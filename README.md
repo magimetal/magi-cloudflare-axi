@@ -48,4 +48,4 @@ Remote endpoints require HTTPS; loopback HTTP supports hermetic tests only. Redi
 
 CI runs formatting, locked tests, clippy, release build, package verification, dependency advisory audit, pinned-source inventory validation, and clean-install smoke checks. Release jobs enforce tag/package version equality, repeat validation, and package skill plus notices. Linux and macOS archives are supported. No live Cloudflare calls are part of CI.
 
-See `docs/plans/cloudflare-axi-contract.md` and `docs/cloudflare-api-evidence.md` for contract and evidence limits.
+See `docs/plans/cloudflare-axi-contract.md`, `docs/plans/cloudflare-full-capability-parity-roadmap.md`, and `docs/cloudflare-api-evidence.md` for contract, phased parity work, and evidence limits.
