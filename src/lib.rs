@@ -486,8 +486,8 @@ fn run(c: Cli) -> Result<(), AppError> {
             )?
         }
         Some(Command::Capability {
-            command: CapabilityCommand::List { family, status },
-        }) => capability::list(family.as_deref(), status.as_deref(), false)
+            command: CapabilityCommand::List { family, access },
+        }) => capability::list(family.as_deref(), access.as_deref(), false)
             .map_err(|_| AppError::api("embedded capability inventory is invalid"))?,
         Some(Command::Capability {
             command: CapabilityCommand::Get { name },

@@ -1,10 +1,10 @@
 ---
 title: Cloudflare full capability parity roadmap
-status: proposed
-owner: unassigned
+status: active
+owner: magimetal
 created: 2026-08-10
 last_reviewed: 2026-08-10
-current_phase: phase-0
+current_phase: phase-1
 baseline_source_commit: 70ff690553722f731849ede6ba9ce98958395a23
 baseline_capabilities: 172
 canonical_tracker: capabilities/cloudflare-mcp-parity.json
@@ -96,7 +96,7 @@ If Cloudflare exposes no usable route for one or more registered capabilities, p
 
 ## Tracking model
 
-`capabilities/cloudflare-mcp-parity.json` remains canonical machine-readable tracker. Phase 0 will version its schema and make every parity dimension explicit.
+`capabilities/cloudflare-mcp-parity.json` remains canonical machine-readable tracker. Phase 0 versions schema and makes every parity dimension explicit.
 
 Each capability record must eventually carry explicit status and evidence for every parity dimension:
 
@@ -184,41 +184,43 @@ Safety is operation-independent:
 
 | ID | Workstream | Deliverable | Owner | Status |
 |---|---|---|---|---|
-| W1 | Source extraction | Deterministic names, schemas, registrations, handlers, and hashes | unassigned | not_started |
-| W2 | Catalog model | Versioned JSON Schema contracts and generated rollups | unassigned | not_started |
-| W3 | Invocation dispatcher | `capability schema/invoke` with pre-network validation | unassigned | not_started |
-| W4 | Route mapping | Exact REST, GraphQL, public, and hosted MCP routes | unassigned | not_started |
-| W5 | Safety policy | Per-capability mutation, metering, destruction, egress, retry rules | unassigned | not_started |
-| W6 | Verification | Real-binary hermetic contract tests for all capabilities | unassigned | not_started |
-| W7 | Discovery/docs | Generated matrix, help, examples, README, and skill synchronization | unassigned | not_started |
-| W8 | Blocker closure | Evidence-backed resolution of 41 current blockers | unassigned | not_started |
-| W9 | Drift governance | Pinned validation and latest-upstream change reports | unassigned | not_started |
+| W1 | Source extraction | Deterministic names, schemas, registrations, handlers, and hashes | magimetal | not_started |
+| W2 | Catalog model | Versioned parity status/evidence model and generated rollups | magimetal | complete |
+| W3 | Invocation dispatcher | `capability schema/invoke` with pre-network validation | magimetal | not_started |
+| W4 | Route mapping | Exact REST, GraphQL, public, and hosted MCP routes | magimetal | not_started |
+| W5 | Safety policy | Per-capability mutation, metering, destruction, egress, retry rules | magimetal | not_started |
+| W6 | Verification | Real-binary hermetic contract tests for all capabilities | magimetal | not_started |
+| W7 | Discovery/docs | Generated matrix, help, examples, README, and skill synchronization | magimetal | not_started |
+| W8 | Blocker closure | Evidence-backed resolution of 41 current blockers | magimetal | not_started |
+| W9 | Drift governance | Pinned validation and latest-upstream change reports | magimetal | active |
 
 ## Phase plan
 
 ### Phase 0 — Measurement and governance
 
-**Status:** `not_started`
+**Status:** `complete`
 
 **Objective:** Make every gap mechanically measurable before bulk implementation.
 
 Tasks:
 
-- [ ] Version catalog schema and migrate parser in same change.
-- [ ] Add explicit inventory, schema, route, behavior, policy, verification, discovery, and external-blocker statuses with dimension-specific evidence.
-- [ ] Add catalog validator for status enums, duplicate names, source commit, evidence references, and denominator consistency.
-- [ ] Generate `docs/cloudflare-capability-parity.md` grouped by family, transport, operation, and blocker.
-- [ ] Add CI stale-generation check.
-- [ ] Separate `unresolved` from evidenced zero-input or externally unavailable.
-- [ ] Add phase metrics script with machine-readable JSON output.
-- [ ] Assign owners or tracking issues for W1–W9.
+- [x] Version catalog schema and migrate parser in same change.
+- [x] Add explicit inventory, schema, route, behavior, policy, verification, discovery, and external-blocker statuses with dimension-specific evidence.
+- [x] Add catalog validator for status enums, duplicate names, source commit, evidence references, and denominator consistency.
+- [x] Generate `docs/cloudflare-capability-parity.md` grouped by family, transport, operation, and blocker.
+- [x] Add CI stale-generation check.
+- [x] Separate `unresolved` from evidenced zero-input or externally unavailable.
+- [x] Add phase metrics script with machine-readable JSON output.
+- [x] Assign owners or tracking issues for W1–W9.
 
 Exit gate:
 
-- [ ] 172 unique names still match pinned source.
-- [ ] Every record has explicit status for I/S/R/B/P/V/D/X.
-- [ ] Generated dashboard reproduces baseline counts.
-- [ ] CI rejects invalid status, stale output, duplicate names, or denominator drift.
+- [x] 172 unique names still match exact pinned Git blobs (`scripts/extract-capability-names`, exact HEAD and commit-blob checks).
+- [x] Every record has explicit status for I/S/R/B/P/V/D/X.
+- [x] Generated dashboard reproduces baseline counts (`I=172; S=R=B=P=V=D=0; X=41`).
+- [x] CI rejects invalid status, stale output, duplicate names, or denominator drift.
+
+Phase 0 evidence (completed `2026-08-10`): `python3 scripts/catalog-governance.py self-test`, `python3 scripts/catalog-governance.py generate`, `python3 scripts/catalog-governance.py check`, generated metrics/report files, Rust typed-status mutation tests, and extractor exact-pin/blob self-test. No live/provider calls or credentials used. Phases 1–8 remain `not_started`; latest-upstream change reporting, schema extraction, routes, invocation, behavior, policy, verification, and blocker closure remain future work.
 
 ### Phase 1 — Authoritative schema extraction
 
@@ -523,7 +525,7 @@ Update this table only when gate evidence exists.
 
 | Phase | Entry state | Exit evidence | Tracking issue | Status | Completed |
 |---|---|---|---|---|---|
-| 0 — Measurement | Inventory baseline | Versioned tracker + generated dashboard CI | — | not_started | — |
+| 0 — Measurement | Inventory baseline | Versioned tracker + generated dashboard CI | — | complete | 2026-08-10 |
 | 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | not_started | — |
 | 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; all routes classified | — | not_started | — |
 | 3 — Public reads | Phase 2 complete | Public read batch verified | — | not_started | — |

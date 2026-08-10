@@ -16,6 +16,14 @@ jobs:
       - run: cargo build --release --locked
       - run: cargo package --locked
       - run: cargo audit
+      - name: Validate catalog and generated governance artifacts
+        run: |
+          python3 scripts/catalog-governance.py validate
+          python3 scripts/catalog-governance.py check
+          python3 scripts/catalog-governance.py self-test
+          python3 scripts/extract-capability-names --self-test
+          python3 scripts/catalog-governance.py metrics > /tmp/catalog-metrics.json
+          test "$(python3 -c 'import json; print(json.load(open("/tmp/catalog-metrics.json"))["denominator"])')" = 172
       - name: Validate pinned registered-tool inventory
         run: |
           git init /tmp/mcp-server-cloudflare

@@ -33,6 +33,12 @@ jobs:
       - run: cargo build --release --locked
       - run: cargo package --locked
       - run: cargo audit
+      - name: Validate catalog and generated governance artifacts
+        run: |
+          python3 scripts/catalog-governance.py validate
+          python3 scripts/catalog-governance.py check
+          python3 scripts/catalog-governance.py self-test
+          python3 scripts/extract-capability-names --self-test
       - name: Validate pinned registered-tool inventory
         if: runner.os == 'Linux'
         shell: bash

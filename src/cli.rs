@@ -228,7 +228,7 @@ pub enum ScopeCommand {
 pub enum CapabilityCommand {
     /// List compact registered-tool inventory evidence.
     #[command(
-        after_help = "Examples:\n  magi-cloudflare-axi capability list\n  magi-cloudflare-axi capability list --family workers-bindings\n  magi-cloudflare-axi capability list --status mcp_remote"
+        after_help = "Examples:\n  magi-cloudflare-axi capability list\n  magi-cloudflare-axi capability list --family workers-bindings\n  magi-cloudflare-axi capability list --access mcp_remote"
     )]
     List {
         /// Exact source family filter.
@@ -236,7 +236,7 @@ pub enum CapabilityCommand {
         family: Option<String>,
         /// Exact catalog access-classification filter.
         #[arg(long)]
-        status: Option<String>,
+        access: Option<String>,
     },
     /// Show evidence, limitations, and safest access route for one tool.
     #[command(
@@ -301,8 +301,10 @@ pub fn home(
     auth: Result<crate::config::Auth, crate::error::AppError>,
 ) -> Result<serde_json::Value, crate::error::AppError> {
     crate::client::validate_endpoint(&config.endpoint)?;
-    let entries = crate::capability::all().unwrap_or_default();
-    let blockers = entries.iter().filter(|x| x.blocker.is_some()).count();
+    let catalog =
+        crate::capability::catalog().map_err(|e| crate::error::AppError::config(e.to_string()))?;
+    let entries = catalog.capabilities.clone();
+    let blockers = crate::capability::x_count(&catalog);
     let mode = auth.as_ref().ok().map(crate::config::Auth::label);
     let live = match auth {
         Ok(auth) => {

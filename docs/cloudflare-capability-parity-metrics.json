@@ -1,0 +1,529 @@
+{
+  "schema_version": 1,
+  "catalog_commit": "70ff690553722f731849ede6ba9ce98958395a23",
+  "denominator": 172,
+  "parity": {
+    "I": 172,
+    "S": 0,
+    "R": 0,
+    "B": 0,
+    "P": 0,
+    "V": 0,
+    "D": 0,
+    "X": 41
+  },
+  "dimensions": {
+    "inventory": {
+      "counts": {
+        "complete": 172,
+        "unresolved": 0
+      },
+      "complete": 172
+    },
+    "schema": {
+      "counts": {
+        "complete": 0,
+        "unresolved": 172,
+        "zero_input_evidenced": 0
+      },
+      "complete": 0
+    },
+    "route": {
+      "counts": {
+        "complete": 0,
+        "external_blocked": 0,
+        "unresolved": 172
+      },
+      "complete": 0
+    },
+    "behavior": {
+      "counts": {
+        "specified": 0,
+        "unresolved": 172,
+        "verified": 0
+      },
+      "complete": 0
+    },
+    "policy": {
+      "counts": {
+        "classified": 0,
+        "unresolved": 172,
+        "verified": 0
+      },
+      "complete": 0
+    },
+    "verification": {
+      "counts": {
+        "hermetic_verified": 0,
+        "unverified": 172
+      },
+      "complete": 0
+    },
+    "discovery": {
+      "counts": {
+        "generated": 0,
+        "missing": 172,
+        "verified": 0
+      },
+      "complete": 0
+    },
+    "external_blocker": {
+      "counts": {
+        "none": 131,
+        "open": 41,
+        "resolved": 0
+      },
+      "complete": 131
+    }
+  },
+  "groups": {
+    "family": {
+      "ai-gateway": {
+        "count": 5,
+        "parity": {
+          "I": 5,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "auditlogs": {
+        "count": 1,
+        "parity": {
+          "I": 1,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "autorag": {
+        "count": 3,
+        "parity": {
+          "I": 3,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "browser-rendering": {
+        "count": 13,
+        "parity": {
+          "I": 13,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "cloudflare-blog": {
+        "count": 4,
+        "parity": {
+          "I": 4,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "cloudflare-one-casb": {
+        "count": 11,
+        "parity": {
+          "I": 11,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 11
+        }
+      },
+      "demo-day": {
+        "count": 1,
+        "parity": {
+          "I": 1,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "dex-analysis": {
+        "count": 18,
+        "parity": {
+          "I": 18,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 18
+        }
+      },
+      "dns-analytics": {
+        "count": 3,
+        "parity": {
+          "I": 3,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "graphql": {
+        "count": 6,
+        "parity": {
+          "I": 6,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "logpush": {
+        "count": 1,
+        "parity": {
+          "I": 1,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "radar": {
+        "count": 66,
+        "parity": {
+          "I": 66,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "sandbox-container": {
+        "count": 7,
+        "parity": {
+          "I": 7,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 7
+        }
+      },
+      "shared": {
+        "count": 7,
+        "parity": {
+          "I": 7,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 1
+        }
+      },
+      "stack-mcp": {
+        "count": 2,
+        "parity": {
+          "I": 2,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 1
+        }
+      },
+      "workers-bindings": {
+        "count": 18,
+        "parity": {
+          "I": 18,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "workers-builds": {
+        "count": 3,
+        "parity": {
+          "I": 3,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "workers-observability": {
+        "count": 3,
+        "parity": {
+          "I": 3,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 3
+        }
+      }
+    },
+    "transport": {
+      "custom_container": {
+        "count": 7,
+        "parity": {
+          "I": 7,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 7
+        }
+      },
+      "graphql": {
+        "count": 6,
+        "parity": {
+          "I": 6,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "internal_binding": {
+        "count": 2,
+        "parity": {
+          "I": 2,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 2
+        }
+      },
+      "public_http": {
+        "count": 86,
+        "parity": {
+          "I": 86,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "rest": {
+        "count": 71,
+        "parity": {
+          "I": 71,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 32
+        }
+      }
+    },
+    "cli_access": {
+      "blocked": {
+        "count": 1,
+        "parity": {
+          "I": 1,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 1
+        }
+      },
+      "mcp_remote": {
+        "count": 26,
+        "parity": {
+          "I": 26,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 26
+        }
+      },
+      "public_direct": {
+        "count": 6,
+        "parity": {
+          "I": 6,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "raw_graphql": {
+        "count": 6,
+        "parity": {
+          "I": 6,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 0
+        }
+      },
+      "raw_rest": {
+        "count": 133,
+        "parity": {
+          "I": 133,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 14
+        }
+      }
+    },
+    "operation": {
+      "read": {
+        "count": 150,
+        "parity": {
+          "I": 150,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 35
+        }
+      },
+      "write": {
+        "count": 22,
+        "parity": {
+          "I": 22,
+          "S": 0,
+          "R": 0,
+          "B": 0,
+          "P": 0,
+          "V": 0,
+          "D": 0,
+          "X": 6
+        }
+      }
+    },
+    "blocker": {
+      "B-CASB": {
+        "count": 11,
+        "status": "open",
+        "family": "cloudflare-one-casb",
+        "parity": {
+          "X": 11
+        }
+      },
+      "B-CONTAINER": {
+        "count": 7,
+        "status": "open",
+        "family": "sandbox-container",
+        "parity": {
+          "X": 7
+        }
+      },
+      "B-DEX": {
+        "count": 18,
+        "status": "open",
+        "family": "dex-analysis",
+        "parity": {
+          "X": 18
+        }
+      },
+      "B-OBS": {
+        "count": 3,
+        "status": "open",
+        "family": "workers-observability",
+        "parity": {
+          "X": 3
+        }
+      },
+      "B-SHARED": {
+        "count": 1,
+        "status": "open",
+        "family": "shared",
+        "parity": {
+          "X": 1
+        }
+      },
+      "B-STACK": {
+        "count": 1,
+        "status": "open",
+        "family": "stack-mcp",
+        "parity": {
+          "X": 1
+        }
+      }
+    }
+  }
+}

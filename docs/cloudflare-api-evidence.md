@@ -11,3 +11,7 @@
 - Remote HTTP is rejected except explicit loopback test endpoints. Endpoint userinfo, query, fragment, and traversal are rejected before credentials.
 
 Unknown product mappings, catalog input schemas, and generic SDK labels remain unverified until source-derived or official endpoint evidence exists.
+
+## Phase 0 catalog contract
+
+`capabilities/cloudflare-mcp-parity.json` uses version 1 root envelope with pinned repository/commit, denominator 172, and fixed SHA-256 over every preserved per-capability legacy metadata record. Each record carries typed parity dimensions with explicit status/evidence IDs. Completion requires dimension-applicable evidence kinds; missing evidence cannot satisfy completion. Baseline vector is `I=172; S=R=B=P=V=D=0; X=41`; no status is inferred from method, path, transport, access class, implementation text, or blocker prose. Run `python3 scripts/catalog-governance.py validate` for validation, `self-test` for negative mutations, and `check` for stale generated metrics/report detection.

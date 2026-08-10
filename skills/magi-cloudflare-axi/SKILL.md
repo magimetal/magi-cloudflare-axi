@@ -7,7 +7,7 @@ Use `magi-cloudflare-axi --help` first. `-v`, `-V`, and `--version` are config/a
 
 Use `--format json` for parsing and `--full` only when truncation guidance appears. Exit 0 success/empty, 1 auth/config/network/API/output, 2 usage. Errors are structured stdout. Raw non-GET requires `--allow-write`; DELETE exact `--confirm-delete PATH`. MCP writes require `--allow-write --confirm TOOL`; metered tools require `--allow-metered`.
 
-Treat 172-entry local catalog as registered-name inventory. This is inventory parity only, not complete schema parity. Default `tool list` is compact. Query live schemas before calls: `tool list --server <server>` then `tool schema <name> --server <server>`. Unified server name is `cloudflare`; it exposes Code Mode `search` and `execute`. Unknown remote tools other than unified `search` and docs `search_cloudflare_documentation` conservatively require `--allow-write --allow-metered --confirm TOOL`; docs search still requires `--allow-metered`.
+Treat 172-entry versioned local catalog as registered-name inventory. It is inventory parity only, not complete schema parity. Current honest vector: `I=172; S=R=B=P=V=D=0; X=41`. Use `capability list --access <classification>` for access filtering. Default `tool list` is compact. Query live schemas before calls: `tool list --server <server>` then `tool schema <name> --server <server>`. Unified server name is `cloudflare`; it exposes Code Mode `search` and `execute`. Unknown remote tools other than unified `search` and docs `search_cloudflare_documentation` conservatively require `--allow-write --allow-metered --confirm TOOL`; docs search still requires `--allow-metered`.
 
 Examples:
 
@@ -18,3 +18,5 @@ magi-cloudflare-axi api GET /zones --paginate --max-pages 2 --max-items 100
 printf 'query { viewer { userName } }' | magi-cloudflare-axi graphql --stdin
 magi-cloudflare-axi tool schema search --server cloudflare
 ```
+
+Governance: `python3 scripts/catalog-governance.py validate` checks catalog envelope, pinned evidence, statuses, blockers, and baseline. `check` detects stale generated metrics/report. No provider calls or credentials required.
