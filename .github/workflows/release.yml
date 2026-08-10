@@ -27,7 +27,10 @@ jobs:
           set -euo pipefail
           version="$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json,sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
           test "$GITHUB_REF_NAME" = "v$version" || { echo "tag $GITHUB_REF_NAME does not match package v$version" >&2; exit 1; }
-      - run: cargo fmt --check
+      - run: cargo fmt --all --check
+      - run: cargo test --locked -p schema-extractor
+      - run: cargo clippy --locked -p schema-extractor --all-targets -- -D warnings
+      - run: cargo run --locked -p schema-extractor -- --self-test
       - run: cargo test --locked
       - run: cargo clippy --all-targets --all-features --locked -- -D warnings
       - run: cargo build --release --locked
@@ -48,6 +51,10 @@ jobs:
           git -C /tmp/mcp-server-cloudflare remote add origin https://github.com/cloudflare/mcp-server-cloudflare.git
           git -C /tmp/mcp-server-cloudflare fetch --depth 1 origin 70ff690553722f731849ede6ba9ce98958395a23
           git -C /tmp/mcp-server-cloudflare checkout --detach FETCH_HEAD
+          cargo run --locked -p schema-extractor -- census /tmp/mcp-server-cloudflare > /tmp/census-a.json
+          cargo run --locked -p schema-extractor -- census /tmp/mcp-server-cloudflare > /tmp/census-b.json
+          cmp /tmp/census-a.json /tmp/census-b.json
+          python3 -c 'import json,sys; x=json.load(open("/tmp/census-a.json")); assert x["file_count"] == 114 and x["source_count"] == 172 and not x["missing"] and not x["duplicates"] and not x["extra"]; from collections import Counter; assert Counter(r["schema_root_kind"] for r in x["records"]) == {"input_schema":139,"dex_raw_shape":18,"casb_params":11,"implicit_zero_input":4}'
           ./scripts/extract-capability-names /tmp/mcp-server-cloudflare
       - name: Archive
         shell: bash

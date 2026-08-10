@@ -220,11 +220,11 @@ Exit gate:
 - [x] Generated dashboard reproduces baseline counts (`I=172; S=R=B=P=V=D=0; X=41`).
 - [x] CI rejects invalid status, stale output, duplicate names, or denominator drift.
 
-Phase 0 evidence (completed `2026-08-10`): `python3 scripts/catalog-governance.py self-test`, `python3 scripts/catalog-governance.py generate`, `python3 scripts/catalog-governance.py check`, generated metrics/report files, Rust typed-status mutation tests, and extractor exact-pin/blob self-test. No live/provider calls or credentials used. Phases 1–8 remain `not_started`; latest-upstream change reporting, schema extraction, routes, invocation, behavior, policy, verification, and blocker closure remain future work.
+Phase 0 evidence (completed `2026-08-10`): `python3 scripts/catalog-governance.py self-test`, `python3 scripts/catalog-governance.py generate`, `python3 scripts/catalog-governance.py check`, generated metrics/report files, Rust typed-status mutation tests, and extractor exact-pin/blob self-test. No live/provider calls or credentials used. Phase 1 is active; phases 2–8 remain `not_started`. Latest-upstream change reporting, schema completion, routes, invocation, behavior, policy, verification, and blocker closure remain future work.
 
 ### Phase 1 — Authoritative schema extraction
 
-**Status:** `not_started`
+**Status:** `active`
 
 **Objective:** Replace 172 empty placeholder schemas.
 
@@ -239,6 +239,8 @@ Tasks:
 - [ ] Generate compact `input_fields` from canonical schema.
 - [ ] Add positive and negative fixtures for every distinct schema shape.
 - [ ] Prove extractor never executes tool handlers or performs network calls.
+
+Phase 1 foundation evidence (active, 2026-08-10): `tools/schema-extractor` uses pinned Git blob reads, exact checkout `HEAD` verification, embedded canonical catalog, and Oxc 0.75.1 typed TypeScript AST. Census scope is exact `apps/*/(src|server)/**/*.ts` plus `packages/mcp-common/src/**/*.ts`, excludes specs, and gates 114 files / 172 records. Current CI asserts deterministic repeated output and observed root-kind counts (`input_schema=139`, `dex_raw_shape=18`, `casb_params=11`, `implicit_zero_input=4`). No schema semantic `resolved` claim, catalog status changes, provider calls, or credentials. Phase 1 tasks and exit gates remain unchecked; S remains 0.
 
 Exit gate:
 
@@ -526,7 +528,7 @@ Update this table only when gate evidence exists.
 | Phase | Entry state | Exit evidence | Tracking issue | Status | Completed |
 |---|---|---|---|---|---|
 | 0 — Measurement | Inventory baseline | Versioned tracker + generated dashboard CI | — | complete | 2026-08-10 |
-| 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | not_started | — |
+| 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | active | — |
 | 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; all routes classified | — | not_started | — |
 | 3 — Public reads | Phase 2 complete | Public read batch verified | — | not_started | — |
 | 4 — Authenticated REST reads | Phase 2 complete | Direct REST reads verified | — | not_started | — |
