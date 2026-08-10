@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Read-only parity validator for tool names registered by pinned source."""
+import json, re, pathlib, sys
+root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path.home() / 'Dev/_third-party/mcp-server-cloudflare')
+catalog = pathlib.Path(__file__).parents[1] / 'capabilities/cloudflare-mcp-parity.json'
+def strip_comments(text):
+    out, index, quote = [], 0, None
+    while index < len(text):
+        char = text[index]
+        if quote:
+            out.append(char)
+            if char == '\\' and index + 1 < len(text):
+                index += 1
+                out.append(text[index])
+            elif char == quote:
+                quote = None
+            index += 1
+        elif char in "'\"`":
+            quote = char
+            out.append(char)
+            index += 1
+        elif text.startswith('//', index):
+            end = text.find('\n', index)
+            index = len(text) if end < 0 else end
+        elif text.startswith('/*', index):
+            end = text.find('*/', index + 2)
+            if end < 0:
+                out.extend('\n' for char in text[index:] if char == '\n')
+                break
+            out.extend('\n' for char in text[index:end + 2] if char == '\n')
+            index = end + 2
+        else:
+            out.append(char)
+            index += 1
+    return ''.join(out)
+found = set()
+source_paths = list(root.glob('apps/*/src/**/*.ts')) + list(root.glob('apps/*/server/**/*.ts'))
+source_paths += list((root / 'packages/mcp-common/src').glob('**/*.ts'))
+for path in source_paths:
+    if '.spec.' in path.name: continue
+    text = strip_comments(path.read_text(errors='ignore'))
+    found.update(re.findall(r'(?:context\.)?(?:registerTool|accountTool|zoneTool)(?:<[^>]+>)?\s*\(\s*(?:\{\s*)?(?:name\s*:\s*)?[\'\"]([^\'\"$]+)', text))
+    declarations = {}
+    for match in re.finditer(r'\b(?:export\s+)?const\s+(\w+)\s*=\s*\{([\s\S]*?)\n\}', text):
+        declarations[match.group(1)] = dict(re.findall(r'\b(\w+)\s*:\s*[\'\"]([^\'\"]+)', match.group(2)))
+    for owner, member in re.findall(r'(?:context\.)?(?:registerTool|accountTool|zoneTool)(?:<[^>]+>)?\s*\(\s*(\w+)\.(\w+)', text):
+        if owner in declarations and member in declarations[owner]:
+            found.add(declarations[owner][member])
+    # CASB registers every entry from this local definition array through accountTool(name, ...).
+    if path.name == 'integrations.tools.ts' and re.search(r'toolDefinitions\.forEach[\s\S]*?accountTool\(\s*name\s*,', text):
+        definition = re.search(r'\btoolDefinitions[^=]*=\s*\[([\s\S]*?)\n\]', text)
+        if definition:
+            found.update(re.findall(r'\bname\s*:\s*[\'\"]([^\'\"]+)', definition.group(1)))
+actual = {x['name'] for x in json.loads(catalog.read_text())}
+missing, extra = sorted(found-actual), sorted(actual-found)
+print(json.dumps({'source_count': len(found), 'catalog_count': len(actual), 'missing': missing, 'extra': extra}, indent=2))
+sys.exit(bool(missing or extra))

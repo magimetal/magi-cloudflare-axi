@@ -1,0 +1,2956 @@
+[
+  {
+    "name": "ai_search",
+    "family": "autorag",
+    "apps": [
+      "autorag"
+    ],
+    "source": "apps/autorag/src/tools/autorag.tools.ts:119",
+    "description": "Ai search capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for ai_search",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "asset_by_id",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:87",
+    "description": "Asset by id capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for asset_by_id",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "asset_categories_by_type",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:198",
+    "description": "Asset categories by type capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for asset_categories_by_type",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "asset_categories_by_vendor",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:177",
+    "description": "Asset categories by vendor capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for asset_categories_by_vendor",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "asset_categories_by_vendor_and_type",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:219",
+    "description": "Asset categories by vendor and type capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for asset_categories_by_vendor_and_type",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "asset_categories_list",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:165",
+    "description": "Asset categories list capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for asset_categories_list",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "assets_by_category_id",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:130",
+    "description": "Assets by category id capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for assets_by_category_id",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "assets_by_integration_id",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:108",
+    "description": "Assets by integration id capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for assets_by_integration_id",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "assets_list",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:152",
+    "description": "Assets list capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for assets_list",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "assets_search",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:65",
+    "description": "Assets search capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for assets_search",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "auditlogs_by_account_id",
+    "family": "auditlogs",
+    "apps": [
+      "auditlogs"
+    ],
+    "source": "apps/auditlogs/src/tools/auditlogs.tools.ts:243",
+    "description": "Auditlogs by account id capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for auditlogs_by_account_id",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "cancel_crawl",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:484",
+    "description": "Cancel crawl capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "write",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "POST",
+    "sdk_method": "Cloudflare API operation for cancel_crawl",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "container_exec",
+    "family": "sandbox-container",
+    "apps": [
+      "sandbox-container"
+    ],
+    "source": "apps/sandbox-container/server/container-tools.ts:60",
+    "description": "Container exec capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "custom_container",
+    "cli_access": "mcp_remote",
+    "sdk_method": "container operation container_exec",
+    "blocker": "Container runtime is internal and unavailable through direct Cloudflare API access.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "container_file_delete",
+    "family": "sandbox-container",
+    "apps": [
+      "sandbox-container"
+    ],
+    "source": "apps/sandbox-container/server/container-tools.ts:72",
+    "description": "Container file delete capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "custom_container",
+    "cli_access": "mcp_remote",
+    "sdk_method": "container operation container_file_delete",
+    "blocker": "Container runtime is internal and unavailable through direct Cloudflare API access.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "container_file_read",
+    "family": "sandbox-container",
+    "apps": [
+      "sandbox-container"
+    ],
+    "source": "apps/sandbox-container/server/container-tools.ts:126",
+    "description": "Container file read capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "custom_container",
+    "cli_access": "mcp_remote",
+    "sdk_method": "container operation container_file_read",
+    "blocker": "Container runtime is internal and unavailable through direct Cloudflare API access.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "container_file_write",
+    "family": "sandbox-container",
+    "apps": [
+      "sandbox-container"
+    ],
+    "source": "apps/sandbox-container/server/container-tools.ts:85",
+    "description": "Container file write capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "custom_container",
+    "cli_access": "mcp_remote",
+    "sdk_method": "container operation container_file_write",
+    "blocker": "Container runtime is internal and unavailable through direct Cloudflare API access.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "container_files_list",
+    "family": "sandbox-container",
+    "apps": [
+      "sandbox-container"
+    ],
+    "source": "apps/sandbox-container/server/container-tools.ts:102",
+    "description": "Container files list capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "custom_container",
+    "cli_access": "mcp_remote",
+    "sdk_method": "container operation container_files_list",
+    "blocker": "Container runtime is internal and unavailable through direct Cloudflare API access.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "container_initialize",
+    "family": "sandbox-container",
+    "apps": [
+      "sandbox-container"
+    ],
+    "source": "apps/sandbox-container/server/container-tools.ts:23",
+    "description": "Container initialize capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "custom_container",
+    "cli_access": "mcp_remote",
+    "sdk_method": "container operation container_initialize",
+    "blocker": "Container runtime is internal and unavailable through direct Cloudflare API access.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "container_ping",
+    "family": "sandbox-container",
+    "apps": [
+      "sandbox-container"
+    ],
+    "source": "apps/sandbox-container/server/container-tools.ts:52",
+    "description": "Container ping capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "custom_container",
+    "cli_access": "mcp_remote",
+    "sdk_method": "container operation container_ping",
+    "blocker": "Container runtime is internal and unavailable through direct Cloudflare API access.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "create_url_scan",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/url-scanner.tools.ts:72",
+    "description": "Create url scan capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "write",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "POST",
+    "sdk_method": "Cloudflare API operation for create_url_scan",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "d1_database_create",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/d1.tools.ts:67",
+    "description": "D1 database create capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation d1_database_create",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "d1_database_delete",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/d1.tools.ts:113",
+    "description": "D1 database delete capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation d1_database_delete",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "d1_database_get",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/d1.tools.ts:153",
+    "description": "D1 database get capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation d1_database_get",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "d1_database_query",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/d1.tools.ts:193",
+    "description": "D1 database query capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation d1_database_query",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "d1_databases_list",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/d1.tools.ts:17",
+    "description": "D1 databases list capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation d1_databases_list",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_analyze_warp_diag",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:549",
+    "description": "Dex analyze warp diag capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_analyze_warp_diag",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_create_remote_pcap",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:199",
+    "description": "Dex create remote pcap capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "POST",
+    "sdk_method": "Cloudflare API operation for dex_create_remote_pcap",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_create_remote_warp_diag",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:257",
+    "description": "Dex create remote warp diag capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "POST",
+    "sdk_method": "Cloudflare API operation for dex_create_remote_warp_diag",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_explore_remote_warp_diag_output",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:530",
+    "description": "Dex explore remote warp diag output capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_explore_remote_warp_diag_output",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_fleet_status_live",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:324",
+    "description": "Dex fleet status live capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_fleet_status_live",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_fleet_status_logs",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:384",
+    "description": "Dex fleet status logs capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_fleet_status_logs",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_fleet_status_over_time",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:355",
+    "description": "Dex fleet status over time capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_fleet_status_over_time",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_http_test_details",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:58",
+    "description": "Dex http test details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_http_test_details",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_list_colos",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:472",
+    "description": "Dex list colos capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_list_colos",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_list_remote_capture_eligible_devices",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:173",
+    "description": "Dex list remote capture eligible devices capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_list_remote_capture_eligible_devices",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_list_remote_captures",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:303",
+    "description": "Dex list remote captures capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_list_remote_captures",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_list_remote_warp_diag_contents",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:503",
+    "description": "Dex list remote warp diag contents capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_list_remote_warp_diag_contents",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_list_tests",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:38",
+    "description": "Dex list tests capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_list_tests",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_list_warp_change_events",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:429",
+    "description": "Dex list warp change events capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_list_warp_change_events",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_test_statistics",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:12",
+    "description": "Dex test statistics capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_test_statistics",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_traceroute_test_details",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:89",
+    "description": "Dex traceroute test details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_traceroute_test_details",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_traceroute_test_network_path",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:120",
+    "description": "Dex traceroute test network path capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_traceroute_test_network_path",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dex_traceroute_test_result_network_path",
+    "family": "dex-analysis",
+    "apps": [
+      "dex-analysis"
+    ],
+    "source": "apps/dex-analysis/src/tools/dex-analysis.tools.ts:147",
+    "description": "Dex traceroute test result network path capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dex_traceroute_test_result_network_path",
+    "blocker": "DEX tool is archive-reader-only until direct public API response is verified.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "dns_report",
+    "family": "dns-analytics",
+    "apps": [
+      "dns-analytics"
+    ],
+    "source": "apps/dns-analytics/src/tools/dex-analytics.tools.ts:19",
+    "description": "Dns report capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "zone",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for dns_report",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_ai_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:928",
+    "description": "Get ai data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_ai_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_annotations",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2116",
+    "description": "Get annotations capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_annotations",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_as112_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1901",
+    "description": "Get as112 data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_as112_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_as_details",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:231",
+    "description": "Get as details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_as_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_as_relationships",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2730",
+    "description": "Get as relationships capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_as_relationships",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_as_set",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2695",
+    "description": "Get as set capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_as_set",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_hijacks",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:993",
+    "description": "Get bgp hijacks capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_hijacks",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_ip_space_timeseries",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2607",
+    "description": "Get bgp ip space timeseries capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_ip_space_timeseries",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_leaks",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1071",
+    "description": "Get bgp leaks capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_leaks",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_moas",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2523",
+    "description": "Get bgp moas capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_moas",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_pfx2as",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2564",
+    "description": "Get bgp pfx2as capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_pfx2as",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_route_stats",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1137",
+    "description": "Get bgp route stats capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_route_stats",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_routes_realtime",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2654",
+    "description": "Get bgp routes realtime capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_routes_realtime",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_routing_table_ases",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:3112",
+    "description": "Get bgp routing table ases capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_routing_table_ases",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_rpki_aspa_changes",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:3265",
+    "description": "Get bgp rpki aspa changes capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_rpki_aspa_changes",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_rpki_aspa_snapshot",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:3202",
+    "description": "Get bgp rpki aspa snapshot capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_rpki_aspa_snapshot",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_rpki_aspa_timeseries",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:3337",
+    "description": "Get bgp rpki aspa timeseries capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_rpki_aspa_timeseries",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_timeseries",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2382",
+    "description": "Get bgp timeseries capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_timeseries",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_top_ases",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2429",
+    "description": "Get bgp top ases capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_top_ases",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_top_ases_by_prefixes",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:3159",
+    "description": "Get bgp top ases by prefixes capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_top_ases_by_prefixes",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bgp_top_prefixes",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2477",
+    "description": "Get bgp top prefixes capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bgp_top_prefixes",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bot_details",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1787",
+    "description": "Get bot details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bot_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bots_crawlers_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1650",
+    "description": "Get bots crawlers data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bots_crawlers_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_bots_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1182",
+    "description": "Get bots data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_bots_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_certificate_transparency_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1264",
+    "description": "Get certificate transparency data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_certificate_transparency_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_crawl_result",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:446",
+    "description": "Get crawl result capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_crawl_result",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_ct_authority_details",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2270",
+    "description": "Get ct authority details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_ct_authority_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_ct_log_details",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2344",
+    "description": "Get ct log details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_ct_log_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_dns_queries_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:553",
+    "description": "Get dns queries data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_dns_queries_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_domain_rank_details",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:453",
+    "description": "Get domain rank details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_domain_rank_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_domains_ranking",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:408",
+    "description": "Get domains ranking capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_domains_ranking",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_domains_ranking_timeseries",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2860",
+    "description": "Get domains ranking timeseries capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_domains_ranking_timeseries",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_email_routing_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:734",
+    "description": "Get email routing data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_email_routing_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_email_security_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:778",
+    "description": "Get email security data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_email_security_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_geolocation_details",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2020",
+    "description": "Get geolocation details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_geolocation_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_http_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:491",
+    "description": "Get http data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_http_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_internet_quality_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:875",
+    "description": "Get internet quality data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_internet_quality_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_internet_services_ranking",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:365",
+    "description": "Get internet services ranking capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_internet_services_ranking",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_internet_services_timeseries",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2963",
+    "description": "Get internet services timeseries capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_internet_services_timeseries",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_internet_speed_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:822",
+    "description": "Get internet speed data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_internet_speed_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_ip_details",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:268",
+    "description": "Get ip details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_ip_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_l3_attack_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:673",
+    "description": "Get l3 attack data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_l3_attack_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_l7_attack_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:612",
+    "description": "Get l7 attack data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_l7_attack_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_leaked_credentials_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1827",
+    "description": "Get leaked credentials data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_leaked_credentials_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_log_details",
+    "family": "ai-gateway",
+    "apps": [
+      "ai-gateway"
+    ],
+    "source": "apps/ai-gateway/src/tools/ai-gateway.tools.ts:98",
+    "description": "Get log details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_log_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_log_request_body",
+    "family": "ai-gateway",
+    "apps": [
+      "ai-gateway"
+    ],
+    "source": "apps/ai-gateway/src/tools/ai-gateway.tools.ts:139",
+    "description": "Get log request body capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_log_request_body",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_log_response_body",
+    "family": "ai-gateway",
+    "apps": [
+      "ai-gateway"
+    ],
+    "source": "apps/ai-gateway/src/tools/ai-gateway.tools.ts:180",
+    "description": "Get log response body capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_log_response_body",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_netflows_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1344",
+    "description": "Get netflows data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_netflows_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_origin_details",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1459",
+    "description": "Get origin details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_origin_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_origins_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1494",
+    "description": "Get origins data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_origins_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_outages",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2179",
+    "description": "Get outages capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_outages",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_outages_by_location",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:3016",
+    "description": "Get outages by location capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_outages_by_location",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_post",
+    "family": "cloudflare-blog",
+    "apps": [
+      "cloudflare-blog"
+    ],
+    "source": "apps/cloudflare-blog/src/tools/blog.tools.ts:182",
+    "description": "Get post capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "public_direct",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_post",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_robots_txt_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1572",
+    "description": "Get robots txt data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_robots_txt_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_speed_histogram",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2912",
+    "description": "Get speed histogram capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_speed_histogram",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_tcp_resets_timeouts_data",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2058",
+    "description": "Get tcp resets timeouts data capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_tcp_resets_timeouts_data",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_tld_details",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2822",
+    "description": "Get tld details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_tld_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_traffic_anomalies",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:313",
+    "description": "Get traffic anomalies capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_traffic_anomalies",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_traffic_anomalies_by_location",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:3063",
+    "description": "Get traffic anomalies by location capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_traffic_anomalies_by_location",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_url_html_content",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:9",
+    "description": "Get url html content capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_url_html_content",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_url_json",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:295",
+    "description": "Get url json capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_url_json",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_url_links",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:346",
+    "description": "Get url links capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_url_links",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_url_markdown",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:50",
+    "description": "Get url markdown capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_url_markdown",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_url_pdf",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:146",
+    "description": "Get url pdf capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_url_pdf",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_url_scan",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/url-scanner.tools.ts:134",
+    "description": "Get url scan capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_url_scan",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_url_scan_har",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/url-scanner.tools.ts:253",
+    "description": "Get url scan har capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_url_scan_har",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_url_scan_screenshot",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/url-scanner.tools.ts:197",
+    "description": "Get url scan screenshot capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_url_scan_screenshot",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_url_screenshot",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:92",
+    "description": "Get url screenshot capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_url_screenshot",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "get_url_snapshot",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:196",
+    "description": "Get url snapshot capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for get_url_snapshot",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "graphql_api_explorer",
+    "family": "graphql",
+    "apps": [
+      "graphql"
+    ],
+    "source": "apps/graphql/src/tools/graphql.tools.ts:1077",
+    "description": "Graphql api explorer capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "graphql",
+    "cli_access": "raw_graphql",
+    "method": "POST",
+    "path_template": "/graphql",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "graphql_complete_schema",
+    "family": "graphql",
+    "apps": [
+      "graphql"
+    ],
+    "source": "apps/graphql/src/tools/graphql.tools.ts:842",
+    "description": "Graphql complete schema capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "graphql",
+    "cli_access": "raw_graphql",
+    "method": "POST",
+    "path_template": "/graphql",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "graphql_query",
+    "family": "graphql",
+    "apps": [
+      "graphql"
+    ],
+    "source": "apps/graphql/src/tools/graphql.tools.ts:990",
+    "description": "Graphql query capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "graphql",
+    "cli_access": "raw_graphql",
+    "method": "POST",
+    "path_template": "/graphql",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "graphql_schema_overview",
+    "family": "graphql",
+    "apps": [
+      "graphql"
+    ],
+    "source": "apps/graphql/src/tools/graphql.tools.ts:626",
+    "description": "Graphql schema overview capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "graphql",
+    "cli_access": "raw_graphql",
+    "method": "POST",
+    "path_template": "/graphql",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "graphql_schema_search",
+    "family": "graphql",
+    "apps": [
+      "graphql"
+    ],
+    "source": "apps/graphql/src/tools/graphql.tools.ts:490",
+    "description": "Graphql schema search capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "graphql",
+    "cli_access": "raw_graphql",
+    "method": "POST",
+    "path_template": "/graphql",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "graphql_type_details",
+    "family": "graphql",
+    "apps": [
+      "graphql"
+    ],
+    "source": "apps/graphql/src/tools/graphql.tools.ts:711",
+    "description": "Graphql type details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "graphql",
+    "cli_access": "raw_graphql",
+    "method": "POST",
+    "path_template": "/graphql",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "hyperdrive_config_delete",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/hyperdrive.tools.ts:28",
+    "description": "Hyperdrive config delete capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation hyperdrive_config_delete",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "hyperdrive_config_edit",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/hyperdrive.tools.ts:30",
+    "description": "Hyperdrive config edit capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation hyperdrive_config_edit",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "hyperdrive_config_get",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/hyperdrive.tools.ts:29",
+    "description": "Hyperdrive config get capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation hyperdrive_config_get",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "hyperdrive_configs_list",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/hyperdrive.tools.ts:26",
+    "description": "Hyperdrive configs list capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation hyperdrive_configs_list",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "integration_by_id",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:35",
+    "description": "Integration by id capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for integration_by_id",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "integrations_list",
+    "family": "cloudflare-one-casb",
+    "apps": [
+      "cloudflare-one-casb"
+    ],
+    "source": "apps/cloudflare-one-casb/src/tools/integrations.tools.ts:56",
+    "description": "Integrations list capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for integrations_list",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "kill_browser_session",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:562",
+    "description": "Kill browser session capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "write",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "POST",
+    "sdk_method": "Cloudflare API operation for kill_browser_session",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "kv_namespace_create",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/kv_namespace.tools.ts:16",
+    "description": "Kv namespace create capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation kv_namespace_create",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "kv_namespace_delete",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/kv_namespace.tools.ts:17",
+    "description": "Kv namespace delete capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation kv_namespace_delete",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "kv_namespace_get",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/kv_namespace.tools.ts:18",
+    "description": "Kv namespace get capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation kv_namespace_get",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "kv_namespace_update",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/kv_namespace.tools.ts:19",
+    "description": "Kv namespace update capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation kv_namespace_update",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "kv_namespaces_list",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/kv_namespace.tools.ts:15",
+    "description": "Kv namespaces list capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation kv_namespaces_list",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_autonomous_systems",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:186",
+    "description": "List autonomous systems capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_autonomous_systems",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_bots",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1717",
+    "description": "List bots capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_bots",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_browser_sessions",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:522",
+    "description": "List browser sessions capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_browser_sessions",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_ct_authorities",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2232",
+    "description": "List ct authorities capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_ct_authorities",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_ct_logs",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2306",
+    "description": "List ct logs capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_ct_logs",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_gateways",
+    "family": "ai-gateway",
+    "apps": [
+      "ai-gateway"
+    ],
+    "source": "apps/ai-gateway/src/tools/ai-gateway.tools.ts:12",
+    "description": "List gateways capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_gateways",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_geolocations",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1977",
+    "description": "List geolocations capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_geolocations",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_libraries",
+    "family": "stack-mcp",
+    "apps": [
+      "stack-mcp"
+    ],
+    "source": "apps/stack-mcp/src/tools/stack.tools.ts:52",
+    "description": "List libraries capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_libraries",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_logs",
+    "family": "ai-gateway",
+    "apps": [
+      "ai-gateway"
+    ],
+    "source": "apps/ai-gateway/src/tools/ai-gateway.tools.ts:56",
+    "description": "List logs capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_logs",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_origins",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:1420",
+    "description": "List origins capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_origins",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_posts",
+    "family": "cloudflare-blog",
+    "apps": [
+      "cloudflare-blog"
+    ],
+    "source": "apps/cloudflare-blog/src/tools/blog.tools.ts:132",
+    "description": "List posts capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "public_direct",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_posts",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_rags",
+    "family": "autorag",
+    "apps": [
+      "autorag"
+    ],
+    "source": "apps/autorag/src/tools/autorag.tools.ts:11",
+    "description": "List rags capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_rags",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_tags",
+    "family": "cloudflare-blog",
+    "apps": [
+      "cloudflare-blog"
+    ],
+    "source": "apps/cloudflare-blog/src/tools/blog.tools.ts:220",
+    "description": "List tags capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "public_direct",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_tags",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "list_tlds",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/radar.tools.ts:2777",
+    "description": "List tlds capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for list_tlds",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "logpush_jobs_by_account_id",
+    "family": "logpush",
+    "apps": [
+      "logpush"
+    ],
+    "source": "apps/logpush/src/tools/logpush.tools.ts:106",
+    "description": "Logpush jobs by account id capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for logpush_jobs_by_account_id",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "mcp_demo_day_info",
+    "family": "demo-day",
+    "apps": [
+      "demo-day"
+    ],
+    "source": "apps/demo-day/src/demo-day.app.ts:14",
+    "description": "Mcp demo day info capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "public_direct",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for mcp_demo_day_info",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "migrate_pages_to_workers_guide",
+    "family": "shared",
+    "apps": [
+      "docs-ai-search",
+      "workers-bindings",
+      "workers-builds",
+      "workers-observability"
+    ],
+    "source": "packages/mcp-common/src/shared-tools/docs-ai-search.tools.ts:98",
+    "description": "Migrate pages to workers guide capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "write",
+    "transport": "public_http",
+    "cli_access": "public_direct",
+    "method": "POST",
+    "sdk_method": "Cloudflare API operation for migrate_pages_to_workers_guide",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "observability_keys",
+    "family": "workers-observability",
+    "apps": [
+      "workers-observability"
+    ],
+    "source": "apps/workers-observability/src/tools/workers-observability.tools.ts:193",
+    "description": "Observability keys capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for observability_keys",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "observability_values",
+    "family": "workers-observability",
+    "apps": [
+      "workers-observability"
+    ],
+    "source": "apps/workers-observability/src/tools/workers-observability.tools.ts:241",
+    "description": "Observability values capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for observability_values",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "query_worker_observability",
+    "family": "workers-observability",
+    "apps": [
+      "workers-observability"
+    ],
+    "source": "apps/workers-observability/src/tools/workers-observability.tools.ts:32",
+    "description": "Query worker observability capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "POST",
+    "sdk_method": "Cloudflare API operation for query_worker_observability",
+    "blocker": "Source-specific runtime or undocumented product API requires verified endpoint mapping; invocation intentionally deferred.",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "r2_bucket_create",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/r2_bucket.tools.ts:72",
+    "description": "R2 bucket create capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation r2_bucket_create",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "r2_bucket_delete",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/r2_bucket.tools.ts:150",
+    "description": "R2 bucket delete capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "write",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation r2_bucket_delete",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "r2_bucket_get",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/r2_bucket.tools.ts:113",
+    "description": "R2 bucket get capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation r2_bucket_get",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "r2_buckets_list",
+    "family": "workers-bindings",
+    "apps": [
+      "workers-bindings"
+    ],
+    "source": "apps/workers-bindings/src/tools/r2_bucket.tools.ts:18",
+    "description": "R2 buckets list capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "sdk_method": "container operation r2_buckets_list",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "scrape_url_elements",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:246",
+    "description": "Scrape url elements capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for scrape_url_elements",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "search",
+    "family": "autorag",
+    "apps": [
+      "autorag"
+    ],
+    "source": "apps/autorag/src/tools/autorag.tools.ts:62",
+    "description": "Search capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for search",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "search_cloudflare_documentation",
+    "family": "shared",
+    "apps": [
+      "docs-ai-search",
+      "workers-bindings",
+      "workers-builds",
+      "workers-observability"
+    ],
+    "source": "packages/mcp-common/src/shared-tools/docs-ai-search.tools.ts:53",
+    "description": "Search cloudflare documentation capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "internal_binding",
+    "cli_access": "mcp_remote",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for search_cloudflare_documentation",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23",
+    "blocker": "Internal AI binding has no direct public response contract; use catalog recipe only."
+  },
+  {
+    "name": "search_dev_stack",
+    "family": "stack-mcp",
+    "apps": [
+      "stack-mcp"
+    ],
+    "source": "apps/stack-mcp/src/tools/stack.tools.ts:87",
+    "description": "Search dev stack capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "internal_binding",
+    "cli_access": "blocked",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for search_dev_stack",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23",
+    "blocker": "Internal AI binding has no direct public response contract; use catalog recipe only."
+  },
+  {
+    "name": "search_posts",
+    "family": "cloudflare-blog",
+    "apps": [
+      "cloudflare-blog"
+    ],
+    "source": "apps/cloudflare-blog/src/tools/blog.tools.ts:38",
+    "description": "Search posts capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "public_direct",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for search_posts",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "search_url_scans",
+    "family": "radar",
+    "apps": [
+      "radar"
+    ],
+    "source": "apps/radar/src/tools/url-scanner.tools.ts:22",
+    "description": "Search url scans capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "read",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for search_url_scans",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "show_account_dns_settings",
+    "family": "dns-analytics",
+    "apps": [
+      "dns-analytics"
+    ],
+    "source": "apps/dns-analytics/src/tools/dex-analytics.tools.ts:64",
+    "description": "Show account dns settings capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "zone",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for show_account_dns_settings",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "show_zone_dns_settings",
+    "family": "dns-analytics",
+    "apps": [
+      "dns-analytics"
+    ],
+    "source": "apps/dns-analytics/src/tools/dex-analytics.tools.ts:102",
+    "description": "Show zone dns settings capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "zone",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for show_zone_dns_settings",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "start_crawl",
+    "family": "browser-rendering",
+    "apps": [
+      "browser-rendering"
+    ],
+    "source": "apps/browser-rendering/src/tools/browser.tools.ts:393",
+    "description": "Start crawl capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "public",
+    "operation": "write",
+    "transport": "public_http",
+    "cli_access": "raw_rest",
+    "method": "POST",
+    "sdk_method": "Cloudflare API operation for start_crawl",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "workers_builds_get_build",
+    "family": "workers-builds",
+    "apps": [
+      "workers-builds"
+    ],
+    "source": "apps/workers-builds/src/tools/workers-builds.tools.ts:78",
+    "description": "Workers builds get build capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for workers_builds_get_build",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "workers_builds_get_build_logs",
+    "family": "workers-builds",
+    "apps": [
+      "workers-builds"
+    ],
+    "source": "apps/workers-builds/src/tools/workers-builds.tools.ts:131",
+    "description": "Workers builds get build logs capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for workers_builds_get_build_logs",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "workers_builds_list_builds",
+    "family": "workers-builds",
+    "apps": [
+      "workers-builds"
+    ],
+    "source": "apps/workers-builds/src/tools/workers-builds.tools.ts:13",
+    "description": "Workers builds list builds capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for workers_builds_list_builds",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "workers_get_worker",
+    "family": "shared",
+    "apps": [
+      "workers-bindings",
+      "workers-builds",
+      "workers-observability"
+    ],
+    "source": "packages/mcp-common/src/shared-tools/worker.tools.ts:90",
+    "description": "Workers get worker capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for workers_get_worker",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "workers_get_worker_code",
+    "family": "shared",
+    "apps": [
+      "workers-bindings",
+      "workers-builds",
+      "workers-observability"
+    ],
+    "source": "packages/mcp-common/src/shared-tools/worker.tools.ts:153",
+    "description": "Workers get worker code capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for workers_get_worker_code",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "workers_list",
+    "family": "shared",
+    "apps": [
+      "workers-bindings",
+      "workers-builds",
+      "workers-observability"
+    ],
+    "source": "packages/mcp-common/src/shared-tools/worker.tools.ts:25",
+    "description": "Workers list capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "account",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for workers_list",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "zone_details",
+    "family": "shared",
+    "apps": [
+      "graphql",
+      "dns-analytics"
+    ],
+    "source": "packages/mcp-common/src/shared-tools/zone.tools.ts:80",
+    "description": "Zone details capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "zone",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for zone_details",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  },
+  {
+    "name": "zones_list",
+    "family": "shared",
+    "apps": [
+      "graphql",
+      "dns-analytics"
+    ],
+    "source": "packages/mcp-common/src/shared-tools/zone.tools.ts:11",
+    "description": "Zones list capability from pinned MCP source.",
+    "input_fields": [],
+    "scope": "zone",
+    "operation": "read",
+    "transport": "rest",
+    "cli_access": "raw_rest",
+    "method": "GET",
+    "sdk_method": "Cloudflare API operation for zones_list",
+    "source_commit": "70ff690553722f731849ede6ba9ce98958395a23"
+  }
+]
