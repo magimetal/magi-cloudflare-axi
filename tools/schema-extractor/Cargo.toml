@@ -12,6 +12,7 @@ oxc_ast = "=0.75.1"
 oxc_ast_visit = "=0.75.1"
 oxc_parser = { version = "=0.75.1", default-features = false }
 oxc_span = "=0.75.1"
+oxc_syntax = "=0.75.1"
 oxc_index = "=3.1.0"
 oxc_semantic = "=0.75.1"
 sha2 = "=0.10.9"

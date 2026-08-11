@@ -5,6 +5,7 @@ use oxc_index::Idx;
 use oxc_parser::Parser;
 use oxc_semantic::{Scoping, SemanticBuilder};
 use oxc_span::{GetSpan, SourceType, Span};
+use oxc_syntax::scope::ScopeFlags;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::{
@@ -13,13 +14,15 @@ use std::{
     process::Command,
 };
 
-pub const EXTRACTOR_VERSION: &str = "phase1-oxc-0.4";
+pub const EXTRACTOR_VERSION: &str = "phase1-oxc-0.5";
 pub const COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
 pub const TREE: &str = "1a51c6ff07170dfe3c3212c8fb96eb85d66f0b96";
 pub const CATALOG: &str = include_str!("../../../capabilities/cloudflare-mcp-parity.json");
 const MAX_BLOB: usize = 8 * 1024 * 1024;
+const MAX_DEPENDENCY_DEPTH: usize = 64;
+const MAX_DEPENDENCY_CHAINS: usize = 4096;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct SpanInfo {
     pub start_byte: u32,
     pub end_byte: u32,
@@ -46,6 +49,10 @@ pub struct DirectBinding {
     pub target_initializer_expression: Option<String>,
     pub target_initializer_span: Option<SpanInfo>,
     pub target_initializer_sha256: Option<String>,
+    pub dependency_root_id: Option<String>,
+    pub dependency_closure_ids: Vec<String>,
+    pub dependency_resolution_chains: Vec<Vec<String>>,
+    pub dependency_max_depth: Option<usize>,
 }
 
 #[derive(Clone)]
@@ -57,6 +64,70 @@ struct ExportedValue {
 struct TargetModule {
     source: String,
     exports: BTreeMap<String, Vec<ExportedValue>>,
+}
+
+#[derive(Clone)]
+struct ModuleValue {
+    name: String,
+    declaration: Span,
+    value: Span,
+    value_kind: String,
+    references: Vec<IdentifierReferenceInfo>,
+}
+
+#[derive(Clone)]
+struct ModuleImport {
+    local_name: String,
+    classification: String,
+    source: String,
+    imported_name: String,
+    declaration: Span,
+}
+
+#[derive(Clone)]
+struct RuntimeBinding {
+    name: String,
+    declaration: Span,
+    classification: String,
+}
+
+#[derive(Clone)]
+struct ModuleIndex {
+    source: String,
+    blob_oid: String,
+    values: HashMap<u32, ModuleValue>,
+    imports: HashMap<u32, ModuleImport>,
+    symbol_spans: HashMap<u32, Span>,
+    runtime_bindings: HashMap<u32, RuntimeBinding>,
+    exports: BTreeMap<String, Vec<u32>>,
+    unsupported_exports: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DependencyNode {
+    pub id: String,
+    pub name: String,
+    pub file: String,
+    pub blob_oid: String,
+    pub value_kind: String,
+    pub declaration: SpanInfo,
+    pub value_span: SpanInfo,
+    pub value_source: String,
+    pub value_sha256: String,
+    pub dependencies: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+pub struct DependencyBoundary {
+    pub id: String,
+    pub name: String,
+    pub classification: String,
+    pub file: String,
+    pub blob_oid: String,
+    pub source_span_kind: String,
+    pub source_span: SpanInfo,
+    pub import_source: Option<String>,
+    pub imported_name: Option<String>,
 }
 
 struct ExportIndexer {
@@ -145,6 +216,301 @@ fn target_exports(
     Ok(indexer.exports)
 }
 
+struct ModuleIndexer<'a> {
+    reference_symbols: &'a HashMap<u32, u32>,
+    values: HashMap<u32, ModuleValue>,
+    imports: HashMap<u32, ModuleImport>,
+    exports: BTreeMap<String, Vec<u32>>,
+    runtime_bindings: HashMap<u32, RuntimeBinding>,
+    unsupported_exports: BTreeMap<String, String>,
+    error: Option<String>,
+}
+
+impl ModuleIndexer<'_> {
+    fn add_value(&mut self, symbol: u32, name: &str, declaration: Span, value: Span, kind: &str) {
+        let candidate = ModuleValue {
+            name: name.into(),
+            declaration,
+            value,
+            value_kind: kind.into(),
+            references: Vec::new(),
+        };
+        if self.values.insert(symbol, candidate).is_some() {
+            self.error = Some(format!(
+                "duplicate value definition for symbol {symbol} ({name})"
+            ));
+        }
+    }
+
+    fn add_declarator(&mut self, declarator: &VariableDeclarator<'_>) {
+        let Some(identifier) = declarator.id.get_binding_identifier() else {
+            return;
+        };
+        let Some(symbol) = identifier.symbol_id.get() else {
+            return;
+        };
+        let Some(initializer) = declarator.init.as_ref() else {
+            return;
+        };
+        self.add_value(
+            symbol.index() as u32,
+            identifier.name.as_str(),
+            identifier.span,
+            initializer.span(),
+            "variable_initializer",
+        );
+    }
+
+    fn export_symbol(&mut self, exported: &str, symbol: u32) {
+        self.exports
+            .entry(exported.into())
+            .or_default()
+            .push(symbol);
+    }
+}
+
+impl<'a> Visit<'a> for ModuleIndexer<'_> {
+    fn visit_variable_declarator(&mut self, declarator: &VariableDeclarator<'a>) {
+        self.add_declarator(declarator);
+        walk::walk_variable_declarator(self, declarator);
+    }
+
+    fn visit_function(&mut self, function: &Function<'a>, flags: ScopeFlags) {
+        if function.r#type == FunctionType::FunctionDeclaration {
+            if let Some((identifier, symbol)) = function.id.as_ref().and_then(|identifier| {
+                identifier
+                    .symbol_id
+                    .get()
+                    .map(|symbol| (identifier, symbol))
+            }) {
+                self.add_value(
+                    symbol.index() as u32,
+                    identifier.name.as_str(),
+                    identifier.span,
+                    function.span,
+                    "function_declaration",
+                );
+            }
+        }
+        walk::walk_function(self, function, flags);
+    }
+
+    fn visit_formal_parameter(&mut self, parameter: &FormalParameter<'a>) {
+        if let Some((identifier, symbol)) =
+            parameter
+                .pattern
+                .get_binding_identifier()
+                .and_then(|identifier| {
+                    identifier
+                        .symbol_id
+                        .get()
+                        .map(|symbol| (identifier, symbol))
+                })
+        {
+            self.runtime_bindings.insert(
+                symbol.index() as u32,
+                RuntimeBinding {
+                    name: identifier.name.to_string(),
+                    declaration: identifier.span,
+                    classification: "lexical_parameter_boundary".into(),
+                },
+            );
+        }
+        walk::walk_formal_parameter(self, parameter);
+    }
+
+    fn visit_import_declaration(&mut self, declaration: &ImportDeclaration<'a>) {
+        if declaration.import_kind != ImportOrExportKind::Type {
+            for specifier in declaration.specifiers.iter().flatten() {
+                if matches!(specifier, ImportDeclarationSpecifier::ImportSpecifier(specifier) if specifier.import_kind == ImportOrExportKind::Type)
+                {
+                    continue;
+                }
+                let (local, classification, imported_name) = match specifier {
+                    ImportDeclarationSpecifier::ImportSpecifier(specifier) => (
+                        &specifier.local,
+                        "named_import",
+                        module_name(&specifier.imported).map(str::to_owned),
+                    ),
+                    ImportDeclarationSpecifier::ImportDefaultSpecifier(specifier) => {
+                        (&specifier.local, "default_import", Some("default".into()))
+                    }
+                    ImportDeclarationSpecifier::ImportNamespaceSpecifier(specifier) => {
+                        (&specifier.local, "namespace_import", Some("*".into()))
+                    }
+                };
+                if let (Some(symbol), Some(imported_name)) = (local.symbol_id.get(), imported_name)
+                {
+                    self.imports.insert(
+                        symbol.index() as u32,
+                        ModuleImport {
+                            local_name: local.name.to_string(),
+                            classification: classification.into(),
+                            source: declaration.source.value.to_string(),
+                            imported_name,
+                            declaration: declaration.span,
+                        },
+                    );
+                }
+            }
+        }
+        walk::walk_import_declaration(self, declaration);
+    }
+
+    fn visit_export_named_declaration(&mut self, export: &ExportNamedDeclaration<'a>) {
+        if export.export_kind != ImportOrExportKind::Type {
+            if let Some(declaration) = &export.declaration {
+                match declaration {
+                    Declaration::VariableDeclaration(declaration) => {
+                        for declarator in &declaration.declarations {
+                            if let Some((identifier, symbol)) = declarator
+                                .id
+                                .get_binding_identifier()
+                                .and_then(|identifier| {
+                                    identifier
+                                        .symbol_id
+                                        .get()
+                                        .map(|symbol| (identifier, symbol))
+                                })
+                            {
+                                self.export_symbol(identifier.name.as_str(), symbol.index() as u32);
+                            }
+                        }
+                    }
+                    Declaration::FunctionDeclaration(function) => {
+                        if let Some((identifier, symbol)) =
+                            function.id.as_ref().and_then(|identifier| {
+                                identifier
+                                    .symbol_id
+                                    .get()
+                                    .map(|symbol| (identifier, symbol))
+                            })
+                        {
+                            self.export_symbol(identifier.name.as_str(), symbol.index() as u32);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            for specifier in &export.specifiers {
+                if specifier.export_kind == ImportOrExportKind::Type {
+                    continue;
+                }
+                let Some(exported) = module_name(&specifier.exported) else {
+                    continue;
+                };
+                if export.source.is_some() {
+                    self.unsupported_exports.insert(
+                        exported.into(),
+                        "named re-export dependency is unsupported".into(),
+                    );
+                    continue;
+                }
+                let symbol = match &specifier.local {
+                    ModuleExportName::IdentifierReference(identifier) => {
+                        reference_symbol(identifier, self.reference_symbols)
+                    }
+                    _ => None,
+                };
+                if let Some(symbol) = symbol {
+                    self.export_symbol(exported, symbol);
+                } else {
+                    self.unsupported_exports.insert(
+                        exported.into(),
+                        "export specifier does not resolve to one local value".into(),
+                    );
+                }
+            }
+        }
+        walk::walk_export_named_declaration(self, export);
+    }
+}
+
+fn analyze_module(file: &str, source: String, blob_oid: String) -> Result<ModuleIndex, String> {
+    let allocator = Allocator::default();
+    let parsed = Parser::new(
+        &allocator,
+        &source,
+        SourceType::default()
+            .with_typescript(true)
+            .with_module(true),
+    )
+    .parse();
+    if parsed.panicked || !parsed.errors.is_empty() {
+        return Err(format!(
+            "dependency parser diagnostics in {file}: {}",
+            parsed.errors.len()
+        ));
+    }
+    let semantic_return = SemanticBuilder::new()
+        .with_check_syntax_error(true)
+        .build(&parsed.program);
+    if !semantic_return.errors.is_empty() {
+        return Err(format!(
+            "dependency semantic diagnostics in {file}: {}",
+            semantic_return.errors.len()
+        ));
+    }
+    let semantic = semantic_return.semantic;
+    let mut reference_symbols = HashMap::new();
+    for symbol in semantic.scoping().symbol_ids() {
+        for reference in semantic.scoping().get_resolved_reference_ids(symbol) {
+            reference_symbols.insert(reference.index() as u32, symbol.index() as u32);
+        }
+    }
+    let references = {
+        let mut collector = ReferenceCollector {
+            reference_symbols: &reference_symbols,
+            scoping: semantic.scoping(),
+            references: Vec::new(),
+        };
+        collector.visit_program(&parsed.program);
+        collector.references
+    };
+    let mut indexer = ModuleIndexer {
+        reference_symbols: &reference_symbols,
+        values: HashMap::new(),
+        imports: HashMap::new(),
+        exports: BTreeMap::new(),
+        runtime_bindings: HashMap::new(),
+        unsupported_exports: BTreeMap::new(),
+        error: None,
+    };
+    indexer.visit_program(&parsed.program);
+    if let Some(error) = indexer.error {
+        return Err(format!("dependency index error in {file}: {error}"));
+    }
+    let symbol_spans = semantic
+        .scoping()
+        .symbol_ids()
+        .map(|symbol| {
+            (
+                symbol.index() as u32,
+                semantic.scoping().symbol_span(symbol),
+            )
+        })
+        .collect();
+    for value in indexer.values.values_mut() {
+        value.references = references
+            .iter()
+            .filter(|reference| {
+                reference.span.start >= value.value.start && reference.span.end <= value.value.end
+            })
+            .cloned()
+            .collect();
+    }
+    Ok(ModuleIndex {
+        source,
+        blob_oid,
+        values: indexer.values,
+        imports: indexer.imports,
+        exports: indexer.exports,
+        runtime_bindings: indexer.runtime_bindings,
+        unsupported_exports: indexer.unsupported_exports,
+        symbol_spans,
+    })
+}
+
 fn target_candidates(importer: &str, source: &str) -> Result<Vec<String>, String> {
     let base = if let Some(relative) = source.strip_prefix("@repo/mcp-common/src/") {
         format!("packages/mcp-common/src/{relative}")
@@ -185,6 +551,403 @@ fn hex_sha(value: &str) -> String {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect()
+}
+
+struct DependencyResolver<'a> {
+    root: &'a Path,
+    tracked: &'a BTreeMap<String, String>,
+    modules: HashMap<String, ModuleIndex>,
+    nodes: BTreeMap<String, DependencyNode>,
+    boundaries: BTreeMap<String, DependencyBoundary>,
+    active: Vec<String>,
+}
+
+impl<'a> DependencyResolver<'a> {
+    fn module(&mut self, file: &str) -> Result<ModuleIndex, String> {
+        if let Some(module) = self.modules.get(file) {
+            return Ok(module.clone());
+        }
+        let oid = self
+            .tracked
+            .get(file)
+            .ok_or_else(|| format!("dependency file is not a regular pinned blob: {file}"))?;
+        let blob = git(self.root, &["cat-file", "blob", oid])?;
+        if blob.len() > MAX_BLOB {
+            return Err(format!("dependency blob exceeds bound: {file}"));
+        }
+        let source = String::from_utf8(blob)
+            .map_err(|_| format!("invalid UTF-8 dependency blob: {file}"))?;
+        let module = analyze_module(file, source, oid.clone())?;
+        self.modules.insert(file.into(), module.clone());
+        Ok(module)
+    }
+
+    fn exported_symbol(&mut self, file: &str, exported: &str) -> Result<u32, String> {
+        let module = self.module(file)?;
+        let symbols = module.exports.get(exported).ok_or_else(|| {
+            module.unsupported_exports.get(exported).map_or_else(
+                || format!("dependency export {exported} missing in {file}"),
+                |reason| format!("unsupported dependency export {exported} in {file}: {reason}"),
+            )
+        })?;
+        if symbols.len() != 1 {
+            return Err(format!(
+                "dependency export {exported} in {file} must resolve exactly once"
+            ));
+        }
+        let symbol = symbols[0];
+        if !module.values.contains_key(&symbol) {
+            return Err(format!(
+                "dependency export {exported} in {file} is not an initialized value"
+            ));
+        }
+        Ok(symbol)
+    }
+
+    fn internal_target(&self, importer: &str, source: &str) -> Result<String, String> {
+        let matches = target_candidates(importer, source)?
+            .into_iter()
+            .filter(|candidate| self.tracked.contains_key(candidate))
+            .collect::<Vec<_>>();
+        if matches.len() != 1 {
+            return Err(format!(
+                "dependency import target must resolve exactly once: {source} from {importer} matched {matches:?}"
+            ));
+        }
+        Ok(matches[0].clone())
+    }
+
+    fn boundary(&mut self, boundary: DependencyBoundary) -> Result<String, String> {
+        let id = boundary.id.clone();
+        if let Some(existing) = self.boundaries.get(&id) {
+            if existing != &boundary {
+                return Err(format!(
+                    "conflicting dependency boundary metadata for {id}: {existing:?} != {boundary:?}"
+                ));
+            }
+        } else {
+            self.boundaries.insert(id.clone(), boundary);
+        }
+        Ok(id)
+    }
+
+    fn resolve_import(
+        &mut self,
+        importer: &str,
+        module: &ModuleIndex,
+        import: &ModuleImport,
+        depth: usize,
+    ) -> Result<String, String> {
+        if import.source.starts_with('.') || import.source.starts_with("@repo/") {
+            if import.classification != "named_import" {
+                return Err(format!(
+                    "unsupported internal {} dependency {} from {} in {} at bytes {}..{}",
+                    import.classification,
+                    import.local_name,
+                    import.source,
+                    importer,
+                    import.declaration.start,
+                    import.declaration.end
+                ));
+            }
+            let target = self.internal_target(importer, &import.source)?;
+            let symbol = self.exported_symbol(&target, &import.imported_name)?;
+            self.resolve_value(&target, symbol, depth)
+        } else {
+            let id = format!(
+                "external-package:{}:{}-{}:{}:{}",
+                importer,
+                import.declaration.start,
+                import.declaration.end,
+                import.source,
+                import.imported_name
+            );
+            self.boundary(DependencyBoundary {
+                id,
+                name: import.local_name.clone(),
+                classification: "external_package_boundary".into(),
+                file: importer.into(),
+                blob_oid: module.blob_oid.clone(),
+                source_span_kind: "import_declaration".into(),
+                source_span: span_info(import.declaration, &module.source),
+                import_source: Some(import.source.clone()),
+                imported_name: Some(import.imported_name.clone()),
+            })
+        }
+    }
+
+    fn resolve_reference(
+        &mut self,
+        file: &str,
+        module: &ModuleIndex,
+        owner: &ModuleValue,
+        reference: &IdentifierReferenceInfo,
+        depth: usize,
+    ) -> Result<Option<String>, String> {
+        let Some(symbol) = reference.symbol else {
+            if [
+                "Boolean", "Date", "Error", "Math", "Object", "Set", "URL", "isNaN", "parseInt",
+            ]
+            .contains(&reference.name.as_str())
+            {
+                let id = format!(
+                    "language-builtin:{}:{}-{}:{}",
+                    file, reference.span.start, reference.span.end, reference.name
+                );
+                return self
+                    .boundary(DependencyBoundary {
+                        id,
+                        name: reference.name.clone(),
+                        classification: "language_builtin_boundary".into(),
+                        file: file.into(),
+                        blob_oid: module.blob_oid.clone(),
+                        source_span_kind: "identifier_reference".into(),
+                        source_span: span_info(reference.span, &module.source),
+                        import_source: None,
+                        imported_name: None,
+                    })
+                    .map(Some);
+            }
+            return Err(format!(
+                "unsupported unresolved global dependency {} in {} value {}",
+                reference.name, file, owner.name
+            ));
+        };
+        if module.symbol_spans.get(&symbol).is_some_and(|declaration| {
+            declaration.start >= owner.value.start && declaration.end <= owner.value.end
+        }) {
+            return Ok(None);
+        }
+        if module.values.contains_key(&symbol) {
+            return self.resolve_value(file, symbol, depth).map(Some);
+        }
+        if let Some(import) = module.imports.get(&symbol) {
+            return self.resolve_import(file, module, import, depth).map(Some);
+        }
+        if let Some(runtime) = module.runtime_bindings.get(&symbol) {
+            let id = format!(
+                "{}:{}:{}-{}:{}",
+                runtime.classification,
+                file,
+                runtime.declaration.start,
+                runtime.declaration.end,
+                runtime.name
+            );
+            return self
+                .boundary(DependencyBoundary {
+                    id,
+                    name: runtime.name.clone(),
+                    classification: runtime.classification.clone(),
+                    file: file.into(),
+                    blob_oid: module.blob_oid.clone(),
+                    source_span_kind: "parameter_declaration".into(),
+                    source_span: span_info(runtime.declaration, &module.source),
+                    import_source: None,
+                    imported_name: None,
+                })
+                .map(Some);
+        }
+        Err(format!(
+            "unsupported local dependency {} in {} value {}",
+            reference.name, file, owner.name
+        ))
+    }
+
+    fn resolve_value(&mut self, file: &str, symbol: u32, depth: usize) -> Result<String, String> {
+        if depth > MAX_DEPENDENCY_DEPTH {
+            return Err(format!(
+                "dependency depth exceeds {MAX_DEPENDENCY_DEPTH} while resolving {file}"
+            ));
+        }
+        let module = self.module(file)?;
+        let value = module.values.get(&symbol).cloned().ok_or_else(|| {
+            format!("dependency symbol {symbol} in {file} has no supported value declaration")
+        })?;
+        let id = format!(
+            "{}:{}-{}:{}",
+            file, value.declaration.start, value.declaration.end, value.name
+        );
+        if let Some(position) = self.active.iter().position(|active| active == &id) {
+            let mut cycle = self.active[position..].to_vec();
+            cycle.push(id.clone());
+            return Err(format!("dependency cycle: {}", cycle.join(" -> ")));
+        }
+        if self.nodes.contains_key(&id) {
+            return Ok(id);
+        }
+        if value.value.start > value.value.end || value.value.end as usize > module.source.len() {
+            return Err(format!("invalid dependency value bounds for {id}"));
+        }
+        self.active.push(id.clone());
+        let mut references = value.references.clone();
+        references.sort_by_key(|reference| (reference.span.start, reference.span.end));
+        let mut dependencies = BTreeSet::new();
+        for reference in &references {
+            if let Some(dependency) =
+                self.resolve_reference(file, &module, &value, reference, depth + 1)?
+            {
+                dependencies.insert(dependency);
+            }
+        }
+        let popped = self.active.pop();
+        if popped.as_deref() != Some(id.as_str()) {
+            return Err("dependency traversal stack corruption".into());
+        }
+        let value_source =
+            module.source[value.value.start as usize..value.value.end as usize].to_string();
+        self.nodes.insert(
+            id.clone(),
+            DependencyNode {
+                id: id.clone(),
+                name: value.name,
+                file: file.into(),
+                blob_oid: module.blob_oid,
+                value_kind: value.value_kind,
+                declaration: span_info(value.declaration, &module.source),
+                value_span: span_info(value.value, &module.source),
+                value_sha256: hex_sha(&value_source),
+                value_source,
+                dependencies: dependencies.into_iter().collect(),
+            },
+        );
+        Ok(id)
+    }
+
+    fn closure(&self, root: &str) -> Result<Vec<String>, String> {
+        let mut seen = BTreeSet::new();
+        let mut pending = vec![root.to_string()];
+        while let Some(id) = pending.pop() {
+            if !seen.insert(id.clone()) {
+                continue;
+            }
+            if let Some(node) = self.nodes.get(&id) {
+                for dependency in node.dependencies.iter().rev() {
+                    pending.push(dependency.clone());
+                }
+            } else if !self.boundaries.contains_key(&id) {
+                return Err(format!("dependency closure references missing node {id}"));
+            }
+        }
+        Ok(seen.into_iter().collect())
+    }
+
+    fn resolution_chains(&self, root: &str) -> Result<Vec<Vec<String>>, String> {
+        let mut chains = Vec::new();
+        let mut pending = vec![vec![root.to_string()]];
+        while let Some(chain) = pending.pop() {
+            let depth = chain.len().saturating_sub(1);
+            if depth > MAX_DEPENDENCY_DEPTH {
+                return Err(format!(
+                    "dependency depth exceeds {MAX_DEPENDENCY_DEPTH} for {root}: {}",
+                    chain.join(" -> ")
+                ));
+            }
+            if chains.len() + pending.len() >= MAX_DEPENDENCY_CHAINS {
+                return Err(format!(
+                    "dependency resolution chains exceed {MAX_DEPENDENCY_CHAINS} for {root}"
+                ));
+            }
+            let current = chain
+                .last()
+                .ok_or("dependency resolution produced an empty chain")?;
+            if let Some(node) = self.nodes.get(current) {
+                if node.dependencies.is_empty() {
+                    chains.push(chain);
+                } else {
+                    for dependency in node.dependencies.iter().rev() {
+                        let mut next = chain.clone();
+                        next.push(dependency.clone());
+                        pending.push(next);
+                    }
+                }
+            } else if self.boundaries.contains_key(current) {
+                chains.push(chain);
+            } else {
+                return Err(format!(
+                    "dependency chain references missing node {current}"
+                ));
+            }
+        }
+        chains.sort();
+        Ok(chains)
+    }
+}
+
+fn resolve_dependency_closures(
+    root: &Path,
+    tracked: &BTreeMap<String, String>,
+    records: &mut [Record],
+) -> Result<(Vec<DependencyNode>, Vec<DependencyBoundary>), String> {
+    let mut resolver = DependencyResolver {
+        root,
+        tracked,
+        modules: HashMap::new(),
+        nodes: BTreeMap::new(),
+        boundaries: BTreeMap::new(),
+        active: Vec::new(),
+    };
+    for record in records {
+        for binding in &mut record.direct_bindings {
+            let target_file = binding
+                .target_file
+                .as_deref()
+                .ok_or_else(|| format!("dependency root {} missing target file", binding.name))?;
+            let module = resolver.module(target_file)?;
+            let symbol = if binding.target_status.as_deref() == Some("same_file_value") {
+                let declaration = binding.declaration.as_ref().ok_or_else(|| {
+                    format!(
+                        "same-file dependency root {} missing declaration",
+                        binding.name
+                    )
+                })?;
+                let matches = module
+                    .values
+                    .iter()
+                    .filter(|(_, value)| {
+                        value.declaration.start == declaration.start_byte
+                            && value.declaration.end == declaration.end_byte
+                    })
+                    .map(|(symbol, _)| *symbol)
+                    .collect::<Vec<_>>();
+                if matches.len() != 1 {
+                    return Err(format!(
+                        "same-file dependency root {} in {} must resolve exactly once",
+                        binding.name, target_file
+                    ));
+                }
+                matches[0]
+            } else if binding.target_status.as_deref() == Some("pinned_internal_value") {
+                let exported = binding.target_export_name.as_deref().ok_or_else(|| {
+                    format!(
+                        "imported dependency root {} missing export name",
+                        binding.name
+                    )
+                })?;
+                resolver.exported_symbol(target_file, exported)?
+            } else {
+                return Err(format!(
+                    "unsupported dependency root status for {}: {:?}",
+                    binding.name, binding.target_status
+                ));
+            };
+            let root_id = resolver.resolve_value(target_file, symbol, 0)?;
+            let closure = resolver.closure(&root_id)?;
+            let chains = resolver.resolution_chains(&root_id)?;
+            let max_depth = chains
+                .iter()
+                .map(|chain| chain.len().saturating_sub(1))
+                .max()
+                .unwrap_or(0);
+            binding.dependency_root_id = Some(root_id);
+            binding.dependency_closure_ids = closure;
+            binding.dependency_resolution_chains = chains;
+            binding.dependency_max_depth = Some(max_depth);
+        }
+    }
+    Ok((
+        resolver.nodes.into_values().collect(),
+        resolver.boundaries.into_values().collect(),
+    ))
 }
 
 fn resolve_named_imports(
@@ -439,6 +1202,16 @@ pub struct Census {
     pub feature_record_counts: BTreeMap<String, usize>,
     pub direct_binding_kind_counts: BTreeMap<String, usize>,
     pub target_status_counts: BTreeMap<String, usize>,
+    pub dependency_node_count: usize,
+    pub dependency_edge_count: usize,
+    pub dependency_resolution_chain_count: usize,
+    pub dependency_max_depth: usize,
+    pub distinct_dependency_value_hash_count: usize,
+    pub dependency_value_kind_counts: BTreeMap<String, usize>,
+    pub dependency_boundary_kind_counts: BTreeMap<String, usize>,
+    pub unsupported_dependency_construct_counts: BTreeMap<String, usize>,
+    pub dependency_nodes: Vec<DependencyNode>,
+    pub dependency_boundaries: Vec<DependencyBoundary>,
     pub records: Vec<Record>,
 }
 
@@ -1274,6 +2047,10 @@ impl<'a> Collector<'a> {
                     target_initializer_expression: None,
                     target_initializer_span: None,
                     target_initializer_sha256: None,
+                    dependency_root_id: None,
+                    dependency_closure_ids: Vec::new(),
+                    dependency_resolution_chains: Vec::new(),
+                    dependency_max_depth: None,
                 })
             })
             .collect::<Result<Vec<_>, String>>()?;
@@ -1516,6 +2293,52 @@ pub fn run(root: &Path) -> Result<Census, String> {
     {
         return Err("incomplete direct binding target provenance".into());
     }
+    let (dependency_nodes, dependency_boundaries) =
+        resolve_dependency_closures(root, &tracked, &mut records)?;
+    if records.iter().any(|record| {
+        record.direct_bindings.iter().any(|binding| {
+            binding.dependency_root_id.is_none()
+                || binding.dependency_closure_ids.is_empty()
+                || binding.dependency_max_depth.is_none()
+                || binding.dependency_resolution_chains.is_empty()
+        })
+    }) {
+        return Err("incomplete recursive dependency closure provenance".into());
+    }
+    let dependency_edge_count = dependency_nodes
+        .iter()
+        .map(|node| node.dependencies.len())
+        .sum();
+    let dependency_resolution_chain_count = records
+        .iter()
+        .flat_map(|record| &record.direct_bindings)
+        .map(|binding| binding.dependency_resolution_chains.len())
+        .sum();
+    let dependency_max_depth = records
+        .iter()
+        .flat_map(|record| &record.direct_bindings)
+        .filter_map(|binding| binding.dependency_max_depth)
+        .max()
+        .unwrap_or(0);
+    let distinct_dependency_value_hash_count = dependency_nodes
+        .iter()
+        .map(|node| node.value_sha256.as_str())
+        .collect::<BTreeSet<_>>()
+        .len();
+    let dependency_value_kind_counts =
+        dependency_nodes
+            .iter()
+            .fold(BTreeMap::new(), |mut counts, node| {
+                *counts.entry(node.value_kind.clone()).or_insert(0) += 1;
+                counts
+            });
+    let dependency_boundary_kind_counts =
+        dependency_boundaries
+            .iter()
+            .fold(BTreeMap::new(), |mut counts, boundary| {
+                *counts.entry(boundary.classification.clone()).or_insert(0) += 1;
+                counts
+            });
     let catalog: serde_json::Value = serde_json::from_str(CATALOG).map_err(|e| e.to_string())?;
     let expected: BTreeSet<String> = catalog["capabilities"]
         .as_array()
@@ -1537,7 +2360,7 @@ pub fn run(root: &Path) -> Result<Census, String> {
     let extra = names.difference(&expected).cloned().collect();
     records.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(Census {
-        version: "4".into(),
+        version: "5".into(),
         extractor_version: EXTRACTOR_VERSION.into(),
         parser: "oxc 0.75.1 typed AST".into(),
         source_commit: COMMIT.into(),
@@ -1570,6 +2393,16 @@ pub fn run(root: &Path) -> Result<Census, String> {
             counts
         }),
         target_status_counts,
+        dependency_node_count: dependency_nodes.len(),
+        dependency_edge_count,
+        dependency_resolution_chain_count,
+        dependency_max_depth,
+        distinct_dependency_value_hash_count,
+        dependency_value_kind_counts,
+        dependency_boundary_kind_counts,
+        unsupported_dependency_construct_counts: BTreeMap::new(),
+        dependency_nodes,
+        dependency_boundaries,
         records,
     })
 }
@@ -1850,6 +2683,150 @@ mod tests {
             "z.literal(\"fixture\")"
         );
         assert!(target_exports("bad.ts", "export const value = (").is_err());
+    }
+
+    #[test]
+    fn dependency_closure_is_recursive_typed_and_non_executing() {
+        let root_file = "fixtures/root.ts";
+        let shared_file = "fixtures/shared.ts";
+        let root_source = r#"
+            import { z } from "zod";
+            import { shared } from "./shared";
+            import type { TypeOnly } from "./types";
+            const leaf = z.string();
+            function poison() {
+                throw new Error("dependency source must never execute");
+            }
+            export const schema = z.object({
+                leaf,
+                shared,
+                shadowed: ((z: TypeOnly) => z)(leaf),
+                poison: poison(),
+            });
+        "#;
+        let shared_source = r#"
+            import z from "zod";
+            export const shared = z.number();
+        "#;
+        let root_module = analyze_module(root_file, root_source.into(), "root-oid".into()).unwrap();
+        let shared_module =
+            analyze_module(shared_file, shared_source.into(), "shared-oid".into()).unwrap();
+        let tracked = BTreeMap::from([(shared_file.into(), "shared-oid".into())]);
+        let mut resolver = DependencyResolver {
+            root: Path::new("."),
+            tracked: &tracked,
+            modules: HashMap::from([
+                (root_file.into(), root_module),
+                (shared_file.into(), shared_module),
+            ]),
+            nodes: BTreeMap::new(),
+            boundaries: BTreeMap::new(),
+            active: Vec::new(),
+        };
+        let symbol = resolver.exported_symbol(root_file, "schema").unwrap();
+        let root = resolver.resolve_value(root_file, symbol, 0).unwrap();
+        let closure = resolver.closure(&root).unwrap();
+        let chains = resolver.resolution_chains(&root).unwrap();
+        let depth = chains.iter().map(|chain| chain.len() - 1).max().unwrap();
+
+        assert!(closure.iter().any(|id| id.ends_with(":leaf")));
+        assert!(closure.iter().any(|id| id.ends_with(":shared")));
+        assert!(closure.iter().any(|id| id.ends_with(":poison")));
+        assert!(closure.iter().any(|id| id.ends_with(":zod:z")));
+        assert!(closure.iter().any(|id| id.ends_with(":zod:default")));
+        assert!(closure.iter().any(|id| id.ends_with(":Error")));
+        assert!(closure.iter().all(|id| !id.contains("TypeOnly")));
+        assert!(depth >= 2);
+        for boundary in resolver.boundaries.values() {
+            assert!(!boundary.file.is_empty());
+            assert!(!boundary.blob_oid.is_empty());
+            assert!(boundary.source_span.start_byte < boundary.source_span.end_byte);
+        }
+        assert!(chains.windows(2).all(|pair| pair[0] <= pair[1]));
+        assert!(
+            resolver
+                .nodes
+                .values()
+                .any(|node| node.value_kind == "function_declaration")
+        );
+    }
+
+    #[test]
+    fn dependency_cycles_reexports_import_forms_and_depth_fail_closed() {
+        let cycle_file = "fixtures/cycle.ts";
+        let cycle_source = "export const a = b; const b = a;";
+        let cycle_module =
+            analyze_module(cycle_file, cycle_source.into(), "cycle-oid".into()).unwrap();
+        let tracked = BTreeMap::new();
+        let mut resolver = DependencyResolver {
+            root: Path::new("."),
+            tracked: &tracked,
+            modules: HashMap::from([(cycle_file.into(), cycle_module)]),
+            nodes: BTreeMap::new(),
+            boundaries: BTreeMap::new(),
+            active: Vec::new(),
+        };
+        let cycle = resolver.exported_symbol(cycle_file, "a").unwrap();
+        assert!(resolver.resolve_value(cycle_file, cycle, 0).is_err());
+
+        let reexport_file = "fixtures/reexport.ts";
+        let reexport = analyze_module(
+            reexport_file,
+            "export { shared } from './shared';".into(),
+            "reexport-oid".into(),
+        )
+        .unwrap();
+        resolver.modules.insert(reexport_file.into(), reexport);
+        assert!(resolver.exported_symbol(reexport_file, "shared").is_err());
+
+        let default_file = "fixtures/default.ts";
+        let default_source = "import shared from './shared'; export const schema = shared;";
+        let default_module =
+            analyze_module(default_file, default_source.into(), "default-oid".into()).unwrap();
+        let shared_module = analyze_module(
+            "fixtures/shared.ts",
+            "export const shared = 1;".into(),
+            "shared-oid".into(),
+        )
+        .unwrap();
+        let tracked = BTreeMap::from([("fixtures/shared.ts".into(), "shared-oid".into())]);
+        let mut resolver = DependencyResolver {
+            root: Path::new("."),
+            tracked: &tracked,
+            modules: HashMap::from([
+                (default_file.into(), default_module),
+                ("fixtures/shared.ts".into(), shared_module),
+            ]),
+            nodes: BTreeMap::new(),
+            boundaries: BTreeMap::new(),
+            active: Vec::new(),
+        };
+        let default = resolver.exported_symbol(default_file, "schema").unwrap();
+        assert!(resolver.resolve_value(default_file, default, 0).is_err());
+
+        let mut deep_source = String::from("export const n0 = n1;\nexport const n2 = n3;\n");
+        deep_source.push_str("const n1 = n2;\n");
+        for index in 3..=MAX_DEPENDENCY_DEPTH + 1 {
+            deep_source.push_str(&format!("const n{index} = n{};\n", index + 1));
+        }
+        deep_source.push_str(&format!("const n{} = 1;\n", MAX_DEPENDENCY_DEPTH + 2));
+        let deep_file = "fixtures/deep.ts";
+        let deep_module = analyze_module(deep_file, deep_source, "deep-oid".into()).unwrap();
+        let tracked = BTreeMap::new();
+        let mut resolver = DependencyResolver {
+            root: Path::new("."),
+            tracked: &tracked,
+            modules: HashMap::from([(deep_file.into(), deep_module)]),
+            nodes: BTreeMap::new(),
+            boundaries: BTreeMap::new(),
+            active: Vec::new(),
+        };
+        let cached = resolver.exported_symbol(deep_file, "n2").unwrap();
+        let cached_root = resolver.resolve_value(deep_file, cached, 0).unwrap();
+        assert!(resolver.resolution_chains(&cached_root).is_ok());
+        let deep = resolver.exported_symbol(deep_file, "n0").unwrap();
+        let deep_root = resolver.resolve_value(deep_file, deep, 0).unwrap();
+        assert!(resolver.resolution_chains(&deep_root).is_err());
     }
 
     #[test]
