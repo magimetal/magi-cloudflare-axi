@@ -13,7 +13,7 @@ use std::{
     process::Command,
 };
 
-pub const EXTRACTOR_VERSION: &str = "phase1-oxc-0.3";
+pub const EXTRACTOR_VERSION: &str = "phase1-oxc-0.4";
 pub const COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
 pub const TREE: &str = "1a51c6ff07170dfe3c3212c8fb96eb85d66f0b96";
 pub const CATALOG: &str = include_str!("../../../capabilities/cloudflare-mcp-parity.json");
@@ -38,6 +38,245 @@ pub struct DirectBinding {
     pub import_source: Option<String>,
     pub imported_name: Option<String>,
     pub import_declaration: Option<SpanInfo>,
+    pub target_status: Option<String>,
+    pub target_file: Option<String>,
+    pub target_blob_oid: Option<String>,
+    pub target_export_name: Option<String>,
+    pub target_declaration: Option<SpanInfo>,
+    pub target_initializer_expression: Option<String>,
+    pub target_initializer_span: Option<SpanInfo>,
+    pub target_initializer_sha256: Option<String>,
+}
+
+#[derive(Clone)]
+struct ExportedValue {
+    declaration: Span,
+    initializer: Span,
+}
+
+struct TargetModule {
+    source: String,
+    exports: BTreeMap<String, Vec<ExportedValue>>,
+}
+
+struct ExportIndexer {
+    exports: BTreeMap<String, Vec<ExportedValue>>,
+    error: Option<String>,
+}
+
+impl ExportIndexer {
+    fn add<'a>(&mut self, declarator: &VariableDeclarator<'a>) {
+        let Some(identifier) = declarator.id.get_binding_identifier() else {
+            return;
+        };
+        let Some(initializer) = declarator.init.as_ref() else {
+            return;
+        };
+        let Ok(name_len) = u32::try_from(identifier.name.len()) else {
+            self.error = Some(format!("export name is too long: {}", identifier.name));
+            return;
+        };
+        let Some(end) = identifier.span.start.checked_add(name_len) else {
+            self.error = Some(format!(
+                "export declaration span overflow: {}",
+                identifier.name
+            ));
+            return;
+        };
+        self.exports
+            .entry(identifier.name.to_string())
+            .or_default()
+            .push(ExportedValue {
+                declaration: Span::new(identifier.span.start, end),
+                initializer: initializer.span(),
+            });
+    }
+}
+
+impl<'a> Visit<'a> for ExportIndexer {
+    fn visit_export_named_declaration(&mut self, export: &ExportNamedDeclaration<'a>) {
+        if export.export_kind == ImportOrExportKind::Type {
+            return;
+        }
+        if let Some(Declaration::VariableDeclaration(declaration)) = &export.declaration {
+            for declarator in &declaration.declarations {
+                self.add(declarator);
+            }
+        }
+    }
+}
+
+fn target_exports(
+    file: &str,
+    source: &str,
+) -> Result<BTreeMap<String, Vec<ExportedValue>>, String> {
+    let allocator = Allocator::default();
+    let parsed = Parser::new(
+        &allocator,
+        source,
+        SourceType::default()
+            .with_typescript(true)
+            .with_module(true),
+    )
+    .parse();
+    if parsed.panicked || !parsed.errors.is_empty() {
+        return Err(format!(
+            "target parser diagnostics in {file}: {}",
+            parsed.errors.len()
+        ));
+    }
+    let semantic = SemanticBuilder::new()
+        .with_check_syntax_error(true)
+        .build(&parsed.program);
+    if !semantic.errors.is_empty() {
+        return Err(format!(
+            "target semantic diagnostics in {file}: {}",
+            semantic.errors.len()
+        ));
+    }
+    let mut indexer = ExportIndexer {
+        exports: BTreeMap::new(),
+        error: None,
+    };
+    indexer.visit_program(&parsed.program);
+    if let Some(error) = indexer.error {
+        return Err(format!("target export provenance error in {file}: {error}"));
+    }
+    Ok(indexer.exports)
+}
+
+fn target_candidates(importer: &str, source: &str) -> Result<Vec<String>, String> {
+    let base = if let Some(relative) = source.strip_prefix("@repo/mcp-common/src/") {
+        format!("packages/mcp-common/src/{relative}")
+    } else if source.starts_with("./") || source.starts_with("../") {
+        let parent = Path::new(importer)
+            .parent()
+            .ok_or_else(|| format!("importer has no parent: {importer}"))?;
+        parent.join(source).to_string_lossy().into_owned()
+    } else {
+        return Err(format!(
+            "unsupported internal import source {source} in {importer}"
+        ));
+    };
+    let mut parts = Vec::new();
+    for part in base.split('/') {
+        match part {
+            "" | "." => {}
+            ".." => {
+                if parts.pop().is_none() {
+                    return Err(format!(
+                        "import escapes pinned tree: {source} in {importer}"
+                    ));
+                }
+            }
+            value => parts.push(value),
+        }
+    }
+    let base = parts.join("/");
+    Ok(if base.ends_with(".ts") {
+        vec![base]
+    } else {
+        vec![format!("{base}.ts"), format!("{base}/index.ts")]
+    })
+}
+
+fn hex_sha(value: &str) -> String {
+    Sha256::digest(value.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn resolve_named_imports(
+    root: &Path,
+    tracked: &BTreeMap<String, String>,
+    records: &mut [Record],
+) -> Result<BTreeMap<String, usize>, String> {
+    let mut cache = HashMap::<String, TargetModule>::new();
+    let mut statuses = BTreeMap::new();
+    for record in records {
+        for binding in &mut record.direct_bindings {
+            if binding.classification == "same_file_initializer" {
+                binding.target_status = Some("same_file_value".into());
+                binding.target_file = Some(record.file.clone());
+                binding.target_blob_oid = Some(record.blob_oid.clone());
+                *statuses.entry("same_file_value".into()).or_insert(0) += 1;
+                continue;
+            }
+            if binding.classification != "named_import" {
+                continue;
+            }
+            let import_source = binding
+                .import_source
+                .as_deref()
+                .ok_or_else(|| format!("named import {} missing source", binding.name))?;
+            if !import_source.starts_with('.') && !import_source.starts_with("@repo/") {
+                binding.target_status = Some("external_package_boundary".into());
+                *statuses
+                    .entry("external_package_boundary".into())
+                    .or_insert(0) += 1;
+                continue;
+            }
+            let candidates = target_candidates(&record.file, import_source)?;
+            let matches = candidates
+                .iter()
+                .filter_map(|path| tracked.get(path).map(|oid| (path.clone(), oid.clone())))
+                .collect::<Vec<_>>();
+            if matches.len() != 1 {
+                return Err(format!(
+                    "internal import target must resolve exactly once: {} from {} matched {:?}",
+                    import_source, record.file, matches
+                ));
+            }
+            let (target_file, target_oid) = &matches[0];
+            if !cache.contains_key(target_file) {
+                let blob = git(root, &["cat-file", "blob", target_oid])?;
+                if blob.len() > MAX_BLOB {
+                    return Err(format!("target blob exceeds bound: {target_file}"));
+                }
+                let source = String::from_utf8(blob)
+                    .map_err(|_| format!("invalid UTF-8 target blob: {target_file}"))?;
+                let exports = target_exports(target_file, &source)?;
+                cache.insert(target_file.clone(), TargetModule { source, exports });
+            }
+            let module = cache
+                .get(target_file)
+                .ok_or_else(|| format!("target cache failure: {target_file}"))?;
+            let imported = binding
+                .imported_name
+                .as_deref()
+                .ok_or_else(|| format!("named import {} missing imported name", binding.name))?;
+            let values = module.exports.get(imported).ok_or_else(|| {
+                format!("exported initialized value {imported} missing in {target_file}")
+            })?;
+            if values.len() != 1 {
+                return Err(format!(
+                    "exported initialized value {imported} ambiguous in {target_file}"
+                ));
+            }
+            let value = &values[0];
+            if value.initializer.start > value.initializer.end
+                || value.initializer.end as usize > module.source.len()
+            {
+                return Err(format!(
+                    "invalid target initializer bounds for {imported} in {target_file}"
+                ));
+            }
+            let expression = module.source
+                [value.initializer.start as usize..value.initializer.end as usize]
+                .to_string();
+            binding.target_status = Some("pinned_internal_value".into());
+            binding.target_file = Some(target_file.clone());
+            binding.target_blob_oid = Some(target_oid.clone());
+            binding.target_export_name = Some(imported.to_string());
+            binding.target_declaration = Some(span_info(value.declaration, &module.source));
+            binding.target_initializer_expression = Some(expression.clone());
+            binding.target_initializer_span = Some(span_info(value.initializer, &module.source));
+            binding.target_initializer_sha256 = Some(hex_sha(&expression));
+            *statuses.entry("pinned_internal_value".into()).or_insert(0) += 1;
+        }
+    }
+    Ok(statuses)
 }
 #[derive(Debug, Serialize, Clone)]
 pub struct Record {
@@ -184,6 +423,9 @@ impl<'a> Visit<'a> for SyntaxCollector<'a> {
 pub struct Census {
     pub version: String,
     pub extractor_version: String,
+    pub provenance_claim: String,
+    pub source_access: String,
+    pub schema_semantics: String,
     pub parser: String,
     pub source_commit: String,
     pub tree_oid: String,
@@ -196,6 +438,7 @@ pub struct Census {
     pub expression_kind_counts: BTreeMap<String, usize>,
     pub feature_record_counts: BTreeMap<String, usize>,
     pub direct_binding_kind_counts: BTreeMap<String, usize>,
+    pub target_status_counts: BTreeMap<String, usize>,
     pub records: Vec<Record>,
 }
 
@@ -1023,6 +1266,14 @@ impl<'a> Collector<'a> {
                     import_source,
                     imported_name,
                     import_declaration: import_declaration.map(|span| span_info(span, self.source)),
+                    target_status: None,
+                    target_file: None,
+                    target_export_name: None,
+                    target_blob_oid: None,
+                    target_declaration: None,
+                    target_initializer_expression: None,
+                    target_initializer_span: None,
+                    target_initializer_sha256: None,
                 })
             })
             .collect::<Result<Vec<_>, String>>()?;
@@ -1167,17 +1418,18 @@ fn reject_unknown_expression_kinds(records: &[Record]) -> Result<(), String> {
     }
 }
 fn git(root: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
-    let o = Command::new("git")
+    let output = Command::new("git")
         .env("GIT_NO_REPLACE_OBJECTS", "1")
+        .env("GIT_TERMINAL_PROMPT", "0")
         .arg("-C")
         .arg(root)
         .args(args)
         .output()
-        .map_err(|e| e.to_string())?;
-    if !o.status.success() {
-        return Err(String::from_utf8_lossy(&o.stderr).into_owned());
+        .map_err(|error| error.to_string())?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).into_owned());
     }
-    Ok(o.stdout)
+    Ok(output.stdout)
 }
 pub fn run(root: &Path) -> Result<Census, String> {
     let head = String::from_utf8(git(root, &["rev-parse", "HEAD"])?)
@@ -1196,37 +1448,45 @@ pub fn run(root: &Path) -> Result<Census, String> {
     if tree != TREE {
         return Err(format!("pinned tree mismatch: expected {TREE}, got {tree}"));
     }
-    let raw = git(
-        root,
-        &[
-            "ls-tree",
-            "-r",
-            "-z",
-            COMMIT,
-            "--",
-            "apps",
-            "packages/mcp-common/src",
-        ],
-    )?;
+    let raw = git(root, &["ls-tree", "-r", "-z", COMMIT])?;
+    let mut tracked = BTreeMap::new();
     let mut records = Vec::new();
     let mut files = 0;
-    for entry in raw.split(|b| *b == 0).filter(|e| !e.is_empty()) {
+    for entry in raw
+        .split(|byte| *byte == 0)
+        .filter(|entry| !entry.is_empty())
+    {
         let tab = entry
             .iter()
-            .position(|b| *b == b'\t')
+            .position(|byte| *byte == b'\t')
             .ok_or("malformed ls-tree entry")?;
         let meta = std::str::from_utf8(&entry[..tab]).map_err(|_| "invalid ls-tree metadata")?;
-        let path = std::str::from_utf8(&entry[tab + 1..]).map_err(|_| "invalid path utf8")?;
+        let path = std::str::from_utf8(&entry[tab + 1..]).map_err(|_| "invalid path UTF-8")?;
+        let mut fields = meta.split_whitespace();
+        let mode = fields.next().ok_or("missing tree mode")?;
+        let kind = fields.next().ok_or("missing tree kind")?;
+        let oid = fields.next().ok_or("missing blob oid")?;
+        if fields.next().is_some() {
+            return Err(format!("unexpected ls-tree metadata: {meta}"));
+        }
+        if mode == "100644"
+            && kind == "blob"
+            && tracked.insert(path.to_string(), oid.to_string()).is_some()
+        {
+            return Err(format!("duplicate pinned tree path: {path}"));
+        }
         let in_scope = path
             .strip_prefix("apps/")
-            .and_then(|p| p.split_once('/'))
-            .map(|(_, p)| p.starts_with("src/") || p.starts_with("server/"))
+            .and_then(|path| path.split_once('/'))
+            .map(|(_, path)| path.starts_with("src/") || path.starts_with("server/"))
             .unwrap_or_else(|| path.starts_with("packages/mcp-common/src/"));
         if !in_scope || !path.ends_with(".ts") || path.ends_with(".spec.ts") {
             continue;
         }
-        let oid = meta.split_whitespace().nth(2).ok_or("missing blob oid")?;
-        let blob = git(root, &["cat-file", "blob", &format!("{COMMIT}:{path}")])?;
+        if mode != "100644" || kind != "blob" {
+            return Err(format!("registration source is not a regular blob: {path}"));
+        }
+        let blob = git(root, &["cat-file", "blob", oid])?;
         if blob.len() > MAX_BLOB {
             return Err(format!("blob exceeds bound: {path}"));
         }
@@ -1241,6 +1501,21 @@ pub fn run(root: &Path) -> Result<Census, String> {
         ));
     }
     reject_unknown_expression_kinds(&records)?;
+    let target_status_counts = resolve_named_imports(root, &tracked, &mut records)?;
+    let direct_binding_count = records
+        .iter()
+        .map(|record| record.direct_bindings.len())
+        .sum::<usize>();
+    if target_status_counts.values().sum::<usize>() != direct_binding_count
+        || records.iter().any(|record| {
+            record
+                .direct_bindings
+                .iter()
+                .any(|binding| binding.target_status.is_none())
+        })
+    {
+        return Err("incomplete direct binding target provenance".into());
+    }
     let catalog: serde_json::Value = serde_json::from_str(CATALOG).map_err(|e| e.to_string())?;
     let expected: BTreeSet<String> = catalog["capabilities"]
         .as_array()
@@ -1262,11 +1537,14 @@ pub fn run(root: &Path) -> Result<Census, String> {
     let extra = names.difference(&expected).cloned().collect();
     records.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(Census {
-        version: "3".into(),
+        version: "4".into(),
         extractor_version: EXTRACTOR_VERSION.into(),
         parser: "oxc 0.75.1 typed AST".into(),
         source_commit: COMMIT.into(),
         tree_oid: tree,
+        provenance_claim: "schema_source_provenance_only".into(),
+        source_access: "pinned_git_blobs".into(),
+        schema_semantics: "not_attempted".into(),
         file_count: files,
         catalog_count: expected.len(),
         source_count: names.len(),
@@ -1291,6 +1569,7 @@ pub fn run(root: &Path) -> Result<Census, String> {
             }
             counts
         }),
+        target_status_counts,
         records,
     })
 }
@@ -1548,6 +1827,53 @@ mod tests {
                 "accepted foreign registration: {rejected}"
             );
         }
+    }
+
+    #[test]
+    fn target_export_provenance_is_typed_and_non_executing() {
+        let source = r#"
+            import { z } from "zod";
+            export type ProviderParam = string;
+            export const ProviderParam: z.ZodType<ProviderParam> = z.literal("fixture");
+            throw new Error("target source must never execute");
+        "#;
+        let exports = target_exports("target.ts", source).unwrap();
+        let values = exports.get("ProviderParam").unwrap();
+        assert_eq!(values.len(), 1);
+        let value = &values[0];
+        assert_eq!(
+            &source[value.declaration.start as usize..value.declaration.end as usize],
+            "ProviderParam"
+        );
+        assert_eq!(
+            &source[value.initializer.start as usize..value.initializer.end as usize],
+            "z.literal(\"fixture\")"
+        );
+        assert!(target_exports("bad.ts", "export const value = (").is_err());
+    }
+
+    #[test]
+    fn target_paths_are_normalized_and_bounded() {
+        assert_eq!(
+            target_candidates("apps/example/src/tools/tool.ts", "../types/schema").unwrap(),
+            [
+                "apps/example/src/types/schema.ts",
+                "apps/example/src/types/schema/index.ts"
+            ]
+        );
+        assert_eq!(
+            target_candidates(
+                "apps/example/src/tools/tool.ts",
+                "@repo/mcp-common/src/pagination"
+            )
+            .unwrap(),
+            [
+                "packages/mcp-common/src/pagination.ts",
+                "packages/mcp-common/src/pagination/index.ts"
+            ]
+        );
+        assert!(target_candidates("tool.ts", "../../escape").is_err());
+        assert!(target_candidates("tool.ts", "external-package").is_err());
     }
 
     #[test]
