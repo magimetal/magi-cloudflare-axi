@@ -3,7 +3,7 @@ use oxc_ast::ast::*;
 use oxc_ast_visit::{Visit, walk};
 use oxc_index::Idx;
 use oxc_parser::Parser;
-use oxc_semantic::SemanticBuilder;
+use oxc_semantic::{Scoping, SemanticBuilder};
 use oxc_span::{GetSpan, SourceType, Span};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -13,7 +13,7 @@ use std::{
     process::Command,
 };
 
-pub const EXTRACTOR_VERSION: &str = "phase1-oxc-0.2";
+pub const EXTRACTOR_VERSION: &str = "phase1-oxc-0.3";
 pub const COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
 pub const TREE: &str = "1a51c6ff07170dfe3c3212c8fb96eb85d66f0b96";
 pub const CATALOG: &str = include_str!("../../../capabilities/cloudflare-mcp-parity.json");
@@ -25,6 +25,19 @@ pub struct SpanInfo {
     pub end_byte: u32,
     pub start_line: usize,
     pub end_line: usize,
+}
+#[derive(Debug, Serialize, Clone)]
+pub struct DirectBinding {
+    pub name: String,
+    pub classification: String,
+    pub first_use: SpanInfo,
+    pub declaration: Option<SpanInfo>,
+    pub initializer_expression: Option<String>,
+    pub initializer_span: Option<SpanInfo>,
+    pub initializer_sha256: Option<String>,
+    pub import_source: Option<String>,
+    pub imported_name: Option<String>,
+    pub import_declaration: Option<SpanInfo>,
 }
 #[derive(Debug, Serialize, Clone)]
 pub struct Record {
@@ -39,6 +52,7 @@ pub struct Record {
     pub schema_syntax_features: Vec<String>,
     pub schema_expression: Option<String>,
     pub schema_expression_sha256: Option<String>,
+    pub direct_bindings: Vec<DirectBinding>,
     pub referenced_bindings: Vec<String>,
     pub resolution_status: String,
     pub resolution_reason: Option<String>,
@@ -181,6 +195,7 @@ pub struct Census {
     pub extra: Vec<String>,
     pub expression_kind_counts: BTreeMap<String, usize>,
     pub feature_record_counts: BTreeMap<String, usize>,
+    pub direct_binding_kind_counts: BTreeMap<String, usize>,
     pub records: Vec<Record>,
 }
 
@@ -265,6 +280,15 @@ struct CasbDefinition {
     params: Span,
 }
 
+#[derive(Clone, Debug)]
+struct BindingMetadata {
+    classification: String,
+    declaration: Span,
+    initializer: Option<Span>,
+    import_source: Option<String>,
+    imported_name: Option<String>,
+    import_declaration: Option<Span>,
+}
 #[derive(Clone)]
 struct CasbCallback {
     registration_spans: Vec<Span>,
@@ -273,6 +297,7 @@ struct CasbCallback {
     params_symbol: u32,
 }
 
+#[derive(Clone)]
 struct IdentifierReferenceInfo {
     span: Span,
     name: String,
@@ -347,6 +372,8 @@ struct Indexer {
     casb_arrays: HashMap<u32, Vec<CasbDefinition>>,
     casb_callbacks: Vec<CasbCallback>,
     identifier_references: Vec<IdentifierReferenceInfo>,
+    binding_metadata: HashMap<u32, BindingMetadata>,
+    metadata_conflict: Option<String>,
 }
 impl Indexer {
     fn dex_helper_matches<'a>(&self, init: &Expression<'a>) -> bool {
@@ -386,6 +413,35 @@ impl Indexer {
         let Some(init) = declarator.init.as_ref() else {
             return;
         };
+        let Some(identifier) = declarator.id.get_binding_identifier() else {
+            return;
+        };
+        let Ok(name_len) = u32::try_from(identifier.name.len()) else {
+            self.metadata_conflict = Some(format!(
+                "declaration name is too long for span metadata: {}",
+                identifier.name
+            ));
+            return;
+        };
+        let Some(declaration_end) = identifier.span.start.checked_add(name_len) else {
+            self.metadata_conflict = Some(format!(
+                "declaration span overflow for symbol {symbol} ({})",
+                identifier.name
+            ));
+            return;
+        };
+        let declaration = Span::new(identifier.span.start, declaration_end);
+        self.add_metadata(
+            symbol,
+            BindingMetadata {
+                classification: "same_file_initializer".into(),
+                declaration,
+                initializer: Some(init.span()),
+                import_source: None,
+                imported_name: None,
+                import_declaration: None,
+            },
+        );
         if declarator
             .id
             .get_binding_identifier()
@@ -440,9 +496,66 @@ impl Indexer {
             self.casb_arrays.insert(symbol, definitions);
         }
     }
+    fn add_metadata(&mut self, symbol: u32, metadata: BindingMetadata) {
+        if let Some(existing) = self.binding_metadata.get(&symbol) {
+            if existing.classification != metadata.classification
+                || existing.declaration != metadata.declaration
+                || existing.initializer != metadata.initializer
+                || existing.import_source != metadata.import_source
+                || existing.imported_name != metadata.imported_name
+                || existing.import_declaration != metadata.import_declaration
+            {
+                self.metadata_conflict = Some(format!(
+                    "symbol {symbol}: {existing:?} conflicts with {metadata:?}"
+                ));
+            }
+        } else {
+            self.binding_metadata.insert(symbol, metadata);
+        }
+    }
+    fn add_imports<'a>(&mut self, declaration: &ImportDeclaration<'a>) {
+        if declaration.import_kind == ImportOrExportKind::Type {
+            return;
+        }
+        let Some(specifiers) = &declaration.specifiers else {
+            return;
+        };
+        for specifier in specifiers {
+            if matches!(specifier, ImportDeclarationSpecifier::ImportSpecifier(specifier) if specifier.import_kind == ImportOrExportKind::Type)
+            {
+                continue;
+            }
+            let (local, classification, imported) = match specifier {
+                ImportDeclarationSpecifier::ImportSpecifier(s) => {
+                    (&s.local, "named_import", module_name(&s.imported))
+                }
+                ImportDeclarationSpecifier::ImportDefaultSpecifier(s) => {
+                    (&s.local, "default_import", Some("default"))
+                }
+                ImportDeclarationSpecifier::ImportNamespaceSpecifier(s) => {
+                    (&s.local, "namespace_import", Some("*"))
+                }
+            };
+            let Some(symbol) = local.symbol_id.get() else {
+                continue;
+            };
+            self.add_metadata(
+                symbol.index() as u32,
+                BindingMetadata {
+                    classification: classification.into(),
+                    declaration: local.span,
+                    initializer: None,
+                    import_source: Some(declaration.source.value.to_string()),
+                    imported_name: imported.map(str::to_owned),
+                    import_declaration: Some(declaration.span),
+                },
+            );
+        }
+    }
 }
 impl<'a> Visit<'a> for Indexer {
     fn visit_import_declaration(&mut self, declaration: &ImportDeclaration<'a>) {
+        self.add_imports(declaration);
         let registration_context = matches!(
             declaration.source.value.as_str(),
             "@repo/mcp-common/src/registration-context" | "../registration-context"
@@ -573,6 +686,7 @@ struct Collector<'a> {
     records: Vec<Record>,
     blob: &'a str,
     file: &'a str,
+    error: Option<String>,
 }
 impl<'a> Collector<'a> {
     fn context_method<'b>(&self, call: &'b CallExpression<'a>) -> Option<&'b str> {
@@ -739,7 +853,6 @@ impl<'a> Collector<'a> {
             "inputSchema",
         );
     }
-
     #[allow(clippy::too_many_arguments)]
     fn emit(
         &mut self,
@@ -758,59 +871,34 @@ impl<'a> Collector<'a> {
             }
             _ => None,
         });
-        let conclusively_zero = span.is_none()
-            && match options {
-                None => true,
-                Some(Argument::ObjectExpression(object)) => object.properties.iter().all(
-                    |property| matches!(property, ObjectPropertyKind::ObjectProperty(property) if !property.computed),
-                ),
-                _ => false,
-            };
+        let conclusively_zero = span.is_none() && match options { None => true, Some(Argument::ObjectExpression(object)) => object.properties.iter().all(|property| matches!(property, ObjectPropertyKind::ObjectProperty(property) if !property.computed)), _ => false };
         let expression =
             span.map(|span| self.source[span.start as usize..span.end as usize].to_string());
         let syntax_info = span.and_then(|span| self.syntax.get(&(span.start, span.end)));
         let schema_expression_kind = syntax_info.map_or_else(
             || {
                 if conclusively_zero {
-                    "zero_input"
+                    "zero_input".into()
                 } else {
-                    "unknown"
+                    "unknown".into()
                 }
-                .into()
             },
             |info| info.kind.clone(),
         );
         let schema_syntax_features = syntax_info
             .map(|info| info.features.clone())
             .unwrap_or_default();
-        let referenced_bindings = span
-            .map(|schema_span| {
-                self.index
-                    .identifier_references
-                    .iter()
-                    .filter(|reference| {
-                        reference.span.start >= schema_span.start
-                            && reference.span.end <= schema_span.end
-                    })
-                    .filter(|reference| {
-                        !reference.symbol.is_some_and(|symbol| {
-                            self.index.zod_symbols.contains(&symbol)
-                                || self
-                                    .index
-                                    .symbol_spans
-                                    .get(&symbol)
-                                    .is_some_and(|declaration| {
-                                        declaration.start >= schema_span.start
-                                            && declaration.end <= schema_span.end
-                                    })
-                        })
-                    })
-                    .map(|reference| reference.name.clone())
-                    .collect::<BTreeSet<_>>()
-                    .into_iter()
-                    .collect()
-            })
-            .unwrap_or_default();
+        let direct_bindings = match self.direct_bindings(span) {
+            Ok(bindings) => bindings,
+            Err(error) => {
+                self.error.get_or_insert(error);
+                return;
+            }
+        };
+        let referenced_bindings = direct_bindings
+            .iter()
+            .map(|binding| binding.name.clone())
+            .collect();
         let schema_expression_sha256 = expression.as_ref().map(|expression| {
             let digest = Sha256::digest(expression.as_bytes());
             digest.iter().map(|byte| format!("{byte:02x}")).collect()
@@ -833,10 +921,117 @@ impl<'a> Collector<'a> {
             schema_syntax_features,
             schema_expression: expression,
             schema_expression_sha256,
+            direct_bindings,
             referenced_bindings,
             resolution_status: "root_identified".into(),
             resolution_reason: None,
         });
+    }
+    fn direct_bindings(&self, schema_span: Option<Span>) -> Result<Vec<DirectBinding>, String> {
+        let Some(schema_span) = schema_span else {
+            return Ok(Vec::new());
+        };
+        let mut selected: BTreeMap<String, IdentifierReferenceInfo> = BTreeMap::new();
+        for reference in &self.index.identifier_references {
+            if reference.span.start < schema_span.start || reference.span.end > schema_span.end {
+                continue;
+            }
+            if reference.symbol.is_some_and(|symbol| {
+                self.index.zod_symbols.contains(&symbol)
+                    || self
+                        .index
+                        .symbol_spans
+                        .get(&symbol)
+                        .is_some_and(|declaration| {
+                            declaration.start >= schema_span.start
+                                && declaration.end <= schema_span.end
+                        })
+            }) {
+                continue;
+            }
+            let key = reference
+                .symbol
+                .map(|symbol| format!("s:{symbol}"))
+                .unwrap_or_else(|| format!("u:{}", reference.name));
+            selected
+                .entry(key)
+                .and_modify(|current| {
+                    if reference.span.start < current.span.start {
+                        *current = reference.clone();
+                    }
+                })
+                .or_insert_with(|| reference.clone());
+        }
+        let mut result = selected
+            .into_values()
+            .map(|reference| {
+                let metadata = reference
+                    .symbol
+                    .and_then(|symbol| self.index.binding_metadata.get(&symbol));
+                let (
+                    classification,
+                    declaration,
+                    initializer,
+                    import_source,
+                    imported_name,
+                    import_declaration,
+                ) = if let Some(metadata) = metadata {
+                    (
+                        metadata.classification.clone(),
+                        Some(metadata.declaration),
+                        metadata.initializer,
+                        metadata.import_source.clone(),
+                        metadata.imported_name.clone(),
+                        metadata.import_declaration,
+                    )
+                } else if let Some(symbol) = reference.symbol {
+                    (
+                        "unsupported_local".into(),
+                        self.index.symbol_spans.get(&symbol).copied(),
+                        None,
+                        None,
+                        None,
+                        None,
+                    )
+                } else {
+                    ("unresolved_global".into(), None, None, None, None, None)
+                };
+                let initializer_expression: Option<String> = initializer
+                    .map(|span| {
+                        if span.start > span.end || span.end as usize > self.source.len() {
+                            return Err::<String, String>(
+                                "invalid initializer slice bounds".into(),
+                            );
+                        }
+                        Ok(self.source[span.start as usize..span.end as usize].to_string())
+                    })
+                    .transpose()?;
+                let initializer_sha256 = initializer_expression.as_ref().map(|value| {
+                    Sha256::digest(value.as_bytes())
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect()
+                });
+                Ok(DirectBinding {
+                    name: reference.name,
+                    classification,
+                    first_use: span_info(reference.span, self.source),
+                    declaration: declaration.map(|span| span_info(span, self.source)),
+                    initializer_expression,
+                    initializer_span: initializer.map(|span| span_info(span, self.source)),
+                    initializer_sha256,
+                    import_source,
+                    imported_name,
+                    import_declaration: import_declaration.map(|span| span_info(span, self.source)),
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        result.sort_by(|a, b| {
+            a.name
+                .cmp(&b.name)
+                .then(a.first_use.start_byte.cmp(&b.first_use.start_byte))
+        });
+        Ok(result)
     }
 }
 impl<'a> Visit<'a> for Collector<'a> {
@@ -848,10 +1043,18 @@ impl<'a> Visit<'a> for Collector<'a> {
 
 struct ReferenceCollector<'a> {
     reference_symbols: &'a HashMap<u32, u32>,
+    scoping: &'a Scoping,
     references: Vec<IdentifierReferenceInfo>,
 }
 impl<'a> Visit<'a> for ReferenceCollector<'_> {
     fn visit_identifier_reference(&mut self, identifier: &IdentifierReference<'a>) {
+        let Some(reference_id) = identifier.reference_id.get() else {
+            return;
+        };
+        let flags = self.scoping.get_reference(reference_id).flags();
+        if !flags.is_value() || flags.is_type() || flags.is_value_as_type() {
+            return;
+        }
         self.references.push(IdentifierReferenceInfo {
             span: identifier.span,
             name: identifier.name.to_string(),
@@ -898,6 +1101,7 @@ pub fn parse_file(file: &str, source: &str, blob_oid: &str) -> Result<Vec<Record
     let identifier_references = {
         let mut references = ReferenceCollector {
             reference_symbols: &reference_symbols,
+            scoping: semantic.scoping(),
             references: Vec::new(),
         };
         references.visit_program(&parsed.program);
@@ -915,8 +1119,15 @@ pub fn parse_file(file: &str, source: &str, blob_oid: &str) -> Result<Vec<Record
         casb_arrays: HashMap::new(),
         casb_callbacks: Vec::new(),
         identifier_references,
+        binding_metadata: HashMap::new(),
+        metadata_conflict: None,
     };
     index.visit_program(&parsed.program);
+    if let Some(conflict) = index.metadata_conflict.as_ref() {
+        return Err(format!(
+            "conflicting binding metadata in {file}: {conflict}"
+        ));
+    }
     let zod_symbols = index.zod_symbols.clone();
     let reference_symbols = index.reference_symbols.clone();
     let mut syntax_indexer = SyntaxIndexer {
@@ -932,8 +1143,12 @@ pub fn parse_file(file: &str, source: &str, blob_oid: &str) -> Result<Vec<Record
         records: Vec::new(),
         blob: blob_oid,
         file,
+        error: None,
     };
     collector.visit_program(&parsed.program);
+    if let Some(error) = collector.error {
+        return Err(format!("binding provenance error in {file}: {error}"));
+    }
     Ok(collector.records)
 }
 fn reject_unknown_expression_kinds(records: &[Record]) -> Result<(), String> {
@@ -1040,14 +1255,14 @@ pub fn run(root: &Path) -> Result<Census, String> {
     let names = counts.keys().cloned().collect::<BTreeSet<_>>();
     let duplicates = counts
         .iter()
-        .filter(|(_, n)| **n > 1)
-        .map(|(n, _)| n.clone())
+        .filter(|(_, count)| **count > 1)
+        .map(|(name, _)| name.clone())
         .collect();
     let missing = expected.difference(&names).cloned().collect();
     let extra = names.difference(&expected).cloned().collect();
     records.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(Census {
-        version: "2".into(),
+        version: "3".into(),
         extractor_version: EXTRACTOR_VERSION.into(),
         parser: "oxc 0.75.1 typed AST".into(),
         source_commit: COMMIT.into(),
@@ -1070,6 +1285,12 @@ pub fn run(root: &Path) -> Result<Census, String> {
             }
             counts
         }),
+        direct_binding_kind_counts: records.iter().fold(BTreeMap::new(), |mut counts, record| {
+            for binding in &record.direct_bindings {
+                *counts.entry(binding.classification.clone()).or_insert(0) += 1;
+            }
+            counts
+        }),
         records,
     })
 }
@@ -1078,6 +1299,13 @@ mod tests {
     use super::*;
     fn record<'a>(records: &'a [Record], name: &str) -> &'a Record {
         records.iter().find(|record| record.name == name).unwrap()
+    }
+    fn direct_binding<'a>(record: &'a Record, name: &str) -> &'a DirectBinding {
+        record
+            .direct_bindings
+            .iter()
+            .find(|binding| binding.name == name)
+            .unwrap()
     }
 
     #[test]
@@ -1132,6 +1360,99 @@ mod tests {
             record(&records, "context_direct").referenced_bindings,
             ["directSchema"]
         );
+
+        let direct = direct_binding(record(&records, "context_direct"), "directSchema");
+        assert_eq!(direct.classification, "same_file_initializer");
+        assert_eq!(
+            direct.initializer_expression.as_deref(),
+            Some("z.object({ id: z.string(), account: accountRef })")
+        );
+        let initializer = direct.initializer_expression.as_ref().unwrap();
+        assert_eq!(
+            direct.initializer_sha256.as_deref(),
+            Some(
+                Sha256::digest(initializer.as_bytes())
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>()
+                    .as_str()
+            )
+        );
+        let direct_use =
+            &source[direct.first_use.start_byte as usize..direct.first_use.end_byte as usize];
+        assert_eq!(direct_use, "directSchema");
+
+        let imported = direct_binding(record(&records, "static_member_name"), "aliasedSchema");
+        assert_eq!(imported.classification, "named_import");
+        assert_eq!(imported.import_source.as_deref(), Some("./schemas"));
+        assert_eq!(imported.imported_name.as_deref(), Some("importedSchema"));
+        assert!(imported.import_declaration.is_some());
+
+        let syntax_bindings = &record(&records, "syntax_features").direct_bindings;
+        assert_eq!(
+            syntax_bindings
+                .iter()
+                .map(|binding| binding.name.as_str())
+                .collect::<Vec<_>>(),
+            [
+                "ProviderParam",
+                "aliasedSchema",
+                "computedKey",
+                "defaultSchema",
+                "helperSchema",
+                "makeField",
+                "schemaNamespace",
+                "spreadShape",
+            ]
+        );
+
+        let merged = direct_binding(record(&records, "syntax_features"), "ProviderParam");
+        assert_eq!(merged.classification, "same_file_initializer");
+        let merged_declaration = merged.declaration.as_ref().unwrap();
+        assert_eq!(merged_declaration.start_line, 80);
+        assert_eq!(
+            merged_declaration.start_byte as usize,
+            source.find("const ProviderParam").unwrap() + 6
+        );
+        assert_eq!(
+            &source[merged_declaration.start_byte as usize..merged_declaration.end_byte as usize],
+            "ProviderParam"
+        );
+        assert!(
+            syntax_bindings
+                .iter()
+                .all(|binding| binding.name != "TypeOnlyInsideSchema")
+        );
+        assert_eq!(
+            merged.initializer_expression.as_deref(),
+            Some("z.literal(\"fixture\")")
+        );
+        assert_eq!(
+            direct_binding(record(&records, "syntax_features"), "defaultSchema").classification,
+            "default_import"
+        );
+        assert_eq!(
+            direct_binding(record(&records, "syntax_features"), "schemaNamespace").classification,
+            "namespace_import"
+        );
+        assert_eq!(
+            direct_binding(record(&records, "syntax_features"), "helperSchema").classification,
+            "unsupported_local"
+        );
+        assert_eq!(
+            direct_binding(record(&records, "syntax_features"), "computedKey").classification,
+            "unresolved_global"
+        );
+        for record in &records {
+            assert_eq!(
+                record.referenced_bindings,
+                record
+                    .direct_bindings
+                    .iter()
+                    .map(|binding| binding.name.clone())
+                    .collect::<Vec<_>>()
+            );
+        }
 
         let syntax = record(&records, "syntax_features");
         assert_eq!(syntax.schema_expression_kind, "zod_object_call");

@@ -54,7 +54,7 @@ jobs:
           cargo run --locked -p schema-extractor -- census /tmp/mcp-server-cloudflare > /tmp/census-a.json
           cargo run --locked -p schema-extractor -- census /tmp/mcp-server-cloudflare > /tmp/census-b.json
           cmp /tmp/census-a.json /tmp/census-b.json
-          python3 -c 'import json; x=json.load(open("/tmp/census-a.json")); assert x["version"] == "2" and x["extractor_version"] == "phase1-oxc-0.2" and x["file_count"] == 114 and x["source_count"] == 172 and not x["missing"] and not x["duplicates"] and not x["extra"] and x["expression_kind_counts"] == {"zod_object_call":139,"object_shape":29,"zero_input":4}; from collections import Counter; assert Counter(r["schema_root_kind"] for r in x["records"]) == {"input_schema":139,"dex_raw_shape":18,"casb_params":11,"implicit_zero_input":4}'
+          python3 -c 'import json; x=json.load(open("/tmp/census-a.json")); assert x["version"] == "3" and x["extractor_version"] == "phase1-oxc-0.3" and x["file_count"] == 114 and x["source_count"] == 172 and not x["missing"] and not x["duplicates"] and not x["extra"] and x["expression_kind_counts"] == {"zod_object_call":139,"object_shape":29,"zero_input":4} and x["direct_binding_kind_counts"] == {"named_import":408,"same_file_initializer":48}; from collections import Counter; assert Counter(r["schema_root_kind"] for r in x["records"]) == {"input_schema":139,"dex_raw_shape":18,"casb_params":11,"implicit_zero_input":4}'
           ./scripts/extract-capability-names /tmp/mcp-server-cloudflare
       - name: Archive
         shell: bash

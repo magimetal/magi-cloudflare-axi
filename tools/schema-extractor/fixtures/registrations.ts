@@ -1,10 +1,13 @@
 // Typed registration corpus. Comments, strings, regex, shadowed and foreign calls must not register.
 import { z } from "zod";
 import type { McpRegistrationContext } from "@repo/mcp-common/src/registration-context";
-import { importedSchema } from "./schemas";
+import { importedSchema as aliasedSchema } from "./schemas";
+import defaultSchema from "./default-schema";
+import * as schemaNamespace from "./namespace-schema";
 import { createPublicMcpApp } from "@repo/mcp-common/src/mcp-app";
 import type { McpRegistrationContext as ForeignRegistrationContext } from "evil/registration-context";
 import { createPublicMcpApp as createForeignApp } from "evil/mcp-app";
+import type { ProviderParam, TypeOnlyInsideSchema } from "./provider";
 
 type Env = {};
 const names = { static_member: "static_member_name" };
@@ -19,7 +22,7 @@ export function registerFixtureTools(context: McpRegistrationContext<Env>) {
   context.registerTool("implicit_no_schema");
   registerTool({ name: "dex_local", schema: legacySchema, context });
   registerTool({ name: "foreign_dex_context", schema: legacySchema, context: foreignContext });
-  context.accountTool(names.static_member, { inputSchema: importedSchema });
+  context.accountTool(names.static_member, { inputSchema: aliasedSchema });
   toolDefinitions.forEach(({ name, params }) => {
     context.accountTool(name, { inputSchema: z.object(params) });
   });
@@ -31,9 +34,14 @@ export function registerFixtureTools(context: McpRegistrationContext<Env>) {
     inputSchema: z.object({
       "quoted-key": z.string(),
       7: z.number(),
-      [computedKey]: z.string().refine((value) => value.length > 0),
+      [computedKey]: z.string().refine((value: TypeOnlyInsideSchema) => value.length > 0),
       ...spreadShape,
       dynamic: makeField(),
+      namedImport: aliasedSchema,
+      defaultImport: defaultSchema,
+      namespaceImport: schemaNamespace.value,
+      mergedTypeValue: ProviderParam,
+      unsupportedLocal: helperSchema,
       choices: z.array(z.enum(["a", "b"])).optional().default([]),
     }),
   });
@@ -66,6 +74,10 @@ function shadowedZ(context: McpRegistrationContext<Env>) {
   const z = fakeZ;
   context.registerTool("shadowed_z", { inputSchema: z.object({}) });
 }
+function helperSchema() {
+  throw new Error("fixture code must never execute");
+}
+const ProviderParam: z.ZodType<ProviderParam> = z.literal("fixture");
 
 const registerTool = <T>({ name, schema, context }: {
   name: string;
