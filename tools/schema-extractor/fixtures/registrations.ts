@@ -43,6 +43,7 @@ export function registerFixtureTools(context: McpRegistrationContext<Env>) {
       mergedTypeValue: ProviderParam,
       unsupportedLocal: helperSchema,
       choices: z.array(z.enum(["a", "b"])).optional().default([]),
+      transformed: z.string().transform((value) => value),
     }),
   });
   context.registerTool("quoted_options", {

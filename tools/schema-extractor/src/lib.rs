@@ -14,7 +14,7 @@ use std::{
     process::Command,
 };
 
-pub const EXTRACTOR_VERSION: &str = "phase1-oxc-0.5";
+pub const EXTRACTOR_VERSION: &str = "phase1-oxc-0.6";
 pub const COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
 pub const TREE: &str = "1a51c6ff07170dfe3c3212c8fb96eb85d66f0b96";
 pub const CATALOG: &str = include_str!("../../../capabilities/cloudflare-mcp-parity.json");
@@ -28,6 +28,21 @@ pub struct SpanInfo {
     pub end_byte: u32,
     pub start_line: usize,
     pub end_line: usize,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+pub struct SemanticOccurrence {
+    pub construct: String,
+    pub signature: Option<String>,
+    pub member_chain: Option<String>,
+    pub file: String,
+    pub blob_oid: String,
+    pub span: SpanInfo,
+    pub source_sha256: String,
+    pub dependency_node_ids: Vec<String>,
+    pub dependency_node_id: Option<String>,
+    pub capabilities: Vec<String>,
+    pub classification: String,
 }
 #[derive(Debug, Serialize, Clone)]
 pub struct DirectBinding {
@@ -1052,6 +1067,7 @@ pub struct Record {
     pub schema_root_kind: String,
     pub schema_expression_kind: String,
     pub schema_syntax_features: Vec<String>,
+    pub semantic_occurrences: Vec<SemanticOccurrence>,
     pub schema_expression: Option<String>,
     pub schema_expression_sha256: Option<String>,
     pub direct_bindings: Vec<DirectBinding>,
@@ -1062,6 +1078,15 @@ pub struct Record {
 struct SyntaxInfo {
     kind: String,
     features: Vec<String>,
+    occurrences: Vec<SyntaxOccurrence>,
+}
+#[derive(Clone)]
+struct SyntaxOccurrence {
+    construct: String,
+    signature: Option<String>,
+    member_chain: Option<String>,
+    span: Span,
+    classification: String,
 }
 struct SyntaxIndexer<'a> {
     zod_symbols: &'a HashSet<u32>,
@@ -1074,6 +1099,7 @@ impl<'a> Visit<'a> for SyntaxIndexer<'a> {
             zod_symbols: self.zod_symbols,
             reference_symbols: self.reference_symbols,
             features: BTreeSet::new(),
+            occurrences: Vec::new(),
         };
         collector.visit_expression(expression);
         let kind = match expression {
@@ -1092,6 +1118,7 @@ impl<'a> Visit<'a> for SyntaxIndexer<'a> {
             SyntaxInfo {
                 kind: kind.into(),
                 features: collector.features.into_iter().collect(),
+                occurrences: collector.occurrences,
             },
         );
         walk::walk_expression(self, expression);
@@ -1101,6 +1128,7 @@ struct SyntaxCollector<'a> {
     zod_symbols: &'a HashSet<u32>,
     reference_symbols: &'a HashMap<u32, u32>,
     features: BTreeSet<String>,
+    occurrences: Vec<SyntaxOccurrence>,
 }
 impl<'a> SyntaxCollector<'a> {
     fn zod_factory(&mut self, call: &CallExpression<'a>) {
@@ -1115,6 +1143,40 @@ impl<'a> SyntaxCollector<'a> {
         {
             self.features
                 .insert(format!("zod_factory_call:z.{}", member.property.name));
+        }
+    }
+    fn classification(&self, call: &CallExpression<'a>) -> &'static str {
+        let Some(chain) = static_chain(&call.callee) else {
+            return "helper_runtime";
+        };
+        let Some(identifier) = root_identifier(&call.callee) else {
+            return "helper_runtime";
+        };
+        let Some(symbol) = reference_symbol(identifier, self.reference_symbols) else {
+            return "helper_runtime";
+        };
+        if !self.zod_symbols.contains(&symbol)
+            && !is_zod_chain(&call.callee, self.reference_symbols, self.zod_symbols)
+        {
+            return if identifier.name == "z" {
+                "shadowed_foreign"
+            } else {
+                "helper_runtime"
+            };
+        }
+        let segments = chain.split('.').collect::<Vec<_>>();
+        if segments.len() == 2 {
+            return "zod_factory";
+        }
+        match segments
+            .last()
+            .copied()
+            .unwrap_or_default()
+            .trim_end_matches("()")
+        {
+            "refine" | "superRefine" => "zod_refinement",
+            "transform" => "zod_transform",
+            _ => "zod_modifier",
         }
     }
 }
@@ -1179,8 +1241,129 @@ impl<'a> Visit<'a> for SyntaxCollector<'a> {
             }
             _ => {}
         }
+        let (construct, signature, member_chain) = match expression {
+            Expression::CallExpression(call) => (
+                "call",
+                static_chain(&call.callee).map(|chain| format!("{chain}()")),
+                None,
+            ),
+            Expression::StaticMemberExpression(_) => {
+                ("member_chain", None, static_chain(expression))
+            }
+            Expression::ComputedMemberExpression(_) => ("computed_member", None, None),
+            Expression::ObjectExpression(object) => (
+                if object
+                    .properties
+                    .iter()
+                    .any(|p| matches!(p, ObjectPropertyKind::SpreadProperty(_)))
+                {
+                    "object_spread"
+                } else {
+                    "object"
+                },
+                None,
+                None,
+            ),
+            Expression::ArrayExpression(array) => (
+                if array
+                    .elements
+                    .iter()
+                    .any(|e| matches!(e, ArrayExpressionElement::SpreadElement(_)))
+                {
+                    "array_spread"
+                } else {
+                    "array"
+                },
+                None,
+                None,
+            ),
+            Expression::ArrowFunctionExpression(_) => ("arrow_function", None, None),
+            Expression::FunctionExpression(_) => ("function_expression", None, None),
+            Expression::ConditionalExpression(_) => ("conditional", None, None),
+            Expression::BinaryExpression(_)
+            | Expression::LogicalExpression(_)
+            | Expression::UnaryExpression(_)
+            | Expression::UpdateExpression(_) => ("operator", None, None),
+            Expression::StringLiteral(_) => ("string_literal", None, None),
+            Expression::NumericLiteral(_) => ("numeric_literal", None, None),
+            Expression::BooleanLiteral(_) => ("boolean_literal", None, None),
+            Expression::NullLiteral(_) => ("null_literal", None, None),
+            Expression::TemplateLiteral(_) => ("template_literal", None, None),
+            Expression::Identifier(_) => ("identifier", None, None),
+            _ => ("unsupported_ast_form", None, None),
+        };
+        let classification = if construct == "unsupported_ast_form" {
+            "unsupported_for_canonical_compile"
+        } else if construct == "call" && signature.as_deref().is_some_and(|s| s.starts_with("z.")) {
+            self.classification(match expression {
+                Expression::CallExpression(call) => call,
+                _ => unreachable!(),
+            })
+        } else if construct == "call" || construct == "computed_member" {
+            "helper_runtime"
+        } else if construct == "member_chain" {
+            "member_access_context"
+        } else {
+            "candidate_representable"
+        };
+        self.occurrences.push(SyntaxOccurrence {
+            construct: construct.into(),
+            signature,
+            member_chain,
+            span: expression.span(),
+            classification: classification.into(),
+        });
         walk::walk_expression(self, expression);
     }
+}
+fn static_chain(expression: &Expression<'_>) -> Option<String> {
+    match expression {
+        Expression::Identifier(identifier) => Some(identifier.name.to_string()),
+        Expression::StaticMemberExpression(member) => Some(format!(
+            "{}.{}",
+            static_chain(&member.object)?,
+            member.property.name
+        )),
+        Expression::CallExpression(call) => Some(format!("{}()", static_chain(&call.callee)?)),
+        _ => None,
+    }
+}
+fn root_identifier<'a>(expression: &'a Expression<'a>) -> Option<&'a IdentifierReference<'a>> {
+    match expression {
+        Expression::Identifier(identifier) => Some(identifier),
+        Expression::StaticMemberExpression(member) => root_identifier(&member.object),
+        Expression::CallExpression(call) => root_identifier(&call.callee),
+        _ => None,
+    }
+}
+fn is_zod_chain(
+    expression: &Expression<'_>,
+    references: &HashMap<u32, u32>,
+    zod: &HashSet<u32>,
+) -> bool {
+    match expression {
+        Expression::StaticMemberExpression(member) => match &member.object {
+            Expression::Identifier(identifier) => {
+                reference_symbol(identifier, references).is_some_and(|symbol| zod.contains(&symbol))
+            }
+            _ => is_zod_chain(&member.object, references, zod),
+        },
+        Expression::CallExpression(call) => is_zod_chain(&call.callee, references, zod),
+        _ => false,
+    }
+}
+#[derive(Debug, Serialize, Clone)]
+pub struct SemanticOccurrenceRegistryEntry {
+    pub construct: String,
+    pub signature: Option<String>,
+    pub member_chain: Option<String>,
+    pub file: String,
+    pub blob_oid: String,
+    pub span: SpanInfo,
+    pub source_sha256: String,
+    pub dependency_node_id: Option<String>,
+    pub capabilities: Vec<String>,
+    pub classification: String,
 }
 #[derive(Debug, Serialize)]
 pub struct Census {
@@ -1192,7 +1375,10 @@ pub struct Census {
     pub parser: String,
     pub source_commit: String,
     pub tree_oid: String,
+    pub zod_version: Option<String>,
     pub file_count: usize,
+    pub semantic_unknown_construct_counts: BTreeMap<String, usize>,
+    pub semantic_unsupported_construct_counts: BTreeMap<String, usize>,
     pub catalog_count: usize,
     pub source_count: usize,
     pub duplicates: Vec<String>,
@@ -1200,6 +1386,8 @@ pub struct Census {
     pub extra: Vec<String>,
     pub expression_kind_counts: BTreeMap<String, usize>,
     pub feature_record_counts: BTreeMap<String, usize>,
+    pub semantic_construct_counts: BTreeMap<String, usize>,
+    pub semantic_classification_counts: BTreeMap<String, usize>,
     pub direct_binding_kind_counts: BTreeMap<String, usize>,
     pub target_status_counts: BTreeMap<String, usize>,
     pub dependency_node_count: usize,
@@ -1210,6 +1398,7 @@ pub struct Census {
     pub dependency_value_kind_counts: BTreeMap<String, usize>,
     pub dependency_boundary_kind_counts: BTreeMap<String, usize>,
     pub unsupported_dependency_construct_counts: BTreeMap<String, usize>,
+    pub semantic_occurrence_registry: Vec<SemanticOccurrenceRegistryEntry>,
     pub dependency_nodes: Vec<DependencyNode>,
     pub dependency_boundaries: Vec<DependencyBoundary>,
     pub records: Vec<Record>,
@@ -1279,6 +1468,81 @@ fn object_binding_symbol(pattern: &BindingPattern<'_>, name: &str) -> Option<u32
         .iter()
         .find(|property| key_name(&property.key) == Some(name))
         .and_then(|property| binding_symbol(&property.value))
+}
+struct ZodImportCollector {
+    symbols: HashSet<u32>,
+}
+
+impl<'a> Visit<'a> for ZodImportCollector {
+    fn visit_import_declaration(&mut self, declaration: &ImportDeclaration<'a>) {
+        if declaration.source.value == "zod" && declaration.import_kind != ImportOrExportKind::Type
+        {
+            for specifier in declaration.specifiers.iter().flatten() {
+                let local = match specifier {
+                    ImportDeclarationSpecifier::ImportSpecifier(specifier)
+                        if specifier.import_kind != ImportOrExportKind::Type
+                            && module_name(&specifier.imported) == Some("z") =>
+                    {
+                        Some(&specifier.local)
+                    }
+                    ImportDeclarationSpecifier::ImportDefaultSpecifier(specifier) => {
+                        Some(&specifier.local)
+                    }
+                    _ => None,
+                };
+                if let Some(symbol) = local.and_then(|local| local.symbol_id.get()) {
+                    self.symbols.insert(symbol.index() as u32);
+                }
+            }
+        }
+        walk::walk_import_declaration(self, declaration);
+    }
+}
+
+fn surveyed_syntax(source: &str) -> Result<Vec<SyntaxOccurrence>, String> {
+    let allocator = Allocator::default();
+    let parsed = Parser::new(
+        &allocator,
+        source,
+        SourceType::default()
+            .with_typescript(true)
+            .with_module(true),
+    )
+    .parse();
+    if parsed.panicked || !parsed.errors.is_empty() {
+        return Err(format!(
+            "dependency survey parser diagnostics: {}",
+            parsed.errors.len()
+        ));
+    }
+    let semantic_return = SemanticBuilder::new()
+        .with_check_syntax_error(true)
+        .build(&parsed.program);
+    if !semantic_return.errors.is_empty() {
+        return Err(format!(
+            "dependency survey semantic diagnostics: {}",
+            semantic_return.errors.len()
+        ));
+    }
+    let semantic = semantic_return.semantic;
+    let mut references = HashMap::new();
+    for symbol in semantic.scoping().symbol_ids() {
+        for reference in semantic.scoping().get_resolved_reference_ids(symbol) {
+            references.insert(reference.index() as u32, symbol.index() as u32);
+        }
+    }
+    let mut zod_imports = ZodImportCollector {
+        symbols: HashSet::new(),
+    };
+    zod_imports.visit_program(&parsed.program);
+    let mut collector = SyntaxCollector {
+        zod_symbols: &zod_imports.symbols,
+        reference_symbols: &references,
+        features: BTreeSet::new(),
+        occurrences: Vec::new(),
+    };
+    collector.visit_program(&parsed.program);
+    Ok(collector.occurrences)
 }
 fn reference_symbol(
     identifier: &IdentifierReference<'_>,
@@ -1911,6 +2175,29 @@ impl<'a> Collector<'a> {
                 return;
             }
         };
+        let semantic_occurrences = syntax_info
+            .map(|info| {
+                info.occurrences
+                    .iter()
+                    .map(|occurrence| SemanticOccurrence {
+                        construct: occurrence.construct.clone(),
+                        signature: occurrence.signature.clone(),
+                        member_chain: occurrence.member_chain.clone(),
+                        file: self.file.into(),
+                        blob_oid: self.blob.into(),
+                        span: span_info(occurrence.span, self.source),
+                        source_sha256: hex_sha(
+                            &self.source
+                                [occurrence.span.start as usize..occurrence.span.end as usize],
+                        ),
+                        dependency_node_ids: Vec::new(),
+                        dependency_node_id: None,
+                        capabilities: vec![name.clone()],
+                        classification: occurrence.classification.clone(),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
         let referenced_bindings = direct_bindings
             .iter()
             .map(|binding| binding.name.clone())
@@ -1935,6 +2222,7 @@ impl<'a> Collector<'a> {
             },
             schema_expression_kind,
             schema_syntax_features,
+            semantic_occurrences,
             schema_expression: expression,
             schema_expression_sha256,
             direct_bindings,
@@ -2179,21 +2467,6 @@ pub fn parse_file(file: &str, source: &str, blob_oid: &str) -> Result<Vec<Record
     }
     Ok(collector.records)
 }
-fn reject_unknown_expression_kinds(records: &[Record]) -> Result<(), String> {
-    let unknown = records
-        .iter()
-        .filter(|record| record.schema_expression_kind == "unknown")
-        .map(|record| record.name.as_str())
-        .collect::<Vec<_>>();
-    if unknown.is_empty() {
-        Ok(())
-    } else {
-        Err(format!(
-            "unknown schema expression kind for {}; refusing census",
-            unknown.join(", ")
-        ))
-    }
-}
 fn git(root: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
     let output = Command::new("git")
         .env("GIT_NO_REPLACE_OBJECTS", "1")
@@ -2207,6 +2480,130 @@ fn git(root: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
         return Err(String::from_utf8_lossy(&output.stderr).into_owned());
     }
     Ok(output.stdout)
+}
+fn validate_manifest_provenance(
+    records: &[Record],
+    registry: &[SemanticOccurrenceRegistryEntry],
+    nodes: &[DependencyNode],
+    sources: &BTreeMap<String, String>,
+) -> Result<(), String> {
+    let ids = nodes
+        .iter()
+        .map(|node| node.id.as_str())
+        .collect::<BTreeSet<_>>();
+    if ids.len() != nodes.len() {
+        return Err("duplicate dependency node identity".into());
+    }
+    let owner = |file: &str, span: &SpanInfo| {
+        nodes
+            .iter()
+            .filter(|node| {
+                node.file == file
+                    && node.value_span.start_byte <= span.start_byte
+                    && node.value_span.end_byte >= span.end_byte
+            })
+            .min_by_key(|node| node.value_span.end_byte - node.value_span.start_byte)
+    };
+    let mut identities = BTreeSet::new();
+    for entry in registry {
+        let key = format!(
+            "{}:{}:{}:{}:{}",
+            entry.file,
+            entry.span.start_byte,
+            entry.span.end_byte,
+            entry.construct,
+            entry.dependency_node_id.as_deref().unwrap_or("")
+        );
+        if !identities.insert(key.clone()) {
+            return Err("duplicate semantic occurrence registry identity".into());
+        }
+        let source = sources
+            .get(&entry.file)
+            .ok_or_else(|| format!("missing source for {}", entry.file))?;
+        let span = entry.span.start_byte as usize..entry.span.end_byte as usize;
+        if span.end > source.len() || hex_sha(&source[span.clone()]) != entry.source_sha256 {
+            return Err(format!(
+                "occurrence source integrity failure in {}",
+                entry.file
+            ));
+        }
+        if let Some(expected_owner) = entry.dependency_node_id.as_deref() {
+            let actual = owner(&entry.file, &entry.span)
+                .ok_or_else(|| format!("occurrence has no owner in {}", entry.file))?;
+            if Some(actual.id.as_str()) != Some(expected_owner) || !ids.contains(actual.id.as_str())
+            {
+                return Err(format!(
+                    "occurrence owner mismatch in {}: expected {}, actual {}",
+                    entry.file, expected_owner, actual.id
+                ));
+            }
+        }
+        let expected = if let Some(node_id) = entry.dependency_node_id.as_deref() {
+            records
+                .iter()
+                .filter(|record| {
+                    record.direct_bindings.iter().any(|binding| {
+                        binding
+                            .dependency_closure_ids
+                            .iter()
+                            .any(|id| id == node_id)
+                    })
+                })
+                .map(|record| record.name.clone())
+                .collect::<BTreeSet<_>>()
+                .into_iter()
+                .collect::<Vec<_>>()
+        } else {
+            records
+                .iter()
+                .filter(|record| {
+                    record.semantic_occurrences.iter().any(|occurrence| {
+                        occurrence.file == entry.file
+                            && occurrence.span == entry.span
+                            && occurrence.construct == entry.construct
+                            && occurrence.dependency_node_id.is_none()
+                    })
+                })
+                .map(|record| record.name.clone())
+                .collect::<BTreeSet<_>>()
+                .into_iter()
+                .collect::<Vec<_>>()
+        };
+        if entry.dependency_node_id.is_some() && expected != entry.capabilities {
+            return Err(format!("capability union mismatch for {key}"));
+        }
+    }
+    for node in nodes {
+        let source = sources
+            .get(&node.file)
+            .ok_or_else(|| format!("missing node source {}", node.file))?;
+        let span = node.value_span.start_byte as usize..node.value_span.end_byte as usize;
+        if span.end > source.len() || hex_sha(&source[span]) != node.value_sha256 {
+            return Err(format!("dependency value hash mismatch for {}", node.id));
+        }
+    }
+    for record in records {
+        for occurrence in &record.semantic_occurrences {
+            let source = sources
+                .get(&occurrence.file)
+                .ok_or_else(|| format!("missing source for {}", occurrence.file))?;
+            let span = occurrence.span.start_byte as usize..occurrence.span.end_byte as usize;
+            if span.end > source.len() || hex_sha(&source[span]) != occurrence.source_sha256 {
+                return Err(format!(
+                    "record occurrence hash mismatch for {}",
+                    record.name
+                ));
+            }
+            if occurrence
+                .dependency_node_ids
+                .iter()
+                .any(|id| !ids.contains(id.as_str()))
+            {
+                return Err(format!("unknown closure node in {}", record.name));
+            }
+        }
+    }
+    Ok(())
 }
 pub fn run(root: &Path) -> Result<Census, String> {
     let head = String::from_utf8(git(root, &["rev-parse", "HEAD"])?)
@@ -2229,6 +2626,7 @@ pub fn run(root: &Path) -> Result<Census, String> {
     let mut tracked = BTreeMap::new();
     let mut records = Vec::new();
     let mut files = 0;
+    let mut source_cache = BTreeMap::new();
     for entry in raw
         .split(|byte| *byte == 0)
         .filter(|entry| !entry.is_empty())
@@ -2269,6 +2667,7 @@ pub fn run(root: &Path) -> Result<Census, String> {
         }
         let source =
             std::str::from_utf8(&blob).map_err(|_| format!("invalid UTF-8 blob: {path}"))?;
+        source_cache.insert(path.to_string(), source.to_string());
         records.extend(parse_file(path, source, oid)?);
         files += 1;
     }
@@ -2277,7 +2676,7 @@ pub fn run(root: &Path) -> Result<Census, String> {
             "source file count mismatch: expected 114, got {files}"
         ));
     }
-    reject_unknown_expression_kinds(&records)?;
+    // Unknown schema shapes remain census-visible; only unsupported AST forms fail closed.
     let target_status_counts = resolve_named_imports(root, &tracked, &mut records)?;
     let direct_binding_count = records
         .iter()
@@ -2305,10 +2704,219 @@ pub fn run(root: &Path) -> Result<Census, String> {
     }) {
         return Err("incomplete recursive dependency closure provenance".into());
     }
+    let mut dependency_sources = source_cache;
+    for node in &dependency_nodes {
+        let blob = git(root, &["cat-file", "blob", &node.blob_oid])?;
+        dependency_sources.entry(node.file.clone()).or_insert(
+            String::from_utf8(blob)
+                .map_err(|_| format!("invalid dependency blob: {}", node.file))?,
+        );
+    }
+    for record in &mut records {
+        let dependency_node_ids = record
+            .direct_bindings
+            .iter()
+            .flat_map(|binding| binding.dependency_closure_ids.iter().cloned())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        for occurrence in &mut record.semantic_occurrences {
+            occurrence.dependency_node_ids = dependency_node_ids.clone();
+        }
+    }
+    let mut node_capabilities: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for record in &records {
+        for binding in &record.direct_bindings {
+            for id in &binding.dependency_closure_ids {
+                node_capabilities
+                    .entry(id.clone())
+                    .or_default()
+                    .insert(record.name.clone());
+            }
+        }
+    }
+    let mut semantic_occurrence_registry = Vec::new();
+    for node in &dependency_nodes {
+        let source = dependency_sources
+            .get(&node.file)
+            .ok_or_else(|| format!("missing dependency source: {}", node.file))?;
+        for occurrence in surveyed_syntax(source)? {
+            semantic_occurrence_registry.push(SemanticOccurrenceRegistryEntry {
+                construct: occurrence.construct,
+                signature: occurrence.signature,
+                member_chain: occurrence.member_chain,
+                file: node.file.clone(),
+                blob_oid: node.blob_oid.clone(),
+                span: span_info(occurrence.span, source),
+                source_sha256: hex_sha(
+                    &source[occurrence.span.start as usize..occurrence.span.end as usize],
+                ),
+                dependency_node_id: Some(node.id.clone()),
+                capabilities: node_capabilities
+                    .get(&node.id)
+                    .into_iter()
+                    .flatten()
+                    .cloned()
+                    .collect(),
+                classification: occurrence.classification,
+            });
+        }
+    }
+    let owner_for = |file: &str, span: &SpanInfo| -> Option<String> {
+        dependency_nodes
+            .iter()
+            .filter(|node| {
+                node.file == file
+                    && node.value_span.start_byte <= span.start_byte
+                    && node.value_span.end_byte >= span.end_byte
+            })
+            .min_by_key(|node| node.value_span.end_byte - node.value_span.start_byte)
+            .map(|node| node.id.clone())
+    };
+    let mut registry: BTreeMap<String, SemanticOccurrenceRegistryEntry> =
+        semantic_occurrence_registry
+            .into_iter()
+            .fold(BTreeMap::new(), |mut registry, entry| {
+                let key = format!(
+                    "{}:{}:{}:{}",
+                    entry.file, entry.span.start_byte, entry.span.end_byte, entry.construct
+                );
+                let replace = registry
+                    .get(&key)
+                    .map(|current| {
+                        let current_len = current
+                            .dependency_node_id
+                            .as_ref()
+                            .and_then(|id| dependency_nodes.iter().find(|node| &node.id == id))
+                            .map(|node| node.value_span.end_byte - node.value_span.start_byte);
+                        let entry_len = entry
+                            .dependency_node_id
+                            .as_ref()
+                            .and_then(|id| dependency_nodes.iter().find(|node| &node.id == id))
+                            .map(|node| node.value_span.end_byte - node.value_span.start_byte);
+                        entry_len < current_len
+                    })
+                    .unwrap_or(true);
+                if replace {
+                    registry.insert(key, entry);
+                }
+                registry
+            });
+    for record in &mut records {
+        for occurrence in &mut record.semantic_occurrences {
+            let owner = owner_for(&occurrence.file, &occurrence.span);
+            occurrence.dependency_node_id = owner.clone();
+            occurrence.dependency_node_ids = owner.into_iter().collect();
+            let key = format!(
+                "{}:{}:{}:{}:{}",
+                occurrence.file,
+                occurrence.span.start_byte,
+                occurrence.span.end_byte,
+                occurrence.construct,
+                occurrence.dependency_node_id.as_deref().unwrap_or("")
+            );
+            let entry = registry
+                .entry(key)
+                .or_insert_with(|| SemanticOccurrenceRegistryEntry {
+                    construct: occurrence.construct.clone(),
+                    signature: occurrence.signature.clone(),
+                    member_chain: occurrence.member_chain.clone(),
+                    file: occurrence.file.clone(),
+                    blob_oid: occurrence.blob_oid.clone(),
+                    span: occurrence.span.clone(),
+                    source_sha256: occurrence.source_sha256.clone(),
+                    dependency_node_id: occurrence.dependency_node_id.clone(),
+                    capabilities: Vec::new(),
+                    classification: occurrence.classification.clone(),
+                });
+            if !entry.capabilities.contains(&record.name) {
+                entry.capabilities.push(record.name.clone());
+            }
+        }
+    }
+    let mut semantic_occurrence_registry = registry.into_values().collect::<Vec<_>>();
+    for entry in &mut semantic_occurrence_registry {
+        entry.capabilities.sort();
+    }
+    for entry in &mut semantic_occurrence_registry {
+        entry.dependency_node_id = owner_for(&entry.file, &entry.span);
+        entry.capabilities = entry
+            .dependency_node_id
+            .as_deref()
+            .map(|owner| {
+                records
+                    .iter()
+                    .filter(|record| {
+                        record.direct_bindings.iter().any(|binding| {
+                            binding.dependency_closure_ids.iter().any(|id| id == owner)
+                        })
+                    })
+                    .map(|record| record.name.clone())
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .collect()
+            })
+            .unwrap_or_default();
+    }
+    let mut normalized = BTreeMap::new();
+    for entry in semantic_occurrence_registry.drain(..) {
+        let key = format!(
+            "{}:{}:{}:{}:{}",
+            entry.file,
+            entry.span.start_byte,
+            entry.span.end_byte,
+            entry.construct,
+            entry.dependency_node_id.as_deref().unwrap_or("")
+        );
+        normalized
+            .entry(key)
+            .and_modify(|current: &mut SemanticOccurrenceRegistryEntry| {
+                current
+                    .capabilities
+                    .extend(entry.capabilities.iter().cloned());
+                current.capabilities.sort();
+                current.capabilities.dedup();
+            })
+            .or_insert(entry);
+    }
+    let mut semantic_occurrence_registry = normalized.into_values().collect::<Vec<_>>();
+    let unsupported_dependency_construct_counts = semantic_occurrence_registry
+        .iter()
+        .filter(|entry| {
+            entry.dependency_node_id.is_some()
+                && entry.classification == "unsupported_for_canonical_compile"
+        })
+        .fold(BTreeMap::new(), |mut counts, entry| {
+            *counts.entry(entry.construct.clone()).or_insert(0) += 1;
+            counts
+        });
     let dependency_edge_count = dependency_nodes
         .iter()
         .map(|node| node.dependencies.len())
         .sum();
+    for entry in &mut semantic_occurrence_registry {
+        if let Some(owner) = owner_for(&entry.file, &entry.span) {
+            entry.dependency_node_id = Some(owner.clone());
+            entry.capabilities = records
+                .iter()
+                .filter(|record| {
+                    record
+                        .direct_bindings
+                        .iter()
+                        .any(|binding| binding.dependency_closure_ids.iter().any(|id| id == &owner))
+                })
+                .map(|record| record.name.clone())
+                .collect::<BTreeSet<_>>()
+                .into_iter()
+                .collect();
+        }
+    }
+    validate_manifest_provenance(
+        &records,
+        &semantic_occurrence_registry,
+        &dependency_nodes,
+        &dependency_sources,
+    )?;
     let dependency_resolution_chain_count = records
         .iter()
         .flat_map(|record| &record.direct_bindings)
@@ -2325,6 +2933,20 @@ pub fn run(root: &Path) -> Result<Census, String> {
         .map(|node| node.value_sha256.as_str())
         .collect::<BTreeSet<_>>()
         .len();
+    let semantic_unknown_construct_counts = semantic_occurrence_registry
+        .iter()
+        .filter(|entry| entry.construct == "unknown")
+        .fold(BTreeMap::new(), |mut counts, entry| {
+            *counts.entry(entry.construct.clone()).or_insert(0) += 1;
+            counts
+        });
+    let semantic_unsupported_construct_counts = semantic_occurrence_registry
+        .iter()
+        .filter(|entry| entry.classification == "unsupported_for_canonical_compile")
+        .fold(BTreeMap::new(), |mut counts, entry| {
+            *counts.entry(entry.construct.clone()).or_insert(0) += 1;
+            counts
+        });
     let dependency_value_kind_counts =
         dependency_nodes
             .iter()
@@ -2359,17 +2981,54 @@ pub fn run(root: &Path) -> Result<Census, String> {
     let missing = expected.difference(&names).cloned().collect();
     let extra = names.difference(&expected).cloned().collect();
     records.sort_by(|a, b| a.name.cmp(&b.name));
+    let mut zod_versions = BTreeSet::new();
+    for (path, oid) in &tracked {
+        if !path.ends_with("package.json") {
+            continue;
+        }
+        let text = String::from_utf8(git(root, &["cat-file", "blob", oid])?)
+            .map_err(|_| format!("invalid package manifest: {path}"))?;
+        let json: serde_json::Value = serde_json::from_str(&text)
+            .map_err(|error| format!("invalid package manifest {path}: {error}"))?;
+        for section in ["dependencies", "devDependencies", "peerDependencies"] {
+            if let Some(version) = json[section]["zod"].as_str() {
+                zod_versions.insert(version.to_string());
+            }
+        }
+    }
+    if zod_versions.len() != 1 || !zod_versions.contains("4.4.3") {
+        return Err(format!(
+            "pinned manifests do not agree on exact Zod 4.4.3: {zod_versions:?}"
+        ));
+    }
     Ok(Census {
-        version: "5".into(),
+        version: "6".into(),
         extractor_version: EXTRACTOR_VERSION.into(),
-        parser: "oxc 0.75.1 typed AST".into(),
-        source_commit: COMMIT.into(),
-        tree_oid: tree,
         provenance_claim: "schema_source_provenance_only".into(),
         source_access: "pinned_git_blobs".into(),
         schema_semantics: "not_attempted".into(),
+        parser: "oxc 0.75.1 typed AST".into(),
+        source_commit: COMMIT.into(),
+        tree_oid: tree,
         file_count: files,
         catalog_count: expected.len(),
+        zod_version: Some("4.4.3".into()),
+        semantic_construct_counts: semantic_occurrence_registry.iter().fold(
+            BTreeMap::new(),
+            |mut counts, occurrence| {
+                *counts.entry(occurrence.construct.clone()).or_insert(0) += 1;
+                counts
+            },
+        ),
+        semantic_classification_counts: semantic_occurrence_registry.iter().fold(
+            BTreeMap::new(),
+            |mut counts, occurrence| {
+                *counts.entry(occurrence.classification.clone()).or_insert(0) += 1;
+                counts
+            },
+        ),
+        semantic_unknown_construct_counts,
+        semantic_unsupported_construct_counts,
         source_count: names.len(),
         duplicates,
         missing,
@@ -2400,7 +3059,8 @@ pub fn run(root: &Path) -> Result<Census, String> {
         distinct_dependency_value_hash_count,
         dependency_value_kind_counts,
         dependency_boundary_kind_counts,
-        unsupported_dependency_construct_counts: BTreeMap::new(),
+        unsupported_dependency_construct_counts,
+        semantic_occurrence_registry,
         dependency_nodes,
         dependency_boundaries,
         records,
@@ -2521,7 +3181,7 @@ mod tests {
         let merged = direct_binding(record(&records, "syntax_features"), "ProviderParam");
         assert_eq!(merged.classification, "same_file_initializer");
         let merged_declaration = merged.declaration.as_ref().unwrap();
-        assert_eq!(merged_declaration.start_line, 80);
+        assert_eq!(merged_declaration.start_line, 81);
         assert_eq!(
             merged_declaration.start_byte as usize,
             source.find("const ProviderParam").unwrap() + 6
@@ -2538,6 +3198,28 @@ mod tests {
         assert_eq!(
             merged.initializer_expression.as_deref(),
             Some("z.literal(\"fixture\")")
+        );
+        let classified = &record(&records, "syntax_features").semantic_occurrences;
+        assert!(
+            classified
+                .iter()
+                .any(
+                    |occurrence| occurrence.signature.as_deref() == Some("z.string().refine()")
+                        && occurrence.classification == "zod_refinement"
+                )
+        );
+        assert!(
+            classified
+                .iter()
+                .any(|occurrence| occurrence.signature.as_deref()
+                    == Some("z.string().transform()")
+                    && occurrence.classification == "zod_transform")
+        );
+        assert!(
+            record(&records, "shadowed_z")
+                .semantic_occurrences
+                .iter()
+                .any(|occurrence| occurrence.classification == "shadowed_foreign")
         );
         assert_eq!(
             direct_binding(record(&records, "syntax_features"), "defaultSchema").classification,
@@ -2618,7 +3300,11 @@ mod tests {
         }
         let zero = record(&records, "implicit_no_schema");
         assert_eq!(zero.schema_expression_kind, "zero_input");
-        assert!(reject_unknown_expression_kinds(&records).is_err());
+        assert!(
+            records
+                .iter()
+                .any(|record| record.schema_expression_kind == "unknown")
+        );
         assert_eq!(zero.schema_root_kind, "implicit_zero_input");
         for record in &records {
             assert_eq!(record.blob_oid, "oid");
