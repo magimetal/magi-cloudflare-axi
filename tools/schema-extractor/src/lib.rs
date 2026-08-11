@@ -13,7 +13,7 @@ use std::{
     process::Command,
 };
 
-pub const EXTRACTOR_VERSION: &str = "phase1-oxc-0.1";
+pub const EXTRACTOR_VERSION: &str = "phase1-oxc-0.2";
 pub const COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
 pub const TREE: &str = "1a51c6ff07170dfe3c3212c8fb96eb85d66f0b96";
 pub const CATALOG: &str = include_str!("../../../capabilities/cloudflare-mcp-parity.json");
@@ -35,11 +35,136 @@ pub struct Record {
     pub schema_span: Option<SpanInfo>,
     pub registration_kind: String,
     pub schema_root_kind: String,
+    pub schema_expression_kind: String,
+    pub schema_syntax_features: Vec<String>,
     pub schema_expression: Option<String>,
     pub schema_expression_sha256: Option<String>,
     pub referenced_bindings: Vec<String>,
     pub resolution_status: String,
     pub resolution_reason: Option<String>,
+}
+struct SyntaxInfo {
+    kind: String,
+    features: Vec<String>,
+}
+struct SyntaxIndexer<'a> {
+    zod_symbols: &'a HashSet<u32>,
+    reference_symbols: &'a HashMap<u32, u32>,
+    syntax: HashMap<(u32, u32), SyntaxInfo>,
+}
+impl<'a> Visit<'a> for SyntaxIndexer<'a> {
+    fn visit_expression(&mut self, expression: &Expression<'a>) {
+        let mut collector = SyntaxCollector {
+            zod_symbols: self.zod_symbols,
+            reference_symbols: self.reference_symbols,
+            features: BTreeSet::new(),
+        };
+        collector.visit_expression(expression);
+        let kind = match expression {
+            Expression::CallExpression(call)
+                if matches!(&call.callee, Expression::StaticMemberExpression(member)
+                if ident(&member.object).and_then(|z| reference_symbol(z, self.reference_symbols))
+                    .is_some_and(|symbol| self.zod_symbols.contains(&symbol)) && member.property.name == "object") =>
+            {
+                "zod_object_call"
+            }
+            Expression::ObjectExpression(_) => "object_shape",
+            _ => "unknown",
+        };
+        self.syntax.insert(
+            (expression.span().start, expression.span().end),
+            SyntaxInfo {
+                kind: kind.into(),
+                features: collector.features.into_iter().collect(),
+            },
+        );
+        walk::walk_expression(self, expression);
+    }
+}
+struct SyntaxCollector<'a> {
+    zod_symbols: &'a HashSet<u32>,
+    reference_symbols: &'a HashMap<u32, u32>,
+    features: BTreeSet<String>,
+}
+impl<'a> SyntaxCollector<'a> {
+    fn zod_factory(&mut self, call: &CallExpression<'a>) {
+        let Expression::StaticMemberExpression(member) = &call.callee else {
+            return;
+        };
+        let Some(object) = ident(&member.object) else {
+            return;
+        };
+        if reference_symbol(object, self.reference_symbols)
+            .is_some_and(|symbol| self.zod_symbols.contains(&symbol))
+        {
+            self.features
+                .insert(format!("zod_factory_call:z.{}", member.property.name));
+        }
+    }
+}
+impl<'a> Visit<'a> for SyntaxCollector<'a> {
+    fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
+        self.zod_factory(call);
+        match &call.callee {
+            Expression::Identifier(identifier) => {
+                self.features
+                    .insert(format!("identifier_call:{}", identifier.name));
+            }
+            Expression::StaticMemberExpression(member) => {
+                self.features
+                    .insert(format!("static_method:{}", member.property.name));
+            }
+            _ => {
+                self.features.insert("dynamic_call".into());
+            }
+        }
+        walk::walk_call_expression(self, call);
+    }
+    fn visit_identifier_reference(&mut self, identifier: &IdentifierReference<'a>) {
+        self.features.insert("identifier_reference".into());
+        walk::walk_identifier_reference(self, identifier);
+    }
+    fn visit_object_expression(&mut self, object: &ObjectExpression<'a>) {
+        if object
+            .properties
+            .iter()
+            .any(|property| matches!(property, ObjectPropertyKind::SpreadProperty(_)))
+        {
+            self.features.insert("object_spread".into());
+        }
+        walk::walk_object_expression(self, object);
+    }
+    fn visit_array_expression(&mut self, array: &ArrayExpression<'a>) {
+        if array
+            .elements
+            .iter()
+            .any(|element| matches!(element, ArrayExpressionElement::SpreadElement(_)))
+        {
+            self.features.insert("array_spread".into());
+        }
+        walk::walk_array_expression(self, array);
+    }
+    fn visit_object_property(&mut self, property: &ObjectProperty<'a>) {
+        if property.computed {
+            self.features.insert("computed_property".into());
+        }
+        walk::walk_object_property(self, property);
+    }
+    fn visit_expression(&mut self, expression: &Expression<'a>) {
+        match expression {
+            Expression::ArrowFunctionExpression(_) => {
+                self.features.insert("arrow_function".into());
+            }
+            Expression::FunctionExpression(_) => {
+                self.features.insert("function_expression".into());
+            }
+            Expression::ConditionalExpression(_) => {
+                self.features.insert("conditional_expression".into());
+            }
+            _ => {}
+        }
+        walk::walk_expression(self, expression);
+    }
 }
 #[derive(Debug, Serialize)]
 pub struct Census {
@@ -54,6 +179,8 @@ pub struct Census {
     pub duplicates: Vec<String>,
     pub missing: Vec<String>,
     pub extra: Vec<String>,
+    pub expression_kind_counts: BTreeMap<String, usize>,
+    pub feature_record_counts: BTreeMap<String, usize>,
     pub records: Vec<Record>,
 }
 
@@ -82,6 +209,7 @@ fn ident<'a>(e: &'a Expression<'a>) -> Option<&'a IdentifierReference<'a>> {
 fn key_name<'a>(key: &'a PropertyKey<'a>) -> Option<&'a str> {
     match key {
         PropertyKey::StaticIdentifier(x) => Some(x.name.as_str()),
+        PropertyKey::StringLiteral(x) => Some(x.value.as_str()),
         _ => None,
     }
 }
@@ -441,6 +569,7 @@ impl<'a> Visit<'a> for Indexer {
 struct Collector<'a> {
     source: &'a str,
     index: Indexer,
+    syntax: HashMap<(u32, u32), SyntaxInfo>,
     records: Vec<Record>,
     blob: &'a str,
     file: &'a str,
@@ -629,8 +758,31 @@ impl<'a> Collector<'a> {
             }
             _ => None,
         });
+        let conclusively_zero = span.is_none()
+            && match options {
+                None => true,
+                Some(Argument::ObjectExpression(object)) => object.properties.iter().all(
+                    |property| matches!(property, ObjectPropertyKind::ObjectProperty(property) if !property.computed),
+                ),
+                _ => false,
+            };
         let expression =
             span.map(|span| self.source[span.start as usize..span.end as usize].to_string());
+        let syntax_info = span.and_then(|span| self.syntax.get(&(span.start, span.end)));
+        let schema_expression_kind = syntax_info.map_or_else(
+            || {
+                if conclusively_zero {
+                    "zero_input"
+                } else {
+                    "unknown"
+                }
+                .into()
+            },
+            |info| info.kind.clone(),
+        );
+        let schema_syntax_features = syntax_info
+            .map(|info| info.features.clone())
+            .unwrap_or_default();
         let referenced_bindings = span
             .map(|schema_span| {
                 self.index
@@ -672,9 +824,13 @@ impl<'a> Collector<'a> {
             registration_kind: format!("{kind}:{method}"),
             schema_root_kind: if span.is_some() {
                 root.into()
-            } else {
+            } else if conclusively_zero {
                 "implicit_zero_input".into()
+            } else {
+                "unsupported".into()
             },
+            schema_expression_kind,
+            schema_syntax_features,
             schema_expression: expression,
             schema_expression_sha256,
             referenced_bindings,
@@ -761,15 +917,39 @@ pub fn parse_file(file: &str, source: &str, blob_oid: &str) -> Result<Vec<Record
         identifier_references,
     };
     index.visit_program(&parsed.program);
+    let zod_symbols = index.zod_symbols.clone();
+    let reference_symbols = index.reference_symbols.clone();
+    let mut syntax_indexer = SyntaxIndexer {
+        zod_symbols: &zod_symbols,
+        reference_symbols: &reference_symbols,
+        syntax: HashMap::new(),
+    };
+    syntax_indexer.visit_program(&parsed.program);
     let mut collector = Collector {
         source,
         index,
+        syntax: syntax_indexer.syntax,
         records: Vec::new(),
         blob: blob_oid,
         file,
     };
     collector.visit_program(&parsed.program);
     Ok(collector.records)
+}
+fn reject_unknown_expression_kinds(records: &[Record]) -> Result<(), String> {
+    let unknown = records
+        .iter()
+        .filter(|record| record.schema_expression_kind == "unknown")
+        .map(|record| record.name.as_str())
+        .collect::<Vec<_>>();
+    if unknown.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "unknown schema expression kind for {}; refusing census",
+            unknown.join(", ")
+        ))
+    }
 }
 fn git(root: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
     let o = Command::new("git")
@@ -845,6 +1025,7 @@ pub fn run(root: &Path) -> Result<Census, String> {
             "source file count mismatch: expected 114, got {files}"
         ));
     }
+    reject_unknown_expression_kinds(&records)?;
     let catalog: serde_json::Value = serde_json::from_str(CATALOG).map_err(|e| e.to_string())?;
     let expected: BTreeSet<String> = catalog["capabilities"]
         .as_array()
@@ -866,7 +1047,7 @@ pub fn run(root: &Path) -> Result<Census, String> {
     let extra = names.difference(&expected).cloned().collect();
     records.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(Census {
-        version: "1".into(),
+        version: "2".into(),
         extractor_version: EXTRACTOR_VERSION.into(),
         parser: "oxc 0.75.1 typed AST".into(),
         source_commit: COMMIT.into(),
@@ -877,6 +1058,18 @@ pub fn run(root: &Path) -> Result<Census, String> {
         duplicates,
         missing,
         extra,
+        expression_kind_counts: records.iter().fold(BTreeMap::new(), |mut counts, record| {
+            *counts
+                .entry(record.schema_expression_kind.clone())
+                .or_insert(0) += 1;
+            counts
+        }),
+        feature_record_counts: records.iter().fold(BTreeMap::new(), |mut counts, record| {
+            for feature in &record.schema_syntax_features {
+                *counts.entry(feature.clone()).or_insert(0) += 1;
+            }
+            counts
+        }),
         records,
     })
 }
@@ -900,12 +1093,17 @@ mod tests {
             "casb_two",
             "context_direct",
             "dex_local",
+            "indirect_options",
             "dynamic_expression",
             "implicit_no_schema",
+            "quoted_options",
             "inline_app",
             "outside_casb",
             "same_file_ref",
+            "shadowed_z",
+            "spread_options",
             "static_member_name",
+            "syntax_features",
         ]
         .into_iter()
         .collect::<BTreeSet<_>>();
@@ -935,6 +1133,60 @@ mod tests {
             ["directSchema"]
         );
 
+        let syntax = record(&records, "syntax_features");
+        assert_eq!(syntax.schema_expression_kind, "zod_object_call");
+        for feature in [
+            "arrow_function",
+            "computed_property",
+            "identifier_call:makeField",
+            "object_spread",
+            "static_method:default",
+            "static_method:optional",
+            "static_method:refine",
+            "zod_factory_call:z.array",
+            "zod_factory_call:z.enum",
+            "zod_factory_call:z.object",
+        ] {
+            assert!(
+                syntax
+                    .schema_syntax_features
+                    .iter()
+                    .any(|item| item == feature)
+            );
+        }
+        let dynamic = record(&records, "dynamic_expression");
+        assert_eq!(dynamic.schema_expression_kind, "unknown");
+        assert!(
+            dynamic
+                .schema_syntax_features
+                .iter()
+                .any(|feature| feature == "identifier_call:makeSchema")
+        );
+        let shadowed_z = record(&records, "shadowed_z");
+        assert_eq!(shadowed_z.schema_expression_kind, "unknown");
+        assert!(
+            shadowed_z
+                .schema_syntax_features
+                .iter()
+                .all(|feature| !feature.starts_with("zod_factory_call:"))
+        );
+        let quoted = record(&records, "quoted_options");
+        assert_eq!(quoted.schema_expression_kind, "zod_object_call");
+        assert!(
+            quoted
+                .schema_syntax_features
+                .iter()
+                .all(|feature| feature != "computed_property")
+        );
+        for name in ["indirect_options", "spread_options"] {
+            let unsupported = record(&records, name);
+            assert_eq!(unsupported.schema_expression_kind, "unknown");
+            assert_eq!(unsupported.schema_root_kind, "unsupported");
+        }
+        let zero = record(&records, "implicit_no_schema");
+        assert_eq!(zero.schema_expression_kind, "zero_input");
+        assert!(reject_unknown_expression_kinds(&records).is_err());
+        assert_eq!(zero.schema_root_kind, "implicit_zero_input");
         for record in &records {
             assert_eq!(record.blob_oid, "oid");
             if let Some(expression) = &record.schema_expression {
@@ -947,8 +1199,12 @@ mod tests {
                     record.schema_expression_sha256.as_deref(),
                     Some(expected_hash.as_str())
                 );
-            } else {
+            } else if record.schema_expression_kind == "zero_input" {
                 assert_eq!(record.schema_root_kind, "implicit_zero_input");
+                assert!(record.schema_expression_sha256.is_none());
+            } else {
+                assert_eq!(record.schema_expression_kind, "unknown");
+                assert_eq!(record.schema_root_kind, "unsupported");
                 assert!(record.schema_expression_sha256.is_none());
             }
         }

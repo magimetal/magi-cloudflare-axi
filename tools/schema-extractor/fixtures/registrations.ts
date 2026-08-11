@@ -27,6 +27,21 @@ export function registerFixtureTools(context: McpRegistrationContext<Env>) {
   const sameFile = z.object({ local: localRef });
   context.registerTool("same_file_ref", { inputSchema: sameFile });
   context.registerTool("dynamic_expression", { inputSchema: makeSchema() });
+  context.registerTool("syntax_features", {
+    inputSchema: z.object({
+      "quoted-key": z.string(),
+      7: z.number(),
+      [computedKey]: z.string().refine((value) => value.length > 0),
+      ...spreadShape,
+      dynamic: makeField(),
+      choices: z.array(z.enum(["a", "b"])).optional().default([]),
+    }),
+  });
+  context.registerTool("quoted_options", {
+    "inputSchema": z.object({ "quoted-key": z.string(), 7: z.number() }),
+  });
+  context.registerTool("indirect_options", indirectOptions);
+  context.registerTool("spread_options", { ...indirectOptions });
   context.registerPrompt("foreign_method", { inputSchema: z.object({}) });
   foreignContext.registerTool("foreign_static", { inputSchema: z.object({}) });
   accountTool("foreign_bare", { inputSchema: z.object({}) });
@@ -46,6 +61,10 @@ createForeignApp({
 });
 function spoofedType(context: ForeignRegistrationContext) {
   context.registerTool("foreign_import", { inputSchema: z.object({}) });
+}
+function shadowedZ(context: McpRegistrationContext<Env>) {
+  const z = fakeZ;
+  context.registerTool("shadowed_z", { inputSchema: z.object({}) });
 }
 
 const registerTool = <T>({ name, schema, context }: {

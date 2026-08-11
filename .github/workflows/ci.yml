@@ -37,7 +37,7 @@ jobs:
           cargo run --locked -p schema-extractor -- census /tmp/mcp-server-cloudflare > /tmp/schema-census-a.json
           cargo run --locked -p schema-extractor -- census /tmp/mcp-server-cloudflare > /tmp/schema-census-b.json
           cmp /tmp/schema-census-a.json /tmp/schema-census-b.json
-          python3 -c 'import json; p=json.load(open("/tmp/schema-census-a.json")); assert p["file_count"] == 114 and p["source_count"] == p["catalog_count"] == 172 and len(p["records"]) == 172 and not p["duplicates"] and not p["missing"] and not p["extra"]; from collections import Counter; c=Counter(r["schema_root_kind"] for r in p["records"]); assert c == {"input_schema": 139, "dex_raw_shape": 18, "implicit_zero_input": 4, "casb_params": 11}'
+          python3 -c 'import json; p=json.load(open("/tmp/schema-census-a.json")); assert p["version"] == "2" and p["extractor_version"] == "phase1-oxc-0.2" and p["file_count"] == 114 and p["source_count"] == p["catalog_count"] == 172 and len(p["records"]) == 172 and not p["duplicates"] and not p["missing"] and not p["extra"] and p["expression_kind_counts"] == {"zod_object_call": 139, "object_shape": 29, "zero_input": 4}; from collections import Counter; c=Counter(r["schema_root_kind"] for r in p["records"]); assert c == {"input_schema": 139, "dex_raw_shape": 18, "implicit_zero_input": 4, "casb_params": 11}'
       - name: Clean install smoke test
         run: |
           root="$(mktemp -d)"

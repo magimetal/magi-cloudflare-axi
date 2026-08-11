@@ -7,13 +7,26 @@ fn main() {
         let source = include_str!("../fixtures/registrations.ts");
         let records =
             parse_file("fixture.ts", source, "fixture").expect("typed fixture must parse");
-        assert_eq!(records.len(), 10);
+        assert_eq!(
+            records.len(),
+            15,
+            "{:?}",
+            records
+                .iter()
+                .map(|record| &record.name)
+                .collect::<Vec<_>>()
+        );
         for expected in [
             "context_direct",
             "dex_local",
             "casb_one",
             "casb_two",
             "inline_app",
+            "syntax_features",
+            "shadowed_z",
+            "indirect_options",
+            "spread_options",
+            "quoted_options",
         ] {
             assert!(records.iter().any(|record| record.name == expected));
         }
