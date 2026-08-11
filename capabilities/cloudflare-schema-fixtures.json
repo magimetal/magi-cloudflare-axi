@@ -1,0 +1,1461 @@
+{
+  "version": "schema-fixtures-v1",
+  "dialect": "https://json-schema.org/draft/2020-12/schema",
+  "bundle_version": "2",
+  "source_commit": "70ff690553722f731849ede6ba9ce98958395a23",
+  "tree_oid": "1a51c6ff07170dfe3c3212c8fb96eb85d66f0b96",
+  "bundle_sha256": "aac9c21845c0bf55d63b5a04f3b2850dbd32ba4146daf472f42e9f9e99af77eb",
+  "contract_count": 172,
+  "distinct_schema_count": 137,
+  "fixtures": [
+    {
+      "raw_input_schema_sha256": "0172e6aaafe8fa75c25d243b676cb08d6354dda1d71f47ca066add232b5b4021",
+      "capabilities": [
+        "get_bgp_top_prefixes"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "01a2e15e6c78a0e08ecbfa90fcaf72defcc40a97fc10493c48d2817c37b673e0",
+      "capabilities": [
+        "get_bgp_timeseries"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "0332460f7be296852c07c7f4fc4f8ab0196efeaec908d202f74ba86d0442364d",
+      "capabilities": [
+        "get_as_relationships"
+      ],
+      "positive": {
+        "asn": 1.0
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "049215daa5166184e3a8c9adce25adc03994f900344d85e2ee65b864ae2e3a80",
+      "capabilities": [
+        "assets_by_integration_id",
+        "integration_by_id"
+      ],
+      "positive": {
+        "integrationIdParam": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "087b8006bd995896c49fcb70c78a7d88b2a03199032cee2bfd60eeb7620f9a4a",
+      "capabilities": [
+        "observability_keys"
+      ],
+      "positive": {
+        "keysQuery": {
+          "timeframe": {
+            "from": "fixture",
+            "to": "fixture"
+          }
+        }
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "0b5c08d942c56e51eee1c4d24e6a765396af435f7f3804bacf795c4f13623eb8",
+      "capabilities": [
+        "get_ct_authority_details"
+      ],
+      "positive": {
+        "caSlug": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "0cf790911cfb82fc25a68fa85b3a4bdcdcd77db96d1eb7bf2e24a7c73fd74636",
+      "capabilities": [
+        "get_bgp_routes_realtime"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "0e5e2517f8ba486cd50ce6881faa86a918c2f1abb611f09f62dc33924139ce98",
+      "capabilities": [
+        "get_domains_ranking"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "0ffdabee1293eecf1729400f563c0f5be248a235c95364bfddba0209f4410bec",
+      "capabilities": [
+        "get_robots_txt_data"
+      ],
+      "positive": {
+        "dimension": "summary/user_agent"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "10498460d501c4170592e7fd9fb556c020c5585a70d77e0de4b89050f8e8772a",
+      "capabilities": [
+        "get_internet_quality_data"
+      ],
+      "positive": {
+        "format": "summary",
+        "metric": "BANDWIDTH"
+      },
+      "negative": {
+        "metric": "BANDWIDTH"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "1085cfa7843734f2f39beda825a8fc1e14891eade7265ea11d6142ace7a3c3dd",
+      "capabilities": [
+        "d1_databases_list"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "12ae32497c28e53bfcaa50d34641651dc29b4f602505216c028eea63040d5252",
+      "capabilities": [
+        "get_speed_histogram"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "1320dd712182fc0d60f91cfd4d4b5d9c9e4b5a037a4a65fe1ed85e4235251495",
+      "capabilities": [
+        "list_bots"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "156826d4d1c29f36b5b01c7171b504c19b7c01ab454b0350867724936b97f435",
+      "capabilities": [
+        "dex_list_remote_captures",
+        "dex_list_tests"
+      ],
+      "positive": {
+        "page": 1.0
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "1683c5f667613413a1a5e3a557cf36d3c9997cb0aa4c4b5795297bb800b66283",
+      "capabilities": [
+        "graphql_schema_overview"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "177335979bcfaea9fa987fa2d5137d1ae30a3046f0d321357f7fc5383e17f70e",
+      "capabilities": [
+        "get_ct_log_details"
+      ],
+      "positive": {
+        "logSlug": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "18c3ec5e9d2976604914f3b4be7d55fa0b5b622d50cd599352931d4af0cc193b",
+      "capabilities": [
+        "container_exec"
+      ],
+      "positive": {
+        "args": {
+          "args": "fixture"
+        }
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "18c897d3b1828b7dd0bad05c11140235fef4eca338ca7b9410448dd1de667c17",
+      "capabilities": [
+        "kv_namespace_delete",
+        "kv_namespace_get"
+      ],
+      "positive": {
+        "namespace_id": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "1ab429a6c182d77c2a8863934b148d7760e85a5b152fd7cb1b2c26039705e5c0",
+      "capabilities": [
+        "observability_values"
+      ],
+      "positive": {
+        "valuesQuery": {
+          "key": "fixture",
+          "timeframe": {
+            "from": "fixture",
+            "to": "fixture"
+          },
+          "type": "string"
+        }
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "1ac00ad937f12a97d83ddd919618592f988cd9fc1ca73660024316e7255b9718",
+      "capabilities": [
+        "asset_categories_by_type"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "1c73ae3c60715bb0e3d8f7a2b708b046bbbbf3f69a865d0468c4a288cf4e1fd7",
+      "capabilities": [
+        "get_post"
+      ],
+      "positive": {
+        "slug": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "1d2ce26ff89ccf8f569e8618514c2c2378822dd6dcd4f646fea8b49bbbe4cd74",
+      "capabilities": [
+        "list_gateways",
+        "list_rags"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "1dc63095e8672403bbe40fa26719d175e695c0167f6daad6b9655f6506491f01",
+      "capabilities": [
+        "search_cloudflare_documentation"
+      ],
+      "positive": {
+        "query": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "1dfc63d52a4c1af3713bdafd1608c713e4f282ee60bb995a2775b67f1a5c5192",
+      "capabilities": [
+        "dex_traceroute_test_network_path"
+      ],
+      "positive": {
+        "deviceId": "550e8400-e29b-41d4-a716-446655440000",
+        "from": "fixture",
+        "interval": "minute",
+        "testId": "550e8400-e29b-41d4-a716-446655440000",
+        "to": "fixture"
+      },
+      "negative": {
+        "from": "fixture",
+        "interval": "minute",
+        "testId": "550e8400-e29b-41d4-a716-446655440000",
+        "to": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "1e320efb9c500b053e38e07cf88691716ee2f7bb09befb65f194753ac6da56f5",
+      "capabilities": [
+        "asset_by_id"
+      ],
+      "positive": {
+        "assetIdParam": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "2009efd2ff06188fe0cd8d59dd06c51db53559e4238ecea867b9fa47e1954e36",
+      "capabilities": [
+        "get_bgp_rpki_aspa_timeseries"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "200be78c9a446e99175dd56b41bbd2fb77bba45b01f21919685f4e96067f8b7a",
+      "capabilities": [
+        "scrape_url_elements"
+      ],
+      "positive": {
+        "elements": [
+          {
+            "selector": "fixture"
+          }
+        ],
+        "url": "fixture"
+      },
+      "negative": {
+        "url": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "205ba4d6e177fd73ee0decc8643292df7e1a9c9a4acef7bca686a2725141ff3c",
+      "capabilities": [
+        "cancel_crawl",
+        "get_crawl_result"
+      ],
+      "positive": {
+        "job_id": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "22ff22f9adce99d2a84d412f6944b72363249849bf53cdc77af7b2e7fb2d56d5",
+      "capabilities": [
+        "get_bots_crawlers_data"
+      ],
+      "positive": {
+        "dimension": "CLIENT_TYPE",
+        "format": "summary"
+      },
+      "negative": {
+        "format": "summary"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "22ffbb2f977a0ec51dd5c44e3ee710bf1b9dbe3665a8c0118a38e92049522841",
+      "capabilities": [
+        "get_tcp_resets_timeouts_data"
+      ],
+      "positive": {
+        "dimension": "summary"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "24f2cb2454870bad25ebfe2259e8e027565528f7814aca0b20a1667986eccaf3",
+      "capabilities": [
+        "get_bgp_hijacks"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "277e8a8ece7358dd46b360b4d8864a63cae688f6bee4b9ba21e990b9e2cbf30a",
+      "capabilities": [
+        "get_netflows_data"
+      ],
+      "positive": {
+        "dimension": "summary/adm1"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "282e370fb471d1ff4cce40f2667b1ff5703524d967ec49fde06caf5a10af80ea",
+      "capabilities": [
+        "get_url_links"
+      ],
+      "positive": {
+        "url": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "30d2aa1dd87a5e77f92ada226536ab939c6eba9068c810ec458f240933c1dddb",
+      "capabilities": [
+        "workers_get_worker",
+        "workers_get_worker_code"
+      ],
+      "positive": {
+        "scriptName": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "3338c01185e628fcb254b3260a337dd3bdd0a73d8b26549c54ef5a5e3ee26b8a",
+      "capabilities": [
+        "list_logs"
+      ],
+      "positive": {
+        "gateway_id": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "347a731bde13224e97350988c1887b5f6b0cb716b57f29e4482c760225b4deb1",
+      "capabilities": [
+        "search_posts"
+      ],
+      "positive": {
+        "query": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "35e362080bc7d517404364115234774f55e7e2d501ca51dc5ab05f882b827216",
+      "capabilities": [
+        "get_bgp_rpki_aspa_changes"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "35e7208951a7821dea1e3d73196a9d759f80b60770964cf91a1704092c4013c4",
+      "capabilities": [
+        "dex_fleet_status_over_time"
+      ],
+      "positive": {
+        "from": "fixture",
+        "interval": "minute",
+        "to": "fixture"
+      },
+      "negative": {
+        "interval": "minute",
+        "to": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "364e0ae4282a869a198b45fd7ad1cd7299018987674f946dee3e6f7ff40c1554",
+      "capabilities": [
+        "asset_categories_by_vendor_and_type"
+      ],
+      "positive": {
+        "assetCategoryVendorParam": "AWS"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "366e51bd31e9f8db75241e6535e07d733c0f1f5bde1690cedbbc5b38e6e346ac",
+      "capabilities": [
+        "get_log_details",
+        "get_log_request_body",
+        "get_log_response_body"
+      ],
+      "positive": {
+        "gateway_id": "fixture",
+        "log_id": "fixture"
+      },
+      "negative": {
+        "log_id": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "388e7054fd5b45639b0952c9f6b444cd2d8ee60ea1165dbbd8a57e83cca90101",
+      "capabilities": [
+        "get_bgp_top_ases_by_prefixes"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "38f1337f3f0b5b3fb28374815c0fc0e616b284e69a327a1bd9043cd98fb09172",
+      "capabilities": [
+        "get_l7_attack_data"
+      ],
+      "positive": {
+        "dimension": "timeseries"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "3c50c3dfc71da5daa07f0edd8a69276d25c2c8d34be443a31e13d516d1285bc3",
+      "capabilities": [
+        "get_bots_data"
+      ],
+      "positive": {
+        "dimension": "timeseries"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "3da77f1dc9ec1898924e7c1c657bd6693d9d27233dad0a2cc03fa39369595f31",
+      "capabilities": [
+        "zones_list"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "3e991dcf25ea95c08573864a2358524425756889597ea9907ca4fa9d5f483742",
+      "capabilities": [
+        "query_worker_observability"
+      ],
+      "positive": {
+        "query": {
+          "parameters": {},
+          "queryId": "fixture",
+          "timeframe": {
+            "from": "fixture",
+            "to": "fixture"
+          }
+        }
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "408396b1173048cb18e7f78f16588a48b7de0b2930686be160808fa42c3b68da",
+      "capabilities": [
+        "kv_namespace_create"
+      ],
+      "positive": {
+        "title": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "4377775efc7598318cb37fe45bde0f16ab81b41b21b4d36d09646b727e4994a5",
+      "capabilities": [
+        "get_origin_details"
+      ],
+      "positive": {
+        "slug": "AMAZON"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "437e1d49ecfcccf17255479ddaae18af1cbb22ef70f168b53d07d8c032d69edb",
+      "capabilities": [
+        "list_posts"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "45226565f7c28defaed0520a5ab8e2b59d3bf9251aa82c5d2040adc53418295f",
+      "capabilities": [
+        "workers_builds_list_builds"
+      ],
+      "positive": {
+        "workerId": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "4ed98efbad3c5fba4813e0183a67d6fd811a63f30c63d6be7a927c718f59696d",
+      "capabilities": [
+        "r2_bucket_create",
+        "r2_bucket_delete",
+        "r2_bucket_get"
+      ],
+      "positive": {
+        "name": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "554081a7a71a5e186e14cccc1a251ffe5c82730265819479126085dad3ae46d2",
+      "capabilities": [
+        "get_leaked_credentials_data"
+      ],
+      "positive": {
+        "dimension": "timeseries"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "57618e7cf8904a6540f465975a83d6f379195149e3b1acf8a57f771194f9ca2f",
+      "capabilities": [
+        "start_crawl"
+      ],
+      "positive": {
+        "url": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "5a05a4fe1987a8cfc5236b873fbaefae160b9c79198e68c6976e38fa495a5265",
+      "capabilities": [
+        "list_tlds"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "5c0922c4e16e0326b0566da1e6be7b766e27db5fda9b36076fa65bffdafa3d1d",
+      "capabilities": [
+        "r2_buckets_list"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "5cdb12426e4f1931a09f5a970b862d140fc7ef7a977c86261ecacbdff6c627f9",
+      "capabilities": [
+        "get_internet_services_timeseries"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "5d02cb3ea1f24ff13360dc05bf74bedcafd99009bcc060a49d96c084ed196e04",
+      "capabilities": [
+        "kv_namespace_update"
+      ],
+      "positive": {
+        "namespace_id": "fixture",
+        "title": "fixture"
+      },
+      "negative": {
+        "title": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "5d7d36bdacacbe7ab615d4959e53369f519d761be380fb9d786d30fc1fdd5390",
+      "capabilities": [
+        "get_bgp_rpki_aspa_snapshot"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "5f623e361f47b2355e25fd2d1d06d0294df770cd666849d25edb8da4e1b02f4f",
+      "capabilities": [
+        "get_url_scan",
+        "get_url_scan_har"
+      ],
+      "positive": {
+        "scanId": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "62405e831e1f72f08a018b25f63f3c0134a53b42c11e5cd556aebef4dcd4371b",
+      "capabilities": [
+        "dex_create_remote_pcap"
+      ],
+      "positive": {
+        "device_id": "550e8400-e29b-41d4-a716-446655440000",
+        "user_email": "fixture@example.com"
+      },
+      "negative": {
+        "user_email": "fixture@example.com"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "62f6e8f7eca35cafaf7c5aa744e47fa57f50cc0fa70395c46d5464168e438914",
+      "capabilities": [
+        "container_file_delete",
+        "container_file_read"
+      ],
+      "positive": {
+        "args": {
+          "path": "fixture"
+        }
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "64b886381c286f7de863f6f7ca08c3dba6f0a95cabb493eec8b7d8fb7141c6f2",
+      "capabilities": [
+        "dex_create_remote_warp_diag"
+      ],
+      "positive": {
+        "device_id": "550e8400-e29b-41d4-a716-446655440000",
+        "user_email": "fixture@example.com"
+      },
+      "negative": {
+        "user_email": "fixture@example.com"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "69b0bdc8b6ca272d4b4e502542419191deb9ef479d3b105fb22b58c9aff60d1f",
+      "capabilities": [
+        "hyperdrive_configs_list"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "6b2374b4f01bdaac2afa6360cfd9a5104394c5b0b54c610a4be76268aa823512",
+      "capabilities": [
+        "get_bgp_leaks"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "6e6133aade9cd48461e8207ffdba666f6aa97533d4c1b3557fe748dc9ea5f528",
+      "capabilities": [
+        "get_outages_by_location"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "71ab2af1df1d331866e81901eef9691738bf4dc715094941ca3322ff38512dc7",
+      "capabilities": [
+        "list_geolocations"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "73b2521158de50c15e0600d3a416938a286115061d44893a444f1699e1ac39f8",
+      "capabilities": [
+        "list_ct_authorities",
+        "list_ct_logs",
+        "list_origins"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "73caa84c1bd901968d6e8548b89fccbd7f74c8a0ce4f2edc3b2dba046c561613",
+      "capabilities": [
+        "hyperdrive_config_delete",
+        "hyperdrive_config_get"
+      ],
+      "positive": {
+        "hyperdrive_id": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "78f13e18166fd04ee16a781ca29433c787d6925deadf2549aa8e12b91ff28877",
+      "capabilities": [
+        "dex_list_colos"
+      ],
+      "positive": {
+        "from": "fixture",
+        "to": "fixture"
+      },
+      "negative": {
+        "to": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "79401cbfbd3eb844b9b1acc0f796babcd081a247762e1e7c2713340c70d4694d",
+      "capabilities": [
+        "get_http_data"
+      ],
+      "positive": {
+        "dimension": "timeseries"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "7a4eeab77d2df0c23a46100459b72fbadd7415f8f9fb655a652fd57429ecd2b3",
+      "capabilities": [
+        "graphql_schema_search"
+      ],
+      "positive": {
+        "keyword": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "7b06f4f674455f07ecce36754c4bacedbcce463043ccedd1bc69b64b2869fc16",
+      "capabilities": [
+        "dex_list_warp_change_events"
+      ],
+      "positive": {
+        "from": "fixture",
+        "page": 1.0,
+        "to": "fixture"
+      },
+      "negative": {
+        "page": 1.0,
+        "to": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "7f53c6e28a92a6180dbb70b79f8bd41ace3ef1063bf8172a98468ef76dfffef1",
+      "capabilities": [
+        "get_annotations"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "80cc2b1b81246aee77f9c82c05ea1829558acc07af58989bc30cf82793b697d9",
+      "capabilities": [
+        "get_ai_data"
+      ],
+      "positive": {
+        "dimension": "bots/timeseries"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "81893f0c4574291332c85c59c48ff60b8ee06ef0619be0a1905cb4eb8104d015",
+      "capabilities": [
+        "graphql_complete_schema"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "8271a2fbdb49fe46e3e5264b94cf061e5c6430883fffb74e3153cac1f725b3ea",
+      "capabilities": [
+        "hyperdrive_config_edit"
+      ],
+      "positive": {
+        "hyperdrive_id": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "83eaff458adb051e1713a0a8d3efdeb0ce3b12cbf22f0edf3dd1a3cd6236e353",
+      "capabilities": [
+        "get_as112_data"
+      ],
+      "positive": {
+        "dimension": "timeseries"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "868f4d12aac7c21dd4ccc8fe67a38818ef4155b4ca67e6d6c6f3ad01e2464455",
+      "capabilities": [
+        "get_tld_details"
+      ],
+      "positive": {
+        "tld": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "89586fc495650615af05f3f79f0b18e71eac8f61da49af8defe581813399da49",
+      "capabilities": [
+        "search_dev_stack"
+      ],
+      "positive": {
+        "query": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "8a5af0482be25fc573b2b1a4c83cae76e50531a7e533d3b8a6252905471f5b61",
+      "capabilities": [
+        "get_email_routing_data"
+      ],
+      "positive": {
+        "dimension": "summary/ipVersion"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "8c211d59aa2932df1e7dadc5bab5b2be293b58a817d3a396fcc44888d79e2bd8",
+      "capabilities": [
+        "workers_builds_get_build"
+      ],
+      "positive": {
+        "buildUUID": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "8d8e2205a93b8658aa5c30f689fab0f9bebad07eee169815a4a1798d67be9578",
+      "capabilities": [
+        "list_autonomous_systems"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "9197cd3ab961e6997800305feb9ccd4dde537bf81dda634e931fb8799f0c40f2",
+      "capabilities": [
+        "get_dns_queries_data"
+      ],
+      "positive": {
+        "dimension": "timeseries"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "923fa354c90e82da06a00c1f43fe363d7f4c03999e4a57d9bba6ed7f815f91ae",
+      "capabilities": [
+        "get_origins_data"
+      ],
+      "positive": {
+        "dimension": "timeseries",
+        "metric": "CONNECTION_FAILURES",
+        "origin": [
+          "AMAZON"
+        ]
+      },
+      "negative": {
+        "metric": "CONNECTION_FAILURES",
+        "origin": [
+          "AMAZON"
+        ]
+      }
+    },
+    {
+      "raw_input_schema_sha256": "92a461b91adf31cec41a6c348e086d0882d10fc1c16ca40c8f783691e0d3e6f3",
+      "capabilities": [
+        "get_ip_details"
+      ],
+      "positive": {
+        "ip": "192.0.2.1"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "95d22d14863a0cf46f3e30dd8a20f3698c94599e22f2285b744088bf642e06c2",
+      "capabilities": [
+        "get_internet_speed_data"
+      ],
+      "positive": {
+        "dimension": "summary"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "966820b1c5adb6bc00fb6a24cb5ce2a8cb4cf6c87530e7d3f9db213ac0fbf81c",
+      "capabilities": [
+        "get_url_scan_screenshot"
+      ],
+      "positive": {
+        "scanId": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "987387b7212b133ad01b7d9c0dd26fa7e43aab28c2acbd524c4135f9fe653d6b",
+      "capabilities": [
+        "get_bot_details"
+      ],
+      "positive": {
+        "botSlug": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "999559193cde30b6e49abe5e14afd5c3a347a2f0ba33db2cef855b3770e0de7a",
+      "capabilities": [
+        "dex_fleet_status_live"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "9a49c1d02132011541eb665978034ddd86427afeafdb64df02af5e5303595a35",
+      "capabilities": [
+        "kill_browser_session"
+      ],
+      "positive": {
+        "session_id": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "9aefb9acb4a3c50a0fc5d7e83d7928a648c8d6ff1128ebd36653179ae615b047",
+      "capabilities": [
+        "dex_analyze_warp_diag"
+      ],
+      "positive": {
+        "command_id": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "a0d73dc8308ea1a2c4c7f53b4e8f71d26efcd99511ab899e6b3f7504256d1c1b",
+      "capabilities": [
+        "ai_search",
+        "search"
+      ],
+      "positive": {
+        "query": "fixture",
+        "rag_id": "fixture"
+      },
+      "negative": {
+        "rag_id": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "a110032b2a2944c140aaf4c1dd2854da471fa95105be1d26f34d558ac5986911",
+      "capabilities": [
+        "graphql_api_explorer"
+      ],
+      "positive": {
+        "query": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "a12e7137edba9bc857eb325a7637759e91c0f2f37d3d28d260949b46d57845a2",
+      "capabilities": [
+        "dex_test_statistics"
+      ],
+      "positive": {
+        "from": "fixture",
+        "testId": "550e8400-e29b-41d4-a716-446655440000",
+        "to": "fixture"
+      },
+      "negative": {
+        "testId": "550e8400-e29b-41d4-a716-446655440000",
+        "to": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "a27acad42457586dffec0857abad7859f0138354fb8d8252b799c51db7f88e09",
+      "capabilities": [
+        "dns_report"
+      ],
+      "positive": {
+        "days": 1.0,
+        "zone": "fixture"
+      },
+      "negative": {
+        "zone": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "a2a2221997a2777451d2f8ff90550b2d7f0f92d657bc3ceb38250d478e9dd458",
+      "capabilities": [
+        "get_url_screenshot"
+      ],
+      "positive": {
+        "url": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "a3cc3e621fa30129e84166b03d0da977f12edc031cceac8da4bdf61b595a1f58",
+      "capabilities": [
+        "workers_builds_get_build_logs"
+      ],
+      "positive": {
+        "buildUUID": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "a498c40ed7fc15aeb98ef3f4aea48cd3770bdaad47ac11a5be99709fc1d83b7d",
+      "capabilities": [
+        "get_bgp_routing_table_ases"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "a4de53f17b5de49c2eb8616be1bb65c272e7496310ec757bb4399a7fb4706cf6",
+      "capabilities": [
+        "dex_list_remote_warp_diag_contents"
+      ],
+      "positive": {
+        "commandId": "550e8400-e29b-41d4-a716-446655440000",
+        "deviceId": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "negative": {
+        "deviceId": "550e8400-e29b-41d4-a716-446655440000"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "a697e6075eaf026d0d8c8d4e248f87e00a31239c061fc5c121b19e53b7722137",
+      "capabilities": [
+        "dex_list_remote_capture_eligible_devices"
+      ],
+      "positive": {
+        "page": 1.0
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "a77bf5dd54860c2013aefa247dec854d6215a47b21ca8de700543379953d235c",
+      "capabilities": [
+        "assets_search"
+      ],
+      "positive": {
+        "assetSearchTerm": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "a9da64cd6eb8a1e3f6d37721f4a62af606894e467dba065d5c44533603075f5f",
+      "capabilities": [
+        "get_bgp_route_stats"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "ac804d6e2a0c32c8f5fc17e9da3c62f9f06a1ea7832031ef9edbb404156ab676",
+      "capabilities": [
+        "graphql_query"
+      ],
+      "positive": {
+        "query": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "ad6848db5a863a2e77978ea2b4d46f7190258dd30052e66b97a4795c7fd1cda0",
+      "capabilities": [
+        "get_geolocation_details"
+      ],
+      "positive": {
+        "geoId": "1"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "ae8f0bdbf13a85b3941ad205966cafde563746e91384789a384804e127f1cb68",
+      "capabilities": [
+        "get_outages",
+        "get_traffic_anomalies"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "b0fbaff13f945d9dcbeefd23969683e286521884305ae1e4b31eac944130e7bc",
+      "capabilities": [
+        "show_zone_dns_settings"
+      ],
+      "positive": {
+        "zone": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "b1db2d03735b0e188fc11ee0528c4f172cd3b2fcd404248ce1c16ff5f8703870",
+      "capabilities": [
+        "get_bgp_ip_space_timeseries"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "b2bc4e14629eaf8ef61bda177aa8adbc73be9ff46d060c622432cf57b867a625",
+      "capabilities": [
+        "get_url_html_content",
+        "get_url_markdown",
+        "get_url_pdf",
+        "get_url_snapshot"
+      ],
+      "positive": {
+        "url": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "b4d299bae5cee6ab0d9f102288bbc3e83bd6186904c15391dbf20f56836592d1",
+      "capabilities": [
+        "d1_database_create"
+      ],
+      "positive": {
+        "name": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "b763e5d8c3dbf50f6dec70c62435b5915f78d551eb3ba05b4f3a7f6c2e308097",
+      "capabilities": [
+        "get_bgp_top_ases"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "b7a02ef80ce22ec6d4513d953aada5e8bbe75065e0c3e57e5e2f086378933a8f",
+      "capabilities": [
+        "get_email_security_data"
+      ],
+      "positive": {
+        "dimension": "summary/spam"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "b8445b6fa2f872ef5d823277566826b39557b0d391c99e681a76bc55af31c8ee",
+      "capabilities": [
+        "get_domains_ranking_timeseries"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "ba7e4486bbef09874ce88e90835f9708217ed0a61b6ee59440d1342724a1395f",
+      "capabilities": [
+        "graphql_type_details"
+      ],
+      "positive": {
+        "typeName": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "bb4e5fb380e977e97881f318474d6817b45e6a9ee30a4c982611566373e005ca",
+      "capabilities": [
+        "get_bgp_pfx2as"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "bb8a490d73a501a1d809ceefe7bd7b61eda2780052f27e3f49bb82d2910845cb",
+      "capabilities": [
+        "d1_database_delete",
+        "d1_database_get"
+      ],
+      "positive": {
+        "database_id": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "bc0162029b83edf134d6e8f732e3d33feeac4c6348854a90197474455802fd1e",
+      "capabilities": [
+        "get_internet_services_ranking"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "c06ab97e6d1322102913e7304325150bc55c5a1e3c22e8f849d47eeb7b8e1b71",
+      "capabilities": [
+        "asset_categories_by_vendor"
+      ],
+      "positive": {
+        "assetCategoryVendorParam": "AWS"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "c263990e44a64c98854731e5bf525e3ee937f8685b9934db602cbe6c6bfdf519",
+      "capabilities": [
+        "dex_traceroute_test_result_network_path"
+      ],
+      "positive": {
+        "testResultId": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "c9bb356f2f25dc0e3e3b405846ab3f3cf874729cbe28fd6565343c75831cbc20",
+      "capabilities": [
+        "container_file_write"
+      ],
+      "positive": {
+        "args": {
+          "path": "fixture",
+          "text": "fixture"
+        }
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "cf224d9316334eab5f15a1b3273f7190538ae0579574bd1cb47eb8a3b8f86f3b",
+      "capabilities": [
+        "zone_details"
+      ],
+      "positive": {
+        "zoneId": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "cfb4980b06df244c78cbc048fdfa37ad10d67ab46b8b515d5cd104f725ea1c65",
+      "capabilities": [
+        "auditlogs_by_account_id"
+      ],
+      "positive": {
+        "before": "2000-01-01",
+        "since": "2000-01-01"
+      },
+      "negative": {
+        "since": "2000-01-01"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "d151a76de129897df76ae592d40eb524df469fbf8603e024e21b429bdf0270b4",
+      "capabilities": [
+        "dex_fleet_status_logs"
+      ],
+      "positive": {
+        "from": "fixture",
+        "page": 1.0,
+        "source": "last_seen",
+        "to": "fixture"
+      },
+      "negative": {
+        "page": 1.0,
+        "source": "last_seen",
+        "to": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "d1d94dd0d8489db5f90264474df39871828b6bdbfe196695fe022b2afc13443c",
+      "capabilities": [
+        "get_certificate_transparency_data"
+      ],
+      "positive": {
+        "dimension": "timeseries"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "d22a1c374dbacbd35f4978a6255202169c1a085e124bdbd8a7833403777caf42",
+      "capabilities": [
+        "get_url_json"
+      ],
+      "positive": {
+        "url": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "d8c966a67ab7b5f4266bdf8a8b0b2f3f03b2461e519ddb311f9766f29aea0ce1",
+      "capabilities": [
+        "dex_explore_remote_warp_diag_output"
+      ],
+      "positive": {
+        "commandId": "550e8400-e29b-41d4-a716-446655440000",
+        "deviceId": "550e8400-e29b-41d4-a716-446655440000",
+        "filepath": "fixture"
+      },
+      "negative": {
+        "deviceId": "550e8400-e29b-41d4-a716-446655440000",
+        "filepath": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "e4ba73d173777ca2cf19d377ea49badd62f9a81b2680cf57a9401ed537f193ab",
+      "capabilities": [
+        "get_as_details",
+        "get_as_set"
+      ],
+      "positive": {
+        "asn": 1.0
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "e707b79737b7b4d5fb8d6c776f3bed8e5ecdf0cbb550329ba6cf84203fe69784",
+      "capabilities": [
+        "d1_database_query"
+      ],
+      "positive": {
+        "database_id": "fixture",
+        "sql": "fixture"
+      },
+      "negative": {
+        "sql": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "e7fd294f813ec90a367e9d8cfab48a41bdc4db62bf8aabe3818ca4acd56f7a6d",
+      "capabilities": [
+        "get_traffic_anomalies_by_location"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "ea7867bc707b3a55e971d0fcc250bcae1a52a40943c21f41df88dae60d9b761c",
+      "capabilities": [
+        "assets_by_category_id"
+      ],
+      "positive": {
+        "assetCategoryIdParam": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "eb593efe95fea10ef2299dbb9eb631c15e9c1aa566eddbf691da6a6f0a661ebe",
+      "capabilities": [
+        "dex_http_test_details"
+      ],
+      "positive": {
+        "from": "fixture",
+        "interval": "minute",
+        "testId": "550e8400-e29b-41d4-a716-446655440000",
+        "to": "fixture"
+      },
+      "negative": {
+        "interval": "minute",
+        "testId": "550e8400-e29b-41d4-a716-446655440000",
+        "to": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "efddc7bd8bbcef73a14eb1ace1ffdaec81e518ef1e13c1e9271d0b8acb694a49",
+      "capabilities": [
+        "asset_categories_list",
+        "assets_list",
+        "container_files_list",
+        "container_initialize",
+        "container_ping",
+        "integrations_list",
+        "list_browser_sessions",
+        "list_libraries",
+        "list_tags",
+        "logpush_jobs_by_account_id",
+        "mcp_demo_day_info",
+        "migrate_pages_to_workers_guide",
+        "show_account_dns_settings",
+        "workers_list"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "efee6b05ee957f074b057134fb99301469cd2c62d9502c742d3f646e19524f05",
+      "capabilities": [
+        "kv_namespaces_list"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "f217d6190f0bbc28e608f06e22b2263b77d11309792170fdb8a47dec4d39a944",
+      "capabilities": [
+        "get_l3_attack_data"
+      ],
+      "positive": {
+        "dimension": "timeseries"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "f231ba35a9541bba306f14c862bdf0a43ce7b689a747c3e79e6b2df7eb5aa587",
+      "capabilities": [
+        "create_url_scan"
+      ],
+      "positive": {
+        "url": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "f2ffddeb2d320faa16d22c89e77f547e2a6d55d0d20524f69b7bdc1041a3eac1",
+      "capabilities": [
+        "get_bgp_moas"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    },
+    {
+      "raw_input_schema_sha256": "f9c0076240a56b618fb9738a6262257ab54aa3c493152525f4047a470ca8194f",
+      "capabilities": [
+        "get_domain_rank_details"
+      ],
+      "positive": {
+        "domain": "fixture"
+      },
+      "negative": {}
+    },
+    {
+      "raw_input_schema_sha256": "fc9f3f4f33e0b298561a039c9b4f14048d2c7bc041827f24c9a1f729c7797394",
+      "capabilities": [
+        "dex_traceroute_test_details"
+      ],
+      "positive": {
+        "interval": "minute",
+        "testId": "550e8400-e29b-41d4-a716-446655440000",
+        "timeEnd": "fixture",
+        "timeStart": "fixture"
+      },
+      "negative": {
+        "testId": "550e8400-e29b-41d4-a716-446655440000",
+        "timeEnd": "fixture",
+        "timeStart": "fixture"
+      }
+    },
+    {
+      "raw_input_schema_sha256": "fe9c565a2bea0b2197a672ce3ae96cc9c8af9987159e6cceb0b7664f9288852c",
+      "capabilities": [
+        "search_url_scans"
+      ],
+      "positive": {},
+      "negative": "fixture"
+    }
+  ]
+}

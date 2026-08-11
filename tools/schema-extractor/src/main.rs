@@ -1,4 +1,4 @@
-use schema_extractor::{parse_file, run};
+use schema_extractor::{compiler, parse_file, run, validation};
 use std::{env, path::Path};
 
 fn main() {
@@ -44,9 +44,53 @@ fn main() {
         println!("schema-extractor self-test: ok");
         return;
     }
-    if args.len() != 2 || args[0] != "census" {
-        eprintln!("usage: schema-extractor --self-test | census <pinned-checkout>");
+    if args.len() != 2 || !matches!(args[0].as_str(), "census" | "compile" | "validate") {
+        eprintln!(
+            "usage: schema-extractor --self-test | census <pinned-checkout> | compile <pinned-checkout> | validate <bundle.json>"
+        );
         std::process::exit(2);
+    }
+    if args[0] == "validate" {
+        match validation::validate_bundle_file(Path::new(&args[1])) {
+            Ok(envelope) => println!(
+                "{}",
+                serde_json::to_string_pretty(&envelope).expect("fixture envelope serialization")
+            ),
+            Err(error) => {
+                eprintln!("{error}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+    if args[0] == "compile" {
+        match run(Path::new(&args[1])) {
+            Ok(census) => {
+                let bundle = compiler::compile(&census);
+                let invalid = census.source_count != 172
+                    || census.catalog_count != 172
+                    || census.source_count != census.catalog_count
+                    || !census.duplicates.is_empty()
+                    || !census.missing.is_empty()
+                    || !census.extra.is_empty()
+                    || bundle.contracts.len() != 172
+                    || bundle.candidate_complete_count != 168
+                    || bundle.candidate_zero_input_count != 4
+                    || bundle.unresolved_count != 0;
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&bundle).expect("schema bundle serialization")
+                );
+                if invalid {
+                    std::process::exit(1);
+                }
+            }
+            Err(error) => {
+                eprintln!("{error}");
+                std::process::exit(1);
+            }
+        }
+        return;
     }
     match run(Path::new(&args[1])) {
         Ok(census) => {

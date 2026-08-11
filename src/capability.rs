@@ -1,15 +1,25 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 const CATALOG: &str = include_str!("../capabilities/cloudflare-mcp-parity.json");
+const SCHEMAS: &str = include_str!("../capabilities/cloudflare-input-schemas.json");
+const FIXTURES: &str = include_str!("../capabilities/cloudflare-schema-fixtures.json");
 pub const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
 const DENOMINATOR: usize = 172;
+const DIALECT: &str = "https://json-schema.org/draft/2020-12/schema";
+const SCHEMA_EVIDENCE_ID: &str = "ev-phase1-canonical-schemas";
+const SCHEMA_SOURCE_REF: &str = "https://github.com/cloudflare/mcp-server-cloudflare/commit/70ff690553722f731849ede6ba9ce98958395a23";
+const SCHEMA_EVIDENCE_FACT: &str = "Registration-input schemas originate from exact pinned upstream registration files and dependency declarations enumerated by source file, blob, span, and expression hash in local capabilities/cloudflare-input-schemas.json; local artifact identity is bound separately by schema_artifacts and per-capability contract hashes.";
+const DEPENDENCY_PROVENANCE_COUNT: usize = 803;
+const DEPENDENCY_PROVENANCE_SHA256: &str =
+    "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04";
 const LEGACY_METADATA_SHA256: &str =
-    "3645e8c99babc36a7af479ce2be8c423fb64acebcf5f8df768cb9bdbf41a7171";
-const LEGACY_METADATA_FNV1A: u64 = 0x5f81185ef06dc693;
+    "fa2d722b3953d2737f2ad69ccc0a8c240acc25cef3d9c8119c6fb63162786f00";
+const LEGACY_METADATA_FNV1A: u64 = 0xadea63317dd97177;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct InputField {
     pub name: String,
@@ -18,6 +28,8 @@ pub struct InputField {
     pub required: bool,
     #[serde(default)]
     pub default: Option<Value>,
+    #[serde(default)]
+    pub condition: Option<String>,
 }
 
 macro_rules! status_enum {
@@ -94,6 +106,7 @@ pub struct Capability {
     pub source_commit: String,
     pub description: String,
     pub input_fields: Vec<InputField>,
+    pub schema_contract_sha256: String,
     pub scope: String,
     pub operation: String,
     pub transport: String,
@@ -154,12 +167,21 @@ pub struct Blocker {
     pub summary: String,
     pub affected_names: Vec<String>,
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SchemaArtifacts {
+    pub bundle_sha256: String,
+    pub fixtures_sha256: String,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Catalog {
     pub schema_version: u32,
     pub catalog_id: String,
     pub source: Source,
+    pub schema_artifacts: SchemaArtifacts,
     pub denominator: usize,
     pub legacy_metadata_sha256: String,
     pub evidence: Vec<Evidence>,
@@ -258,6 +280,413 @@ fn canonical_json(value: Value) -> Value {
     }
 }
 
+fn json_sha256(value: &Value) -> Result<String, serde_json::Error> {
+    let bytes = serde_json::to_vec(&canonical_json(value.clone()))
+        .map_err(|error| invalid(error.to_string()))?;
+    Ok(Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect())
+}
+
+fn is_lower_hex(value: Option<&str>, length: usize) -> bool {
+    value.is_some_and(|value| {
+        value.len() == length
+            && value
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    })
+}
+
+fn valid_span(value: Option<&Value>) -> bool {
+    let Some(span) = value.and_then(Value::as_object) else {
+        return false;
+    };
+    if span.len() != 4
+        || !["start_byte", "end_byte", "start_line", "end_line"]
+            .iter()
+            .all(|key| span.contains_key(*key))
+    {
+        return false;
+    }
+    let Some(start_byte) = span["start_byte"].as_u64() else {
+        return false;
+    };
+    let Some(end_byte) = span["end_byte"].as_u64() else {
+        return false;
+    };
+    let Some(start_line) = span["start_line"].as_u64() else {
+        return false;
+    };
+    let Some(end_line) = span["end_line"].as_u64() else {
+        return false;
+    };
+    start_byte < end_byte && start_line >= 1 && start_line <= end_line
+}
+
+fn validate_dependency_provenance(
+    value: &Value,
+    contract_index: usize,
+) -> Result<&str, serde_json::Error> {
+    let object = value
+        .as_object()
+        .ok_or_else(|| invalid("dependency provenance object required"))?;
+    let expected = [
+        "id",
+        "name",
+        "file",
+        "blob_oid",
+        "classification",
+        "source_span_kind",
+        "source_span",
+        "source_sha256",
+    ];
+    if object.len() != expected.len() || expected.iter().any(|key| !object.contains_key(*key)) {
+        return Err(invalid(format!(
+            "dependency provenance shape mismatch for contract {contract_index}"
+        )));
+    }
+    let text = |key: &str| {
+        object[key]
+            .as_str()
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| invalid(format!("dependency provenance {key} required")))
+    };
+    let id = text("id")?;
+    text("name")?;
+    let file = text("file")?;
+    let classification = text("classification")?;
+    text("source_span_kind")?;
+    if file.starts_with('/')
+        || ![
+            "dependency_node",
+            "external_package_boundary",
+            "language_builtin_boundary",
+            "lexical_parameter_boundary",
+        ]
+        .contains(&classification)
+        || !is_lower_hex(object["blob_oid"].as_str(), 40)
+        || !is_lower_hex(object["source_sha256"].as_str(), 64)
+        || !valid_span(object.get("source_span"))
+    {
+        return Err(invalid(format!(
+            "invalid dependency provenance for contract {contract_index}"
+        )));
+    }
+    Ok(id)
+}
+
+fn compact_schema_type(schema: &Value) -> String {
+    if schema.get("enum").is_some() {
+        return "enum".into();
+    }
+    if let Some(kind) = schema.get("type").and_then(Value::as_str) {
+        if kind == "array" {
+            return format!(
+                "array<{}>",
+                schema
+                    .get("items")
+                    .map(compact_schema_type)
+                    .unwrap_or_else(|| "any".into())
+            );
+        }
+        return kind.into();
+    }
+    if let Some(branches) = schema
+        .get("anyOf")
+        .or_else(|| schema.get("oneOf"))
+        .and_then(Value::as_array)
+    {
+        return branches
+            .iter()
+            .map(compact_schema_type)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>()
+            .join("|");
+    }
+    "any".into()
+}
+
+fn compact_input_fields(contract: &Value) -> Result<Vec<InputField>, serde_json::Error> {
+    let schema = contract
+        .get("raw_input_schema")
+        .and_then(Value::as_object)
+        .ok_or_else(|| invalid("raw input schema object required"))?;
+    let properties = schema
+        .get("properties")
+        .and_then(Value::as_object)
+        .ok_or_else(|| invalid("raw input schema properties required"))?;
+    let required = schema
+        .get("required")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .collect::<BTreeSet<_>>();
+    let mut fields = properties
+        .iter()
+        .map(|(name, field_schema)| InputField {
+            name: name.clone(),
+            field_type: compact_schema_type(field_schema),
+            required: required.contains(name.as_str()),
+            default: field_schema.get("default").cloned(),
+            condition: None,
+        })
+        .collect::<Vec<_>>();
+    for overlay in contract
+        .get("context_overlays")
+        .and_then(Value::as_array)
+        .ok_or_else(|| invalid("context overlays array required"))?
+    {
+        if overlay.get("operation").and_then(Value::as_str) != Some("extend_optional_property") {
+            continue;
+        }
+        let property = overlay
+            .get("property")
+            .and_then(Value::as_str)
+            .ok_or_else(|| invalid("context overlay property required"))?;
+        if properties.contains_key(property) {
+            return Err(invalid("context overlay duplicates base property"));
+        }
+        let overlay_schema = overlay
+            .get("schema")
+            .ok_or_else(|| invalid("context overlay schema required"))?;
+        fields.push(InputField {
+            name: property.into(),
+            field_type: compact_schema_type(overlay_schema),
+            required: false,
+            default: None,
+            condition: Some(
+                overlay
+                    .get("predicate")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| invalid("context overlay predicate required"))?
+                    .into(),
+            ),
+        });
+    }
+    fields.sort_by(|left, right| left.name.cmp(&right.name));
+    Ok(fields)
+}
+
+fn validate_schema_artifacts(catalog: &Catalog) -> Result<(), serde_json::Error> {
+    let bundle: Value = serde_json::from_str(SCHEMAS)?;
+    let fixtures: Value = serde_json::from_str(FIXTURES)?;
+    validate_schema_artifact_values(catalog, &bundle, &fixtures)
+}
+
+fn validate_schema_artifact_values(
+    catalog: &Catalog,
+    bundle: &Value,
+    fixtures: &Value,
+) -> Result<(), serde_json::Error> {
+    let bundle_hash = json_sha256(bundle)?;
+    let fixtures_hash = json_sha256(fixtures)?;
+    let contracts = bundle
+        .get("contracts")
+        .and_then(Value::as_array)
+        .ok_or_else(|| invalid("schema contracts array required"))?;
+    if bundle.get("version").and_then(Value::as_str) != Some("2")
+        || bundle.get("compiler_version").and_then(Value::as_str) != Some("phase1-oxc-static-0.4")
+        || bundle.get("source_access").and_then(Value::as_str) != Some("exact_pinned_git_blobs")
+        || bundle.get("execution_policy").and_then(Value::as_str)
+            != Some(
+                "static_only; never import or execute upstream TypeScript, Zod modules, registrations, or handlers",
+            )
+        || bundle.get("zod_version").and_then(Value::as_str) != Some("4.4.3")
+        || bundle.get("source_commit").and_then(Value::as_str) != Some(SOURCE_COMMIT)
+        || bundle.get("tree_oid").and_then(Value::as_str)
+            != Some("1a51c6ff07170dfe3c3212c8fb96eb85d66f0b96")
+        || bundle.get("dialect").and_then(Value::as_str) != Some(DIALECT)
+        || bundle
+            .get("candidate_complete_count")
+            .and_then(Value::as_u64)
+            != Some(168)
+        || bundle
+            .get("candidate_zero_input_count")
+            .and_then(Value::as_u64)
+            != Some(4)
+        || bundle.get("unresolved_count").and_then(Value::as_u64) != Some(0)
+        || bundle
+            .get("dependency_provenance_count")
+            .and_then(Value::as_u64)
+            != Some(DEPENDENCY_PROVENANCE_COUNT as u64)
+        || bundle
+            .get("dependency_provenance_sha256")
+            .and_then(Value::as_str)
+            != Some(DEPENDENCY_PROVENANCE_SHA256)
+        || contracts.len() != DENOMINATOR
+    {
+        return Err(invalid("invalid canonical schema bundle envelope"));
+    }
+    let mut schemas = BTreeMap::<String, Vec<String>>::new();
+    let mut complete_count = 0;
+    let mut zero_input_count = 0;
+    let mut dependency_provenance_count = 0;
+    let mut dependency_provenance_by_capability = serde_json::Map::new();
+    for (index, (row, contract)) in catalog.capabilities.iter().zip(contracts).enumerate() {
+        let capability = contract
+            .get("capability")
+            .and_then(Value::as_str)
+            .ok_or_else(|| invalid("schema contract capability required"))?;
+        let schema = contract
+            .get("raw_input_schema")
+            .ok_or_else(|| invalid("raw input schema required"))?;
+        let schema_hash = contract
+            .get("raw_input_schema_sha256")
+            .and_then(Value::as_str)
+            .ok_or_else(|| invalid("raw schema hash required"))?;
+        let contract_hash = contract
+            .get("contract_sha256")
+            .and_then(Value::as_str)
+            .ok_or_else(|| invalid("schema contract hash required"))?;
+        let status = contract
+            .get("status")
+            .and_then(Value::as_str)
+            .ok_or_else(|| invalid("schema contract status required"))?;
+        let zero = match status {
+            "candidate_complete" => {
+                complete_count += 1;
+                false
+            }
+            "candidate_zero_input" => {
+                zero_input_count += 1;
+                true
+            }
+            _ => return Err(invalid("invalid schema contract status")),
+        };
+        let source_file = contract
+            .get("source_file")
+            .and_then(Value::as_str)
+            .ok_or_else(|| invalid("schema contract source file required"))?;
+        let dependency_provenance = contract
+            .get("dependency_provenance")
+            .and_then(Value::as_array)
+            .ok_or_else(|| invalid("dependency provenance array required"))?;
+        let dependency_ids = dependency_provenance
+            .iter()
+            .map(|entry| validate_dependency_provenance(entry, index))
+            .collect::<Result<Vec<_>, _>>()?;
+        let dependency_provenance_valid = !dependency_ids.windows(2).any(|pair| pair[0] >= pair[1])
+            && contract
+                .get("unresolved_reasons")
+                .and_then(Value::as_array)
+                .is_some_and(Vec::is_empty);
+        dependency_provenance_count += dependency_provenance.len();
+        dependency_provenance_by_capability.insert(
+            capability.into(),
+            Value::Array(dependency_provenance.clone()),
+        );
+        let mut unhashed = contract.clone();
+        unhashed["contract_sha256"] = Value::Null;
+        let expected_zero_schema = json!({"properties": {}, "type": "object"});
+        let provenance_valid =
+            is_lower_hex(contract.get("source_blob_oid").and_then(Value::as_str), 40)
+                && valid_span(contract.get("registration_span"))
+                && is_lower_hex(Some(schema_hash), 64)
+                && is_lower_hex(Some(contract_hash), 64)
+                && if zero {
+                    contract.get("schema_span").is_some_and(Value::is_null)
+                        && contract
+                            .get("schema_expression_sha256")
+                            .is_some_and(Value::is_null)
+                } else {
+                    valid_span(contract.get("schema_span"))
+                        && is_lower_hex(
+                            contract
+                                .get("schema_expression_sha256")
+                                .and_then(Value::as_str),
+                            64,
+                        )
+                };
+        if capability != row.name
+            || row.schema_contract_sha256 != contract_hash
+            || !schema.is_object()
+            || json_sha256(schema)? != schema_hash
+            || json_sha256(&unhashed)? != contract_hash
+            || row.input_fields != compact_input_fields(contract)?
+            || !row.source.starts_with(&format!("{source_file}:"))
+            || (zero && *schema != expected_zero_schema)
+            || (zero && row.parity.schema.status != SchemaStatus::ZeroInputEvidenced)
+            || !provenance_valid
+            || (!zero && row.parity.schema.status != SchemaStatus::Complete)
+            || !dependency_provenance_valid
+        {
+            return Err(invalid(format!(
+                "schema artifact mismatch for {}",
+                row.name
+            )));
+        }
+        schemas
+            .entry(schema_hash.into())
+            .or_default()
+            .push(row.name.clone());
+    }
+    let derived_dependency_provenance_sha256 =
+        json_sha256(&Value::Object(dependency_provenance_by_capability))?;
+    if dependency_provenance_count != DEPENDENCY_PROVENANCE_COUNT
+        || derived_dependency_provenance_sha256 != DEPENDENCY_PROVENANCE_SHA256
+    {
+        return Err(invalid("derived dependency provenance mismatch"));
+    }
+    if complete_count != 168 || zero_input_count != 4 {
+        return Err(invalid(format!(
+            "derived schema status counts mismatch: complete={complete_count}, zero_input={zero_input_count}"
+        )));
+    }
+    let fixture_rows = fixtures
+        .get("fixtures")
+        .and_then(Value::as_array)
+        .ok_or_else(|| invalid("schema fixtures array required"))?;
+    let fixture_map = fixture_rows
+        .iter()
+        .map(|fixture| {
+            fixture
+                .get("raw_input_schema_sha256")
+                .and_then(Value::as_str)
+                .map(|hash| (hash, fixture))
+                .ok_or_else(|| invalid("fixture schema hash required"))
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+    if fixtures.get("version").and_then(Value::as_str) != Some("schema-fixtures-v1")
+        || fixtures.get("source_commit").and_then(Value::as_str) != Some(SOURCE_COMMIT)
+        || fixtures.get("tree_oid").and_then(Value::as_str)
+            != Some("1a51c6ff07170dfe3c3212c8fb96eb85d66f0b96")
+        || fixtures.get("dialect").and_then(Value::as_str) != Some(DIALECT)
+        || fixtures
+            .get("distinct_schema_count")
+            .and_then(Value::as_u64)
+            != Some(schemas.len() as u64)
+        || catalog.schema_artifacts.bundle_sha256 != bundle_hash
+        || catalog.schema_artifacts.fixtures_sha256 != fixtures_hash
+        || fixtures.get("bundle_sha256").and_then(Value::as_str) != Some(&json_sha256(bundle)?)
+        || fixtures.get("contract_count").and_then(Value::as_u64) != Some(DENOMINATOR as u64)
+        || fixture_map.len() != schemas.len()
+    {
+        return Err(invalid("invalid schema fixture envelope"));
+    }
+    for (hash, capabilities) in schemas {
+        let fixture = fixture_map
+            .get(hash.as_str())
+            .ok_or_else(|| invalid("missing distinct-schema fixture"))?;
+        let actual = fixture
+            .get("capabilities")
+            .and_then(Value::as_array)
+            .ok_or_else(|| invalid("fixture capabilities required"))?
+            .iter()
+            .filter_map(Value::as_str)
+            .collect::<Vec<_>>();
+        if actual != capabilities.iter().map(String::as_str).collect::<Vec<_>>()
+            || fixture.get("positive").is_none()
+            || fixture.get("negative").is_none()
+        {
+            return Err(invalid("fixture capability join mismatch"));
+        }
+    }
+    Ok(())
+}
+
 fn legacy_metadata_checksum(raw: &str) -> Result<u64, serde_json::Error> {
     let mut value: Value = serde_json::from_str(raw)?;
     let capabilities = value
@@ -268,7 +697,15 @@ fn legacy_metadata_checksum(raw: &str) -> Result<u64, serde_json::Error> {
         capability
             .as_object_mut()
             .ok_or_else(|| invalid("catalog capability must be an object"))?
-            .retain(|key, _| key != "source_ref" && key != "parity");
+            .retain(|key, _| {
+                ![
+                    "source_ref",
+                    "parity",
+                    "input_fields",
+                    "schema_contract_sha256",
+                ]
+                .contains(&key.as_str())
+            });
     }
     let encoded = serde_json::to_vec(&canonical_json(Value::Array(capabilities.clone())))
         .map_err(|error| invalid(error.to_string()))?;
@@ -287,7 +724,7 @@ fn parse_catalog(raw: &str) -> Result<Catalog, serde_json::Error> {
 }
 
 pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
-    if c.schema_version != 1
+    if c.schema_version != 2
         || c.catalog_id != "cloudflare-mcp-parity"
         || c.denominator != DENOMINATOR
         || c.legacy_metadata_sha256 != LEGACY_METADATA_SHA256
@@ -316,6 +753,18 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
         })
     {
         return Err(invalid("invalid or duplicate evidence"));
+    }
+    let schema_evidence = evidence
+        .get(SCHEMA_EVIDENCE_ID)
+        .ok_or_else(|| invalid("Phase 1 schema evidence required"))?;
+    if schema_evidence.dimension != EvidenceDimension::Schema
+        || schema_evidence.kind != EvidenceKind::SourceVerified
+        || schema_evidence.source_repo != "https://github.com/cloudflare/mcp-server-cloudflare"
+        || schema_evidence.source_commit != SOURCE_COMMIT
+        || schema_evidence.source_ref != SCHEMA_SOURCE_REF
+        || schema_evidence.fact != SCHEMA_EVIDENCE_FACT
+    {
+        return Err(invalid("Phase 1 schema evidence provenance mismatch"));
     }
     let blockers: BTreeMap<_, _> = c.blockers.iter().map(|x| (x.id.as_str(), x)).collect();
     if blockers.len() != c.blockers.len() {
@@ -355,6 +804,13 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             || row.parity.inventory.evidence_ids.len() != 1
         {
             return Err(invalid("inventory completion requires one evidence ref"));
+        }
+        if row.parity.schema.evidence_ids.len() != 1
+            || row.parity.schema.evidence_ids[0] != SCHEMA_EVIDENCE_ID
+        {
+            return Err(invalid(
+                "schema completion requires canonical Phase 1 evidence",
+            ));
         }
         let evidence_groups = [
             (
@@ -601,6 +1057,7 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
     {
         return Err(invalid("legacy baseline metadata drift"));
     }
+    validate_schema_artifacts(c)?;
     Ok(())
 }
 fn complete<S: PartialEq>(s: &S, yes: &[S]) -> bool {
@@ -646,14 +1103,14 @@ pub fn list(
         Value::Array(entries.iter().map(|e|json!({"name":e.name,"family":e.family,"operation":e.operation,"catalog_access":e.cli_access})).collect())
     };
     Ok(
-        json!({"count":rows.as_array().map_or(0,Vec::len),"families":families,"access":accesses,"inventory_status":"complete; all other parity dimensions remain explicitly unresolved","global_parity":parity_vector(&catalog()?),"entries":rows}),
+        json!({"count":rows.as_array().map_or(0,Vec::len),"families":families,"access":accesses,"parity_status":"inventory and registration-input schemas complete; routes, behavior, policy, verification, and discovery remain unresolved","global_parity":parity_vector(&catalog()?),"entries":rows}),
     )
 }
 pub fn get(name: &str) -> Result<Option<Capability>, serde_json::Error> {
     Ok(all()?.into_iter().find(|e| e.name == name))
 }
 pub fn access_recipe(e: &Capability) -> Value {
-    json!({"name":e.name,"family":e.family,"operation":e.operation,"scope":e.scope,"catalog_access":e.cli_access,"status":"inventory_only","source":e.source,"source_commit":e.source_commit,"description":e.description,"catalog_input_fields":e.input_fields,"method":e.method,"path_template":e.path_template,"blocker":e.blocker,"next_command":format!("magi-cloudflare-axi tool schema {} --server <server>",e.name),"warning":"inventory parity only; use authoritative schema and route evidence before invocation"})
+    json!({"name":e.name,"family":e.family,"operation":e.operation,"scope":e.scope,"catalog_access":e.cli_access,"status":"registration_schema_complete_route_unresolved","source":e.source,"source_commit":e.source_commit,"description":e.description,"catalog_input_fields":e.input_fields,"schema_contract_sha256":e.schema_contract_sha256,"method":e.method,"path_template":e.path_template,"blocker":e.blocker,"next_command":format!("magi-cloudflare-axi tool schema {} --server <server>",e.name),"warning":"pinned registration-input schema is complete; live schema may vary by request context, and route/behavior/policy evidence remains incomplete"})
 }
 
 #[cfg(test)]
@@ -672,6 +1129,30 @@ mod tests {
         );
         assert_eq!(x_count(&c), 41);
     }
+    #[test]
+    fn capability_output_reports_schema_completion_without_route_overclaim() {
+        let summary = list(None, None, false).unwrap();
+        assert!(
+            summary["parity_status"]
+                .as_str()
+                .unwrap()
+                .contains("schemas complete")
+        );
+        assert_eq!(summary["global_parity"]["S"], 172);
+        let capability = all().unwrap().into_iter().next().unwrap();
+        let recipe = access_recipe(&capability);
+        assert_eq!(
+            recipe["status"],
+            "registration_schema_complete_route_unresolved"
+        );
+        assert!(
+            recipe["warning"]
+                .as_str()
+                .unwrap()
+                .contains("route/behavior/policy")
+        );
+    }
+
     #[test]
     fn typed_status_rejects_cross_dimension() {
         let mut v: Value = serde_json::from_str(CATALOG).unwrap();
@@ -803,5 +1284,198 @@ mod tests {
         assert_eq!(x_count(&c), baseline + 1);
         c.capabilities[0].parity.external_blocker.status = ExternalBlockerStatus::Open;
         assert_eq!(x_count(&c), baseline + 1);
+    }
+
+    fn rebind_schema_artifacts(catalog: &mut Catalog, bundle: &Value, fixtures: &mut Value) {
+        let bundle_hash = json_sha256(bundle).unwrap();
+        fixtures["bundle_sha256"] = Value::String(bundle_hash.clone());
+        catalog.schema_artifacts.bundle_sha256 = bundle_hash;
+        catalog.schema_artifacts.fixtures_sha256 = json_sha256(fixtures).unwrap();
+    }
+
+    fn rebind_schema_contract(
+        catalog: &mut Catalog,
+        bundle: &mut Value,
+        fixtures: &mut Value,
+        index: usize,
+    ) {
+        let contract = &mut bundle["contracts"][index];
+        contract["contract_sha256"] = Value::Null;
+        let contract_hash = json_sha256(contract).unwrap();
+        contract["contract_sha256"] = Value::String(contract_hash.clone());
+        catalog.capabilities[index].schema_contract_sha256 = contract_hash;
+        rebind_schema_artifacts(catalog, bundle, fixtures);
+    }
+
+    #[test]
+    fn schema_evidence_requires_exact_upstream_provenance() {
+        let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+        let evidence = catalog
+            .evidence
+            .iter_mut()
+            .find(|item| item.id == SCHEMA_EVIDENCE_ID)
+            .unwrap();
+        evidence.source_ref = "capabilities/cloudflare-input-schemas.json".into();
+        assert!(validate(&catalog).is_err());
+    }
+
+    #[test]
+    fn schema_artifacts_reject_fabricated_status_after_hash_rebinding() {
+        let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+        let mut bundle: Value = serde_json::from_str(SCHEMAS).unwrap();
+        let mut fixtures: Value = serde_json::from_str(FIXTURES).unwrap();
+        let contract = &mut bundle["contracts"][0];
+        contract["status"] = Value::String("fabricated".into());
+        contract["contract_sha256"] = Value::Null;
+        let contract_hash = json_sha256(contract).unwrap();
+        contract["contract_sha256"] = Value::String(contract_hash.clone());
+        catalog.capabilities[0].schema_contract_sha256 = contract_hash;
+        rebind_schema_artifacts(&mut catalog, &bundle, &mut fixtures);
+        assert!(validate_schema_artifact_values(&catalog, &bundle, &fixtures).is_err());
+    }
+
+    #[test]
+    fn schema_artifacts_derive_status_counts_after_hash_rebinding() {
+        let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+        let mut bundle: Value = serde_json::from_str(SCHEMAS).unwrap();
+        let mut fixtures: Value = serde_json::from_str(FIXTURES).unwrap();
+        let index = bundle["contracts"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .position(|contract| contract["status"] == "candidate_zero_input")
+            .unwrap();
+        let contract = &mut bundle["contracts"][index];
+        contract["status"] = Value::String("candidate_complete".into());
+        contract["contract_sha256"] = Value::Null;
+        let contract_hash = json_sha256(contract).unwrap();
+        contract["contract_sha256"] = Value::String(contract_hash.clone());
+        catalog.capabilities[index].schema_contract_sha256 = contract_hash;
+        catalog.capabilities[index].parity.schema.status = SchemaStatus::Complete;
+        rebind_schema_artifacts(&mut catalog, &bundle, &mut fixtures);
+        assert!(validate_schema_artifact_values(&catalog, &bundle, &fixtures).is_err());
+    }
+
+    #[test]
+    fn schema_artifacts_reject_malformed_provenance_after_hash_rebinding() {
+        for (field, value) in [
+            ("source_blob_oid", Value::String("bad".into())),
+            (
+                "registration_span",
+                json!({"start_byte": 1, "end_byte": 1, "start_line": 1, "end_line": 1}),
+            ),
+            ("schema_span", Value::Null),
+        ] {
+            let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+            let mut bundle: Value = serde_json::from_str(SCHEMAS).unwrap();
+            let mut fixtures: Value = serde_json::from_str(FIXTURES).unwrap();
+            let contract = &mut bundle["contracts"][0];
+            contract[field] = value;
+            contract["contract_sha256"] = Value::Null;
+            let contract_hash = json_sha256(contract).unwrap();
+            contract["contract_sha256"] = Value::String(contract_hash.clone());
+            catalog.capabilities[0].schema_contract_sha256 = contract_hash;
+            rebind_schema_artifacts(&mut catalog, &bundle, &mut fixtures);
+            assert!(validate_schema_artifact_values(&catalog, &bundle, &fixtures).is_err());
+        }
+    }
+
+    #[test]
+    fn schema_artifacts_reject_dependency_provenance_removal_after_hash_rebinding() {
+        for remove_field in [false, true] {
+            let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+            let mut bundle: Value = serde_json::from_str(SCHEMAS).unwrap();
+            let mut fixtures: Value = serde_json::from_str(FIXTURES).unwrap();
+            let index = bundle["contracts"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .position(|contract| {
+                    contract["dependency_provenance"]
+                        .as_array()
+                        .is_some_and(|entries| !entries.is_empty())
+                })
+                .unwrap();
+            if remove_field {
+                bundle["contracts"][index]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("dependency_provenance");
+            } else {
+                bundle["contracts"][index]["dependency_provenance"] = json!([]);
+            }
+            rebind_schema_contract(&mut catalog, &mut bundle, &mut fixtures, index);
+            assert!(validate_schema_artifact_values(&catalog, &bundle, &fixtures).is_err());
+        }
+    }
+
+    #[test]
+    fn schema_artifacts_reject_fabricated_dependency_after_hash_rebinding() {
+        let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+        let mut bundle: Value = serde_json::from_str(SCHEMAS).unwrap();
+        let mut fixtures: Value = serde_json::from_str(FIXTURES).unwrap();
+        let index = bundle["contracts"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .position(|contract| {
+                contract["dependency_provenance"]
+                    .as_array()
+                    .is_some_and(|entries| !entries.is_empty())
+            })
+            .unwrap();
+        bundle["contracts"][index]["dependency_provenance"][0]["name"] =
+            Value::String("fabricated".into());
+        rebind_schema_contract(&mut catalog, &mut bundle, &mut fixtures, index);
+        assert!(validate_schema_artifact_values(&catalog, &bundle, &fixtures).is_err());
+    }
+
+    #[test]
+    fn schema_artifacts_reject_unresolved_reason_after_hash_rebinding() {
+        let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+        let mut bundle: Value = serde_json::from_str(SCHEMAS).unwrap();
+        let mut fixtures: Value = serde_json::from_str(FIXTURES).unwrap();
+        bundle["contracts"][0]["unresolved_reasons"] = json!(["fabricated"]);
+        rebind_schema_contract(&mut catalog, &mut bundle, &mut fixtures, 0);
+        assert!(validate_schema_artifact_values(&catalog, &bundle, &fixtures).is_err());
+    }
+
+    #[test]
+    fn schema_artifacts_reject_malformed_dependency_source_after_hash_rebinding() {
+        for (field, value) in [
+            ("source_sha256", Value::String("bad".into())),
+            ("blob_oid", Value::String("bad".into())),
+            (
+                "source_span",
+                json!({"start_byte": 1, "end_byte": 1, "start_line": 1, "end_line": 1}),
+            ),
+        ] {
+            let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+            let mut bundle: Value = serde_json::from_str(SCHEMAS).unwrap();
+            let mut fixtures: Value = serde_json::from_str(FIXTURES).unwrap();
+            let index = bundle["contracts"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .position(|contract| {
+                    contract["dependency_provenance"]
+                        .as_array()
+                        .is_some_and(|entries| !entries.is_empty())
+                })
+                .unwrap();
+            bundle["contracts"][index]["dependency_provenance"][0][field] = value;
+            rebind_schema_contract(&mut catalog, &mut bundle, &mut fixtures, index);
+            assert!(validate_schema_artifact_values(&catalog, &bundle, &fixtures).is_err());
+        }
+    }
+
+    #[test]
+    fn schema_artifacts_reject_wrong_dialect_after_hash_rebinding() {
+        let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+        let mut bundle: Value = serde_json::from_str(SCHEMAS).unwrap();
+        let mut fixtures: Value = serde_json::from_str(FIXTURES).unwrap();
+        bundle["dialect"] = Value::String("https://example.com/schema".into());
+        rebind_schema_artifacts(&mut catalog, &bundle, &mut fixtures);
+        assert!(validate_schema_artifact_values(&catalog, &bundle, &fixtures).is_err());
     }
 }

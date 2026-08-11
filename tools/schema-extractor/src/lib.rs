@@ -1,3 +1,6 @@
+pub mod compiler;
+pub mod validation;
+
 use oxc_allocator::Allocator;
 use oxc_ast::ast::*;
 use oxc_ast_visit::{Visit, walk};
@@ -141,6 +144,7 @@ pub struct DependencyBoundary {
     pub blob_oid: String,
     pub source_span_kind: String,
     pub source_span: SpanInfo,
+    pub source_sha256: String,
     pub import_source: Option<String>,
     pub imported_name: Option<String>,
 }
@@ -685,6 +689,10 @@ impl<'a> DependencyResolver<'a> {
                 blob_oid: module.blob_oid.clone(),
                 source_span_kind: "import_declaration".into(),
                 source_span: span_info(import.declaration, &module.source),
+                source_sha256: hex_sha(
+                    &module.source
+                        [import.declaration.start as usize..import.declaration.end as usize],
+                ),
                 import_source: Some(import.source.clone()),
                 imported_name: Some(import.imported_name.clone()),
             })
@@ -718,6 +726,10 @@ impl<'a> DependencyResolver<'a> {
                         blob_oid: module.blob_oid.clone(),
                         source_span_kind: "identifier_reference".into(),
                         source_span: span_info(reference.span, &module.source),
+                        source_sha256: hex_sha(
+                            &module.source
+                                [reference.span.start as usize..reference.span.end as usize],
+                        ),
                         import_source: None,
                         imported_name: None,
                     })
@@ -757,6 +769,10 @@ impl<'a> DependencyResolver<'a> {
                     blob_oid: module.blob_oid.clone(),
                     source_span_kind: "parameter_declaration".into(),
                     source_span: span_info(runtime.declaration, &module.source),
+                    source_sha256: hex_sha(
+                        &module.source
+                            [runtime.declaration.start as usize..runtime.declaration.end as usize],
+                    ),
                     import_source: None,
                     imported_name: None,
                 })
@@ -2467,13 +2483,20 @@ pub fn parse_file(file: &str, source: &str, blob_oid: &str) -> Result<Vec<Record
     }
     Ok(collector.records)
 }
-fn git(root: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
-    let output = Command::new("git")
+fn git_command(root: &Path, args: &[&str]) -> Command {
+    let mut command = Command::new("git");
+    command
         .env("GIT_NO_REPLACE_OBJECTS", "1")
         .env("GIT_TERMINAL_PROMPT", "0")
+        .env("GIT_NO_LAZY_FETCH", "1")
         .arg("-C")
         .arg(root)
-        .args(args)
+        .args(args);
+    command
+}
+
+fn git(root: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
+    let output = git_command(root, args)
         .output()
         .map_err(|error| error.to_string())?;
     if !output.status.success() {
@@ -3594,6 +3617,27 @@ mod tests {
             .to_string();
         assert_eq!(observed, original_tree);
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn git_reads_disable_lazy_fetch_and_prompts() {
+        let command = git_command(Path::new("fixture"), &["cat-file", "blob", "oid"]);
+        let env = command
+            .get_envs()
+            .filter_map(|(key, value)| value.map(|value| (key.to_owned(), value.to_owned())))
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(
+            env.get(std::ffi::OsStr::new("GIT_NO_REPLACE_OBJECTS")),
+            Some(&"1".into())
+        );
+        assert_eq!(
+            env.get(std::ffi::OsStr::new("GIT_NO_LAZY_FETCH")),
+            Some(&"1".into())
+        );
+        assert_eq!(
+            env.get(std::ffi::OsStr::new("GIT_TERMINAL_PROMPT")),
+            Some(&"0".into())
+        );
     }
     #[test]
     fn output_is_deterministic() {

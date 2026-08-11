@@ -588,7 +588,8 @@ mod tests {
         let readme = include_str!("../README.md");
         let skill = include_str!("../skills/magi-cloudflare-axi/SKILL.md");
         for phrase in [
-            "inventory parity only",
+            "registration-input schema",
+            "I=172; S=172;",
             "--allow-write --allow-metered --confirm",
             "tool schema search --server cloudflare",
         ] {

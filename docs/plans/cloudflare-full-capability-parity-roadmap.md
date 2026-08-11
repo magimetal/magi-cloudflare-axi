@@ -4,7 +4,7 @@ status: active
 owner: magimetal
 created: 2026-08-10
 last_reviewed: 2026-08-10
-current_phase: phase-1
+current_phase: phase-1-complete
 baseline_source_commit: 70ff690553722f731849ede6ba9ce98958395a23
 baseline_capabilities: 172
 canonical_tracker: capabilities/cloudflare-mcp-parity.json
@@ -36,7 +36,7 @@ Registered-name presence alone remains **inventory parity**, not full parity.
 | Dimension | Current | Target |
 |---|---:|---:|
 | Registered names | 172/172 | 172/172 |
-| Canonical input schemas | 0/172 | 172/172 |
+| Canonical input schemas | 172/172 | 172/172 |
 | Method metadata | 147/172 | Route-dependent |
 | Path metadata | 6/172 | Every direct route complete |
 | Capability-specific complete routes | 0/172 | 172/172 |
@@ -187,7 +187,7 @@ Safety is operation-independent:
 
 | ID | Workstream | Deliverable | Owner | Status |
 |---|---|---|---|---|
-| W1 | Source extraction | Deterministic names, schemas, registrations, handlers, and hashes | magimetal | not_started |
+| W1 | Source extraction | Deterministic names, schemas, registrations, dependency closure, and hashes | magimetal | complete |
 | W2 | Catalog model | Versioned parity status/evidence model and generated rollups | magimetal | complete |
 | W3 | Invocation dispatcher | `capability schema/invoke` with pre-network validation | magimetal | not_started |
 | W4 | Route mapping | Exact REST, GraphQL, public, and hosted MCP routes | magimetal | not_started |
@@ -223,35 +223,35 @@ Exit gate:
 - [x] Generated dashboard reproduces baseline counts (`I=172; S=R=B=P=V=D=0; X=41`).
 - [x] CI rejects invalid status, stale output, duplicate names, or denominator drift.
 
-Phase 0 evidence (completed `2026-08-10`): `python3 scripts/catalog-governance.py self-test`, `python3 scripts/catalog-governance.py generate`, `python3 scripts/catalog-governance.py check`, generated metrics/report files, Rust typed-status mutation tests, and extractor exact-pin/blob self-test. No live/provider calls or credentials used. Phase 1 is active; phases 2–8 remain `not_started`. Latest-upstream change reporting, schema completion, routes, invocation, behavior, policy, verification, and blocker closure remain future work.
+Phase 0 evidence (completed `2026-08-10`): `python3 scripts/catalog-governance.py self-test`, `python3 scripts/catalog-governance.py generate`, `python3 scripts/catalog-governance.py check`, generated metrics/report files, Rust typed-status mutation tests, and extractor exact-pin/blob self-test. No live/provider calls or credentials used.
 
 ### Phase 1 — Authoritative schema extraction
 
-**Status:** `active`
+**Status:** `complete`
 
 **Objective:** Replace 172 empty placeholder schemas.
 
 Tasks:
 
-- [ ] Build deterministic extractor from pinned registration source.
-- [ ] Evaluate safest extraction method: no-I/O registration harness first, semantic TypeScript AST second; regex-only extraction cannot be canonical.
-- [ ] Resolve shared definitions, nested objects, arrays, unions, optional/default fields, refinements, and transformations.
-- [ ] Preserve constraints as JSON Schema.
-- [ ] Mark genuine no-input tools `zero_input_evidenced`.
-- [ ] Record source file, symbol/line, commit, and schema hash.
-- [ ] Generate compact `input_fields` from canonical schema.
-- [ ] Add positive and negative fixtures for every distinct schema shape.
-- [ ] Prove extractor never executes tool handlers or performs network calls.
+- [x] Build deterministic extractor from pinned registration source.
+- [x] Evaluate safest extraction method: static semantic TypeScript AST selected; no-I/O harness and regex-only extraction rejected as canonical sources.
+- [x] Resolve shared definitions, nested objects, arrays, unions, optional/default fields, refinements, and transformations.
+- [x] Preserve constraints as JSON Schema plus explicit runtime semantic contracts where JSON Schema cannot execute Zod behavior.
+- [x] Mark genuine no-input tools `zero_input_evidenced`.
+- [x] Record source file, symbol/line, commit, blob, expression hash, schema hash, and contract hash.
+- [x] Generate compact `input_fields` from canonical schema.
+- [x] Add positive and negative fixtures for every distinct schema shape.
+- [x] Prove extractor never executes tool handlers or performs network calls.
 
-Phase 1 foundation evidence (active, 2026-08-10): `tools/schema-extractor` uses pinned Git blob reads, exact checkout `HEAD` and tree verification, and Oxc 0.75.1 typed TypeScript AST with lexical symbol resolution. Census schema version `6`, extractor `phase1-oxc-0.6`. It emits one deterministic registry of 9,072 unique AST occurrences across roots and all 217 recursive dependency value spans, aggregating affected capabilities while retaining exact owning dependency node ID, pinned file/blob/span, and source hash. Lexically resolved Zod chains retain nested factory/modifier signatures and classify 912 factories, 951 modifiers, 2 refinements, and 2 transforms; generic helper/runtime and member-access constructs remain distinct. The census reports 136 unsupported AST-form occurrences as canonical-compilation work, rather than claiming semantic support. Pinned package manifests verify exact Zod `4.4.3`. Root kinds remain `input_schema=139`, `dex_raw_shape=18`, `casb_params=11`, `implicit_zero_input=4`; census remains source provenance only: no shared-binding semantic evaluation or canonical JSON Schema claim, catalog status change, or provider call.
+Phase 1 evidence (completed `2026-08-10`): `tools/schema-extractor` reads only exact pinned Git blobs at commit `70ff690553722f731849ede6ba9ce98958395a23` and tree `1a51c6ff07170dfe3c3212c8fb96eb85d66f0b96`, with `GIT_NO_REPLACE_OBJECTS=1`, Oxc 0.75.1 typed AST and lexical resolution, bounded recursive dependency evaluation, and fail-closed diagnostics. Census v6 retains 9,072 unique semantic occurrences, 217 dependency nodes, 269 edges, 642 chains, exact Zod `4.4.3`, and all source spans/hashes. Compiler bundle v2 emits 168 complete registration-input contracts and 4 source-evidenced zero-input contracts with zero unresolved, Draft 2020-12 raw schemas, path-indexed defaults/normalizations/refinements/transforms/unknown-key behavior, request-context overlays, and lexicographic SHA-256 hashes. Exact static lowerings are hash/version-gated for Zod 4.4.3 default email, UUID, ISO date, and UTC datetime acceptance, IP/ASN refinements, Radar case normalization, Radar normalization helpers, stack-library request subsets, account selection overlays, and relative-time normalized output. URL behavior is not overclaimed as generic JSON Schema URI validation: ten contracts explicitly record external-runtime trimming, JavaScript WHATWG URL-constructor validation of trimmed input, and trimmed output when `normalize=false`; dynamic `nowISO()` descriptions remain explicit templates rather than lossy static claims. Every contract carries typed dependency provenance; 803 entries bind ID/name, source file/blob, classification, source span kind/span, and source SHA-256 under aggregate SHA-256 `bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04`. Rehashed mutation tests reject deleted, emptied, or fabricated dependency provenance, nonempty unresolved reasons, and malformed dependency source hashes, blobs, or spans. `capabilities/cloudflare-input-schemas.json` and `capabilities/cloudflare-schema-fixtures.json` contain 172 contracts and positive/negative fixtures for all 137 distinct schema hashes. Independent `jsonschema` 0.38.1 validation enables Draft 2020-12 format assertions and metaschema checks. Catalog schema v2 joins every capability to its contract hash, generated compact fields, authoritative upstream evidence, and status while binding local artifacts separately by root hashes. Generated dashboard reports `I=172; S=172; R=B=P=V=D=0; X=41`. CI repeats compilation byte-for-byte, compares committed artifacts, validates fixtures, and runs with Node/Bun/TS executors replaced by poison commands; no upstream TypeScript, Zod module, registration, handler, provider call, credential, or network-capable schema resolver executes.
 
 Exit gate:
 
-- [ ] Schema coverage 172/172.
-- [ ] `unresolved` schemas 0.
-- [ ] Every zero-input schema has source evidence.
-- [ ] Every schema parses and validates fixtures.
-- [ ] Repeated extraction from same commit is byte-stable.
+- [x] Schema coverage 172/172.
+- [x] `unresolved` schemas 0.
+- [x] Every zero-input schema has source evidence.
+- [x] Every schema parses and validates fixtures.
+- [x] Repeated extraction from same commit is byte-stable.
 
 ### Phase 2 — Route contracts and dispatcher vertical slices
 
@@ -531,7 +531,7 @@ Update this table only when gate evidence exists.
 | Phase | Entry state | Exit evidence | Tracking issue | Status | Completed |
 |---|---|---|---|---|---|
 | 0 — Measurement | Inventory baseline | Versioned tracker + generated dashboard CI | — | complete | 2026-08-10 |
-| 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | active | — |
+| 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | complete | 2026-08-10 |
 | 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; all routes classified | — | not_started | — |
 | 3 — Public reads | Phase 2 complete | Public read batch verified | — | not_started | — |
 | 4 — Authenticated REST reads | Phase 2 complete | Direct REST reads verified | — | not_started | — |

@@ -38,6 +38,21 @@ jobs:
           cargo run --locked -p schema-extractor -- census /tmp/mcp-server-cloudflare > /tmp/schema-census-b.json
           cmp /tmp/schema-census-a.json /tmp/schema-census-b.json
           python3 -c 'import json; p=json.load(open("/tmp/schema-census-a.json")); assert p["version"] == "6" and p["extractor_version"] == "phase1-oxc-0.6" and p["provenance_claim"] == "schema_source_provenance_only" and p["source_access"] == "pinned_git_blobs" and p["schema_semantics"] == "not_attempted" and p["zod_version"] == "4.4.3" and p["file_count"] == 114 and p["source_count"] == p["catalog_count"] == 172 and len(p["records"]) == 172 and len(p["semantic_occurrence_registry"]) == 9072 and p["semantic_unsupported_construct_counts"] == {"unsupported_ast_form": 136} and p["semantic_classification_counts"] == {"candidate_representable": 4400, "helper_runtime": 401, "member_access_context": 2268, "unsupported_for_canonical_compile": 136, "zod_factory": 912, "zod_modifier": 951, "zod_refinement": 2, "zod_transform": 2} and not p["duplicates"] and not p["missing"] and not p["extra"] and p["expression_kind_counts"] == {"zod_object_call": 139, "object_shape": 29, "zero_input": 4} and p["dependency_node_count"] == len(p["dependency_nodes"]) == 217 and p["dependency_edge_count"] == 269 and p["dependency_resolution_chain_count"] == 642 and p["dependency_max_depth"] == 4 and p["distinct_dependency_value_hash_count"] == 208 and p["dependency_value_kind_counts"] == {"function_declaration": 4, "variable_initializer": 213} and p["dependency_boundary_kind_counts"] == {"external_package_boundary":18,"language_builtin_boundary":17,"lexical_parameter_boundary":1} and len(p["dependency_boundaries"]) == 36 and p["unsupported_dependency_construct_counts"] == {"unsupported_ast_form":136}; assert all(b["file"] and b["blob_oid"] and b["source_span"]["start_byte"] < b["source_span"]["end_byte"] for b in p["dependency_boundaries"]); assert all(o["file"] and o["blob_oid"] and o["source_sha256"] and o["capabilities"] for o in p["semantic_occurrence_registry"])'
+          git -C /tmp/mcp-server-cloudflare remote remove origin
+          cargo build --locked -p schema-extractor
+          trapbin="$(mktemp -d)"
+          ln -s "$(command -v git)" "$trapbin/git"
+          for tool in node bun npx tsx ts-node; do
+            printf '#!/bin/sh\nexit 99\n' > "$trapbin/$tool"
+            chmod +x "$trapbin/$tool"
+          done
+          GIT_NO_REPLACE_OBJECTS=1 PATH="$trapbin" target/debug/schema-extractor compile /tmp/mcp-server-cloudflare > /tmp/schema-compile-a.json
+          GIT_NO_REPLACE_OBJECTS=1 PATH="$trapbin" target/debug/schema-extractor compile /tmp/mcp-server-cloudflare > /tmp/schema-compile-b.json
+          cmp /tmp/schema-compile-a.json /tmp/schema-compile-b.json
+          cmp /tmp/schema-compile-a.json capabilities/cloudflare-input-schemas.json
+          target/debug/schema-extractor validate /tmp/schema-compile-a.json > /tmp/schema-fixtures.json
+          cmp /tmp/schema-fixtures.json capabilities/cloudflare-schema-fixtures.json
+          python3 -c 'import json; p=json.load(open("/tmp/schema-compile-a.json")); assert p["version"] == "2" and p["candidate_complete_count"] == 168 and p["candidate_zero_input_count"] == 4 and p["unresolved_count"] == 0 and len(p["contracts"]) == 172'
       - name: Clean install smoke test
         run: |
           root="$(mktemp -d)"

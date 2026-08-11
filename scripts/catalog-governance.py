@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic Phase 0 catalog validation, metrics, reports, and tests."""
+"""Deterministic catalog validation, schema integration, metrics, reports, and tests."""
 from __future__ import annotations
 
 import argparse
@@ -11,11 +11,24 @@ import sys
 
 ROOT = pathlib.Path(__file__).parents[1]
 CATALOG = ROOT / "capabilities/cloudflare-mcp-parity.json"
+SCHEMAS = ROOT / "capabilities/cloudflare-input-schemas.json"
+FIXTURES = ROOT / "capabilities/cloudflare-schema-fixtures.json"
 METRICS = ROOT / "docs/cloudflare-capability-parity-metrics.json"
 REPORT = ROOT / "docs/cloudflare-capability-parity.md"
 COMMIT = "70ff690553722f731849ede6ba9ce98958395a23"
 REPO = "https://github.com/cloudflare/mcp-server-cloudflare"
-LEGACY_METADATA_SHA256 = "3645e8c99babc36a7af479ce2be8c423fb64acebcf5f8df768cb9bdbf41a7171"
+LEGACY_METADATA_SHA256 = "fa2d722b3953d2737f2ad69ccc0a8c240acc25cef3d9c8119c6fb63162786f00"
+SCHEMA_VERSION = 2
+SCHEMA_EVIDENCE_ID = "ev-phase1-canonical-schemas"
+SCHEMA_SOURCE_REF = f"https://github.com/cloudflare/mcp-server-cloudflare/commit/{COMMIT}"
+SCHEMA_EVIDENCE_FACT = (
+    "Registration-input schemas originate from exact pinned upstream registration files and "
+    "dependency declarations enumerated by source file, blob, span, and expression hash in "
+    "local capabilities/cloudflare-input-schemas.json; local artifact identity is bound "
+    "separately by schema_artifacts and per-capability contract hashes."
+)
+DEPENDENCY_PROVENANCE_COUNT = 803
+DEPENDENCY_PROVENANCE_SHA256 = "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04"
 DIMENSIONS = (
     "inventory",
     "schema",
@@ -133,6 +146,7 @@ RECORD_KEYS = {
     "source_commit",
     "description",
     "input_fields",
+    "schema_contract_sha256",
     "scope",
     "operation",
     "transport",
@@ -159,15 +173,74 @@ def require_keys(value, required, optional, path):
     if extra:
         fail(path, f"unknown keys: {sorted(extra)}")
 
-
 def require_text(value, path):
     if not isinstance(value, str) or not value:
         fail(path, "nonempty string required")
 
 
+def is_hex(value, length):
+    return (
+        isinstance(value, str)
+        and len(value) == length
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def valid_span(value):
+    if not isinstance(value, dict) or set(value) != {
+        "start_byte",
+        "end_byte",
+        "start_line",
+        "end_line",
+    }:
+        return False
+    if any(not isinstance(value[key], int) or isinstance(value[key], bool) for key in value):
+        return False
+    return (
+        0 <= value["start_byte"] < value["end_byte"]
+        and 1 <= value["start_line"] <= value["end_line"]
+    )
+
+def valid_dependency_provenance(value):
+    expected = {
+        "id",
+        "name",
+        "file",
+        "blob_oid",
+        "classification",
+        "source_span_kind",
+        "source_span",
+        "source_sha256",
+    }
+    return (
+        isinstance(value, dict)
+        and set(value) == expected
+        and all(
+            isinstance(value[field], str) and value[field]
+            for field in expected - {"source_span"}
+        )
+        and not value["file"].startswith("/")
+        and value["classification"]
+        in {
+            "dependency_node",
+            "external_package_boundary",
+            "language_builtin_boundary",
+            "lexical_parameter_boundary",
+        }
+        and is_hex(value["blob_oid"], 40)
+        and is_hex(value["source_sha256"], 64)
+        and valid_span(value["source_span"])
+    )
+
 def legacy_digest(records):
+    generated = {
+        "source_ref",
+        "parity",
+        "input_fields",
+        "schema_contract_sha256",
+    }
     payload = [
-        {key: value for key, value in record.items() if key not in {"source_ref", "parity"}}
+        {key: value for key, value in record.items() if key not in generated}
         for record in records
     ]
     encoded = json.dumps(
@@ -177,6 +250,228 @@ def legacy_digest(records):
         ensure_ascii=False,
     ).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def json_sha256(value):
+    encoded = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def compact_schema_type(schema):
+    if "enum" in schema:
+        return "enum"
+    kind = schema.get("type")
+    if kind == "array":
+        return f"array<{compact_schema_type(schema.get('items', {}))}>"
+    if isinstance(kind, str):
+        return kind
+    branches = schema.get("anyOf") or schema.get("oneOf")
+    if isinstance(branches, list):
+        return "|".join(sorted({compact_schema_type(branch) for branch in branches}))
+    return "any"
+
+
+def compact_input_fields(contract):
+    schema = contract["raw_input_schema"]
+    properties = schema.get("properties", {})
+    required = set(schema.get("required", []))
+    fields = []
+    for name, field_schema in properties.items():
+        field = {
+            "name": name,
+            "type": compact_schema_type(field_schema),
+            "required": name in required,
+        }
+        if "default" in field_schema:
+            field["default"] = field_schema["default"]
+        fields.append(field)
+    for overlay in contract["context_overlays"]:
+        if overlay["operation"] != "extend_optional_property":
+            continue
+        if overlay["property"] in properties:
+            fail(contract["capability"], "context overlay duplicates base property")
+        fields.append(
+            {
+                "name": overlay["property"],
+                "type": compact_schema_type(overlay["schema"]),
+                "required": False,
+                "condition": overlay["predicate"],
+            }
+        )
+    return sorted(fields, key=lambda field: field["name"])
+
+
+def apply_schema_bundle(catalog):
+    bundle = json.loads(SCHEMAS.read_text())
+    contracts = {item["capability"]: item for item in bundle["contracts"]}
+    catalog["schema_version"] = 2
+    evidence = [item for item in catalog["evidence"] if item["id"] != SCHEMA_EVIDENCE_ID]
+    evidence.append(
+        {
+            "id": SCHEMA_EVIDENCE_ID,
+            "dimension": "schema",
+            "kind": "source_verified",
+            "source_repo": REPO,
+            "source_commit": COMMIT,
+            "source_ref": SCHEMA_SOURCE_REF,
+            "fact": SCHEMA_EVIDENCE_FACT,
+        }
+    )
+    catalog["evidence"] = sorted(evidence, key=lambda item: item["id"])
+    for row in catalog["capabilities"]:
+        contract = contracts[row["name"]]
+        row["schema_contract_sha256"] = contract["contract_sha256"]
+        row["input_fields"] = compact_input_fields(contract)
+        if contract["status"] == "candidate_complete":
+            schema_status = "complete"
+        elif contract["status"] == "candidate_zero_input":
+            schema_status = "zero_input_evidenced"
+        else:
+            fail(row["name"], "invalid schema contract status during sync")
+        row["parity"]["schema"] = {
+            "status": schema_status,
+            "evidence_ids": [SCHEMA_EVIDENCE_ID],
+        }
+    fixtures = json.loads(FIXTURES.read_text())
+    catalog["schema_artifacts"] = {
+        "bundle_sha256": json_sha256(bundle),
+        "fixtures_sha256": json_sha256(fixtures),
+    }
+    catalog["legacy_metadata_sha256"] = legacy_digest(catalog["capabilities"])
+
+
+def validate_schema_artifacts(catalog):
+    bundle = json.loads(SCHEMAS.read_text())
+    fixtures = json.loads(FIXTURES.read_text())
+    contracts = bundle.get("contracts")
+    if (
+        bundle.get("version") != "2"
+        or bundle.get("compiler_version") != "phase1-oxc-static-0.4"
+        or bundle.get("source_access") != "exact_pinned_git_blobs"
+        or bundle.get("execution_policy") != "static_only; never import or execute upstream TypeScript, Zod modules, registrations, or handlers"
+        or bundle.get("zod_version") != "4.4.3"
+        or bundle.get("source_commit") != COMMIT
+        or bundle.get("tree_oid") != "1a51c6ff07170dfe3c3212c8fb96eb85d66f0b96"
+        or bundle.get("dialect") != "https://json-schema.org/draft/2020-12/schema"
+        or bundle.get("candidate_complete_count") != 168
+        or bundle.get("candidate_zero_input_count") != 4
+        or bundle.get("unresolved_count") != 0
+        or bundle.get("dependency_provenance_count") != DEPENDENCY_PROVENANCE_COUNT
+        or bundle.get("dependency_provenance_sha256") != DEPENDENCY_PROVENANCE_SHA256
+        or not isinstance(contracts, list)
+        or len(contracts) != 172
+    ):
+        fail("schema artifact", "invalid bundle envelope or coverage")
+    rows = catalog["capabilities"]
+    if [item.get("capability") for item in contracts] != [row["name"] for row in rows]:
+        fail("schema artifact", "capability join mismatch")
+    schemas_by_hash = {}
+    capabilities_by_hash = {}
+    status_counts = {"candidate_complete": 0, "candidate_zero_input": 0}
+    dependency_provenance_count = 0
+    dependency_provenance_by_capability = {}
+    for row, contract in zip(rows, contracts):
+        schema = contract.get("raw_input_schema")
+        schema_hash = contract.get("raw_input_schema_sha256")
+        contract_hash = contract.get("contract_sha256")
+        status = contract.get("status")
+        schema_span = contract.get("schema_span")
+        expression_hash = contract.get("schema_expression_sha256")
+        dependency_provenance = contract.get("dependency_provenance")
+        dependency_ids = (
+            [entry.get("id") for entry in dependency_provenance]
+            if isinstance(dependency_provenance, list)
+            and all(valid_dependency_provenance(entry) for entry in dependency_provenance)
+            else None
+        )
+        if dependency_ids is not None:
+            dependency_provenance_count += len(dependency_provenance)
+            dependency_provenance_by_capability[row["name"]] = dependency_provenance
+        unhashed = dict(contract)
+        unhashed["contract_sha256"] = None
+        expected_status = (
+            "zero_input_evidenced"
+            if contract.get("status") == "candidate_zero_input"
+            else "complete"
+        )
+        if status in status_counts:
+            status_counts[status] += 1
+        if (
+            status not in status_counts
+            or not isinstance(schema, dict)
+            or json_sha256(schema) != schema_hash
+            or json_sha256(unhashed) != contract_hash
+            or row["schema_contract_sha256"] != contract_hash
+            or row["input_fields"] != compact_input_fields(contract)
+            or row["parity"]["schema"]
+            != {"status": expected_status, "evidence_ids": [SCHEMA_EVIDENCE_ID]}
+            or not row["source"].startswith(contract.get("source_file", "") + ":")
+            or not isinstance(contract.get("source_file"), str)
+            or not contract["source_file"]
+            or not is_hex(contract.get("source_blob_oid"), 40)
+            or not valid_span(contract.get("registration_span"))
+            or not is_hex(schema_hash, 64)
+            or not is_hex(contract_hash, 64)
+            or (
+                status == "candidate_complete"
+                and (not valid_span(schema_span) or not is_hex(expression_hash, 64))
+            )
+            or (
+                status == "candidate_zero_input"
+                and (
+                    schema_span is not None
+                    or expression_hash is not None
+                    or schema != {"properties": {}, "type": "object"}
+                )
+            )
+            or dependency_ids is None
+            or dependency_ids != sorted(set(dependency_ids))
+            or contract.get("unresolved_reasons") != []
+        ):
+            fail(row["name"], "schema artifact contract mismatch")
+        if schema_hash in schemas_by_hash and schemas_by_hash[schema_hash] != schema:
+            fail(row["name"], "schema hash collision or conflict")
+        schemas_by_hash[schema_hash] = schema
+        capabilities_by_hash.setdefault(schema_hash, []).append(row["name"])
+    if status_counts != {"candidate_complete": 168, "candidate_zero_input": 4}:
+        fail("schema artifact", f"derived contract status counts mismatch: {status_counts}")
+    if (
+        dependency_provenance_count != DEPENDENCY_PROVENANCE_COUNT
+        or json_sha256(dependency_provenance_by_capability)
+        != DEPENDENCY_PROVENANCE_SHA256
+    ):
+        fail("schema artifact", "derived dependency provenance mismatch")
+    fixture_rows = fixtures.get("fixtures")
+    fixture_by_hash = {
+        item.get("raw_input_schema_sha256"): item
+        for item in fixture_rows or []
+        if isinstance(item, dict)
+    }
+    if (
+        fixtures.get("version") != "schema-fixtures-v1"
+        or fixtures.get("source_commit") != COMMIT
+        or fixtures.get("tree_oid") != bundle["tree_oid"]
+        or fixtures.get("bundle_sha256") != json_sha256(bundle)
+        or fixtures.get("contract_count") != 172
+        or fixtures.get("distinct_schema_count") != len(schemas_by_hash)
+        or catalog.get("schema_artifacts")
+        != {
+            "bundle_sha256": json_sha256(bundle),
+            "fixtures_sha256": json_sha256(fixtures),
+        }
+        or len(fixture_by_hash) != len(schemas_by_hash)
+        or set(fixture_by_hash) != set(schemas_by_hash)
+    ):
+        fail("schema fixtures", "fixture envelope or shape coverage mismatch")
+    for schema_hash, capabilities in capabilities_by_hash.items():
+        fixture = fixture_by_hash[schema_hash]
+        if fixture.get("capabilities") != capabilities or "positive" not in fixture or "negative" not in fixture:
+            fail(schema_hash, "fixture capability join or instances mismatch")
 
 
 def validate_evidence_kind(dimension, status, items, path):
@@ -210,19 +505,21 @@ def validate_evidence_kind(dimension, status, items, path):
             fail(path, "resolved blocker requires non-missing resolution evidence")
 
 
+
 def validate(catalog):
     root_keys = {
         "schema_version",
         "catalog_id",
         "source",
         "denominator",
+        "schema_artifacts",
         "legacy_metadata_sha256",
         "evidence",
         "blockers",
         "capabilities",
     }
     require_keys(catalog, root_keys, set(), "$")
-    if catalog["schema_version"] != 1 or catalog["catalog_id"] != "cloudflare-mcp-parity":
+    if catalog["schema_version"] != SCHEMA_VERSION or catalog["catalog_id"] != "cloudflare-mcp-parity":
         fail("$", "invalid schema envelope")
     require_keys(catalog["source"], {"repo", "commit", "ref"}, set(), "$.source")
     expected_source = {"repo": REPO, "commit": COMMIT, "ref": "pinned-source"}
@@ -259,8 +556,6 @@ def validate(catalog):
             "fact",
         }
         require_keys(item, fields, set(), path)
-        for field in ("id", "source_repo", "source_commit", "source_ref", "fact"):
-            require_text(item[field], f"{path}.{field}")
         if (
             item["id"] in evidence
             or item["dimension"] not in DIMENSIONS
@@ -269,7 +564,20 @@ def validate(catalog):
             or item["source_commit"] != COMMIT
         ):
             fail(path, "invalid or duplicate evidence")
+        for field in ("id", "source_ref", "fact"):
+            require_text(item[field], f"{path}.{field}")
         evidence[item["id"]] = item
+    expected_schema_evidence = {
+        "id": SCHEMA_EVIDENCE_ID,
+        "dimension": "schema",
+        "kind": "source_verified",
+        "source_repo": REPO,
+        "source_commit": COMMIT,
+        "source_ref": SCHEMA_SOURCE_REF,
+        "fact": SCHEMA_EVIDENCE_FACT,
+    }
+    if evidence.get(SCHEMA_EVIDENCE_ID) != expected_schema_evidence:
+        fail("$.evidence", "Phase 1 schema evidence provenance mismatch")
 
     if not isinstance(catalog["blockers"], list):
         fail("$.blockers", "array required")
@@ -331,11 +639,14 @@ def validate(catalog):
             fail(f"{path}.input_fields", "array required")
         for field_index, field in enumerate(row["input_fields"]):
             field_path = f"{path}.input_fields[{field_index}]"
-            require_keys(field, {"name", "type", "required"}, {"default"}, field_path)
+            require_keys(field, {"name", "type", "required"}, {"default", "condition"}, field_path)
             require_text(field["name"], f"{field_path}.name")
             require_text(field["type"], f"{field_path}.type")
             if not isinstance(field["required"], bool):
                 fail(f"{field_path}.required", "boolean required")
+            if "condition" in field:
+                require_text(field["condition"], f"{field_path}.condition")
+        require_text(row["schema_contract_sha256"], f"{path}.schema_contract_sha256")
         for optional in ("method", "path_template", "sdk_method", "blocker"):
             if optional in row:
                 require_text(row[optional], f"{path}.{optional}")
@@ -424,6 +735,7 @@ def validate(catalog):
         fail("$.capabilities", "path baseline mismatch")
     if sum("blocker" in row for row in rows) != 41:
         fail("$.capabilities", "legacy blocker baseline mismatch")
+    validate_schema_artifacts(catalog)
 
 
 def metric_vector(rows):
@@ -453,7 +765,7 @@ def metric_vector(rows):
 def metrics(catalog):
     rows = catalog["capabilities"]
     output = {
-        "schema_version": 1,
+        "schema_version": SCHEMA_VERSION,
         "catalog_commit": COMMIT,
         "denominator": len(rows),
         "parity": metric_vector(rows),
@@ -624,6 +936,10 @@ def mutation_cases(catalog):
     add("malformed apps", lambda value: value["capabilities"][0].__setitem__("apps", "bad"))
     add("empty apps", lambda value: value["capabilities"][0].__setitem__("apps", []))
     add("malformed input fields", lambda value: value["capabilities"][0].__setitem__("input_fields", [{"surprise": 1}]))
+    add("schema bundle artifact hash drift", lambda value: value["schema_artifacts"].__setitem__("bundle_sha256", "bad"))
+    add("schema fixture artifact hash drift", lambda value: value["schema_artifacts"].__setitem__("fixtures_sha256", "bad"))
+    add("schema contract hash drift", lambda value: value["capabilities"][0].__setitem__("schema_contract_sha256", "bad"))
+    add("schema compact fields drift", lambda value: value["capabilities"][0].__setitem__("input_fields", []))
 
     def complete_without_evidence(value, dimension, status):
         value["capabilities"][0]["parity"][dimension]["status"] = status
@@ -686,6 +1002,21 @@ def mutation_cases(catalog):
     add("wrong evidence source repo", lambda value: value["evidence"][0].__setitem__("source_repo", "https://example.com"))
     add("wrong evidence source commit", lambda value: value["evidence"][0].__setitem__("source_commit", "bad"))
     add("wrong inventory source ref", lambda value: value["evidence"][0].__setitem__("source_ref", "wrong.ts:1"))
+
+    def phase1_schema_evidence(value):
+        return next(item for item in value["evidence"] if item["id"] == SCHEMA_EVIDENCE_ID)
+
+    add("wrong Phase 1 schema evidence source repo", lambda value: phase1_schema_evidence(value).__setitem__("source_repo", "https://example.com"))
+    add("wrong Phase 1 schema evidence source commit", lambda value: phase1_schema_evidence(value).__setitem__("source_commit", "bad"))
+    add("wrong Phase 1 schema evidence source ref", lambda value: phase1_schema_evidence(value).__setitem__("source_ref", "capabilities/cloudflare-input-schemas.json"))
+    add("wrong Phase 1 schema evidence kind", lambda value: phase1_schema_evidence(value).__setitem__("kind", "official_verified"))
+
+    def rename_phase1_schema_evidence(value):
+        phase1_schema_evidence(value)["id"] = "alternate-schema-evidence"
+        for row in value["capabilities"]:
+            row["parity"]["schema"]["evidence_ids"] = ["alternate-schema-evidence"]
+
+    add("schema rows reference alternate evidence", rename_phase1_schema_evidence)
     add("none blocker with evidence", lambda value: value["capabilities"][0]["parity"]["external_blocker"]["evidence_ids"].append(value["capabilities"][1]["parity"]["external_blocker"]["evidence_ids"][0]))
 
     def swap_field(value, field, left, right):
@@ -772,10 +1103,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "command",
-        choices=["validate", "metrics", "report", "generate", "check", "self-test"],
+        choices=["validate", "metrics", "report", "generate", "check", "self-test", "sync-schemas"],
     )
     args = parser.parse_args()
     catalog = json.loads(CATALOG.read_text())
+    if args.command == "sync-schemas":
+        apply_schema_bundle(catalog)
+        CATALOG.write_text(json.dumps(catalog, indent=2) + "\n")
+        print("catalog schema sync: ok")
+        return
     validate(catalog)
     if args.command == "self-test":
         print(json.dumps(self_test(catalog), sort_keys=True))
