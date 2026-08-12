@@ -457,6 +457,55 @@ pub fn call(
     )?;
     Ok(normalize(r))
 }
+
+pub fn verified_call(name: &str, input: Value, endpoint: Option<&str>) -> Result<Value, AppError> {
+    let selected = server("docs")?;
+    validate_input(&input)?;
+    let result = post(
+        selected,
+        endpoint,
+        "tools/call",
+        json!({"name": name, "arguments": input}),
+        None,
+    )?;
+    let content = result
+        .get("structuredContent")
+        .ok_or_else(|| AppError::api("MCP tool response missing structuredContent"))?;
+    let results = content
+        .get("results")
+        .and_then(Value::as_array)
+        .ok_or_else(|| AppError::api("MCP structuredContent must be {results:[...] }"))?;
+    let mut projected = Vec::with_capacity(results.len());
+    for (index, record) in results.iter().enumerate() {
+        let object = record
+            .as_object()
+            .ok_or_else(|| AppError::api(format!("MCP result {index} must be an object")))?;
+        let similarity = object
+            .get("similarity")
+            .and_then(Value::as_f64)
+            .filter(|value| value.is_finite())
+            .ok_or_else(|| {
+                AppError::api(format!(
+                    "MCP result {index} similarity must be finite number"
+                ))
+            })?;
+        let string_field = |name: &str| {
+            object
+                .get(name)
+                .and_then(Value::as_str)
+                .map(str::to_owned)
+                .ok_or_else(|| AppError::api(format!("MCP result {index} {name} must be string")))
+        };
+        projected.push(json!({
+            "similarity": similarity,
+            "id": string_field("id")?,
+            "url": string_field("url")?,
+            "title": string_field("title")?,
+            "text": string_field("text")?,
+        }));
+    }
+    Ok(json!({"results": projected}))
+}
 fn normalize(v: Value) -> Value {
     if let Some(x) = v.get("structuredContent") {
         return x.clone();

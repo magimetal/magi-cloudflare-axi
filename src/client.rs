@@ -48,6 +48,11 @@ impl TryFrom<&str> for Method {
         }
     }
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RetryPolicy {
+    Never,
+    TransientRead,
+}
 #[derive(Debug, Clone)]
 pub struct RequestOptions {
     pub method: Method,
@@ -56,7 +61,8 @@ pub struct RequestOptions {
     pub body: Option<Value>,
     pub allow_write: bool,
     pub confirm_delete: Option<String>,
-    pub retry_read_post: bool,
+    pub retry_policy: RetryPolicy,
+    pub allow_classified_read_post: bool,
 }
 #[derive(Debug, Clone)]
 pub struct CloudflareResponse {
@@ -70,7 +76,7 @@ pub struct CloudflareClient {
     agent: ureq::Agent,
 }
 
-pub fn validate_endpoint(raw: &str) -> Result<Url, AppError> {
+pub(crate) fn validate_endpoint(raw: &str) -> Result<Url, AppError> {
     let mut u =
         Url::parse(raw).map_err(|e| AppError::config(format!("invalid API endpoint: {e}")))?;
     let loopback = matches!(u.host(), Some(url::Host::Domain("localhost")))
@@ -123,9 +129,9 @@ fn provider_code(envelope: &Value) -> Option<String> {
         })
 }
 
-fn provider_failure(status: u16, envelope: &Value) -> AppError {
+fn provider_failure(status: u16, envelope: &Value, secrets: &[&str]) -> AppError {
     let code = provider_code(envelope)
-        .map(|code| format!(", provider code {code}"))
+        .map(|code| format!(", provider code {}", red(&code, secrets)))
         .unwrap_or_default();
     let message = format!("Cloudflare API request failed (HTTP {status}{code})");
     match status {
@@ -175,10 +181,8 @@ fn target(base: &Url, raw: &str) -> Result<Url, AppError> {
     {
         return Err(AppError::usage("API path cannot contain traversal"));
     }
-    let mut u = base.clone();
-    let suffix = raw.trim_start_matches('/');
-    u.set_path(&format!("{}{}", base.path(), suffix));
-    Ok(u)
+    let target = format!("{}{}", base.as_str(), raw.trim_start_matches('/'));
+    Url::parse(&target).map_err(|_| AppError::usage("invalid API path encoding"))
 }
 fn limited_text(mut reader: impl Read, label: &str) -> Result<String, AppError> {
     let mut text = String::new();
@@ -230,6 +234,55 @@ fn body(file: Option<&Path>, stdin: bool, raw: Option<&str>) -> Result<Option<Va
         .map(Some)
         .map_err(|e| AppError::usage(format!("invalid JSON body: {e}")))
 }
+pub fn preflight_raw(
+    method: &str,
+    path: &str,
+    endpoint: Option<&str>,
+    allow_write: bool,
+    confirm_delete: Option<&str>,
+    sources: (Option<&Path>, bool, Option<&str>),
+) -> Result<(), AppError> {
+    let (file, stdin, raw) = sources;
+    let method = Method::try_from(method)?;
+    if [file.is_some(), stdin, raw.is_some()]
+        .into_iter()
+        .filter(|present| *present)
+        .count()
+        > 1
+    {
+        return Err(AppError::usage(
+            "body sources are mutually exclusive; choose one of --body, --file, --stdin",
+        ));
+    }
+    if !method.read_only() && !allow_write {
+        return Err(AppError::usage("write API calls require --allow-write"));
+    }
+    if method == Method::Delete && confirm_delete != Some(path) {
+        return Err(AppError::usage(
+            "DELETE requires --confirm-delete PATH exactly",
+        ));
+    }
+    if let Some(raw) = raw {
+        if raw.len() > MAX_REQUEST {
+            return Err(AppError::usage("request body exceeds 1 MiB"));
+        }
+    }
+    if let Some(file) = file {
+        if file
+            .metadata()
+            .map(|meta| meta.len() > MAX_REQUEST as u64)
+            .unwrap_or(false)
+        {
+            return Err(AppError::usage("request body exceeds 1 MiB"));
+        }
+    }
+    if let Some(endpoint) = endpoint {
+        let base = validate_endpoint(endpoint)?;
+        target(&base, path)?;
+    }
+    Ok(())
+}
+
 pub fn read_body(
     file: Option<&Path>,
     stdin: bool,
@@ -252,8 +305,13 @@ impl CloudflareClient {
                 .into(),
         })
     }
+
     pub fn request(&self, options: RequestOptions) -> Result<CloudflareResponse, AppError> {
-        if options.method != Method::Get && options.method != Method::Head && !options.allow_write {
+        if options.method != Method::Get
+            && options.method != Method::Head
+            && !(options.method == Method::Post && options.allow_classified_read_post)
+            && !options.allow_write
+        {
             return Err(AppError::usage("write API calls require --allow-write"));
         }
         if options.method == Method::Delete
@@ -264,8 +322,8 @@ impl CloudflareClient {
             ));
         }
         let mut url = target(&self.base, &options.path)?;
-        for (k, v) in &options.query {
-            url.query_pairs_mut().append_pair(k, v);
+        for (key, value) in &options.query {
+            url.query_pairs_mut().append_pair(key, value);
         }
         let body = options
             .body
@@ -273,23 +331,28 @@ impl CloudflareClient {
             .map(serde_json::to_vec)
             .transpose()
             .map_err(|_| AppError::usage("request body cannot be serialized"))?;
-        if body.as_ref().is_some_and(|b| b.len() > MAX_REQUEST) {
+        if body.as_ref().is_some_and(|bytes| bytes.len() > MAX_REQUEST) {
             return Err(AppError::usage("request body exceeds 1 MiB"));
         }
-        let retry = options.method.read_only()
-            || (options.method == Method::Post && options.retry_read_post);
-        let mut last = None;
         let secrets = match &self.auth {
-            Auth::Bearer(x) | Auth::KeyBearer(x) => vec![x.as_str()],
+            Auth::None => Vec::new(),
+            Auth::Bearer(token) | Auth::KeyBearer(token) => vec![token.as_str()],
             Auth::KeyEmail { key, email } => vec![key.as_str(), email.as_str()],
         };
-        for attempt in 0..if retry { ATTEMPTS } else { 1 } {
+        let attempts = if options.retry_policy == RetryPolicy::TransientRead {
+            ATTEMPTS
+        } else {
+            1
+        };
+        let mut last = None;
+        for attempt in 0..attempts {
             let mut builder = ureq::http::Request::builder()
                 .method(options.method.as_str())
                 .uri(url.as_str());
             builder = match &self.auth {
-                Auth::Bearer(x) | Auth::KeyBearer(x) => {
-                    builder.header("Authorization", format!("Bearer {x}"))
+                Auth::None => builder,
+                Auth::Bearer(token) | Auth::KeyBearer(token) => {
+                    builder.header("Authorization", format!("Bearer {token}"))
                 }
                 Auth::KeyEmail { key, email } => builder
                     .header("X-Auth-Key", key)
@@ -300,18 +363,23 @@ impl CloudflareClient {
             }
             let request = builder
                 .body(body.clone().unwrap_or_default())
-                .map_err(|e| AppError::network(e.to_string()))?;
-            let result = self.agent.run(request);
-            match result {
+                .map_err(|error| AppError::network(error.to_string()))?;
+            match self.agent.run(request) {
                 Ok(response) => {
                     let status = response.status().as_u16();
                     let mut bytes = Vec::new();
-                    response
+                    let read_result = response
                         .into_body()
                         .into_reader()
                         .take((MAX_RESPONSE + 1) as u64)
-                        .read_to_end(&mut bytes)
-                        .map_err(|e| AppError::network(red(&e.to_string(), &secrets)))?;
+                        .read_to_end(&mut bytes);
+                    if let Err(error) = read_result {
+                        last = Some(AppError::network(red(&error.to_string(), &secrets)));
+                        if attempt + 1 < attempts {
+                            continue;
+                        }
+                        break;
+                    }
                     if bytes.len() > MAX_RESPONSE {
                         return Err(AppError::network("response exceeds 8 MiB"));
                     }
@@ -328,37 +396,23 @@ impl CloudflareClient {
                         envelope,
                     };
                     if (200..300).contains(&status) {
-                        if let Some(errors) =
-                            response.envelope.get("errors").and_then(Value::as_array)
+                        if response
+                            .envelope
+                            .get("errors")
+                            .and_then(Value::as_array)
+                            .is_some_and(|errors| !errors.is_empty())
                         {
-                            if !errors.is_empty() {
-                                return Err(AppError::api(format!(
-                                    "GraphQL query returned {} provider error(s)",
-                                    errors.len()
-                                )));
-                            }
+                            return Err(AppError::api(
+                                "GraphQL query returned 1 provider error(s)",
+                            ));
                         }
                         return Ok(response);
                     }
-                    last = Some(provider_failure(status, &response.envelope));
-                    if !retry || !(status == 429 || status >= 500) {
-                        break;
-                    }
-                    let wait = response
-                        .envelope
-                        .get("retry_after")
-                        .and_then(Value::as_u64)
-                        .unwrap_or(0)
-                        .min(2);
-                    if wait > 0 {
-                        std::thread::sleep(Duration::from_secs(wait));
-                    }
+                    last = Some(provider_failure(status, &response.envelope, &secrets));
                 }
-                Err(e) => {
-                    last = Some(AppError::network(red(&e.to_string(), &secrets)));
-                }
+                Err(error) => last = Some(AppError::network(red(&error.to_string(), &secrets))),
             }
-            if attempt + 1 < if retry { ATTEMPTS } else { 1 } {
+            if attempt + 1 < attempts {
                 std::thread::sleep(Duration::from_millis(10));
             }
         }
@@ -414,7 +468,12 @@ pub fn request_response(
         body: payload,
         allow_write,
         confirm_delete: guard.0.map(str::to_owned),
-        retry_read_post: guard.1 && method == Method::Post,
+        retry_policy: if guard.1 && (method.read_only() || method == Method::Post) {
+            RetryPolicy::TransientRead
+        } else {
+            RetryPolicy::Never
+        },
+        allow_classified_read_post: false,
     })
 }
 

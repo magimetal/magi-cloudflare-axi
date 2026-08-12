@@ -9,18 +9,18 @@ Denominator: **172**. Full parity is not claimed.
 |---|---|---|
 | inventory | {"complete": 172, "unresolved": 0} | 172 |
 | schema | {"complete": 168, "unresolved": 0, "zero_input_evidenced": 4} | 172 |
-| route | {"complete": 0, "external_blocked": 0, "unresolved": 172} | 0 |
-| behavior | {"specified": 0, "unresolved": 172, "verified": 0} | 0 |
-| policy | {"classified": 0, "unresolved": 172, "verified": 0} | 0 |
-| verification | {"hermetic_verified": 0, "unverified": 172} | 0 |
-| discovery | {"generated": 0, "missing": 172, "verified": 0} | 0 |
-| external_blocker | {"none": 131, "open": 41, "resolved": 0} | 131 |
+| route | {"complete": 9, "external_blocked": 0, "unresolved": 163} | 9 |
+| behavior | {"specified": 0, "unresolved": 163, "verified": 9} | 9 |
+| policy | {"classified": 0, "unresolved": 163, "verified": 9} | 9 |
+| verification | {"hermetic_verified": 9, "unverified": 163} | 9 |
+| discovery | {"generated": 5, "missing": 163, "verified": 4} | 4 |
+| external_blocker | {"none": 132, "open": 40, "resolved": 0} | 132 |
 
 ## Global parity
 
 | I | S | R | B | P | V | D | X |
 |---:|---:|---:|---:|---:|---:|---:|---:|
-| 172 | 172 | 0 | 0 | 0 | 0 | 0 | 41 |
+| 172 | 172 | 9 | 9 | 9 | 9 | 4 | 40 |
 
 ## Family summary
 
@@ -29,19 +29,19 @@ Denominator: **172**. Full parity is not claimed.
 | ai-gateway | 5 | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | auditlogs | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | autorag | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
-| browser-rendering | 13 | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |
-| cloudflare-blog | 4 | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 |
+| browser-rendering | 13 | 13 | 13 | 1 | 1 | 1 | 1 | 0 | 0 |
+| cloudflare-blog | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 0 |
 | cloudflare-one-casb | 11 | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 11 |
 | demo-day | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | dex-analysis | 18 | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 18 |
 | dns-analytics | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
-| graphql | 6 | 6 | 6 | 0 | 0 | 0 | 0 | 0 | 0 |
+| graphql | 6 | 6 | 6 | 1 | 1 | 1 | 1 | 0 | 0 |
 | logpush | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | radar | 66 | 66 | 66 | 0 | 0 | 0 | 0 | 0 | 0 |
 | sandbox-container | 7 | 7 | 7 | 0 | 0 | 0 | 0 | 0 | 7 |
-| shared | 7 | 7 | 7 | 0 | 0 | 0 | 0 | 0 | 1 |
+| shared | 7 | 7 | 7 | 1 | 1 | 1 | 1 | 0 | 0 |
 | stack-mcp | 2 | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 1 |
-| workers-bindings | 18 | 18 | 18 | 0 | 0 | 0 | 0 | 0 | 0 |
+| workers-bindings | 18 | 18 | 18 | 2 | 2 | 2 | 2 | 0 | 0 |
 | workers-builds | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
 | workers-observability | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 3 |
 
@@ -50,27 +50,28 @@ Denominator: **172**. Full parity is not claimed.
 | Group | Count | I | S | R | B | P | V | D | X |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | custom_container | 7 | 7 | 7 | 0 | 0 | 0 | 0 | 0 | 7 |
-| graphql | 6 | 6 | 6 | 0 | 0 | 0 | 0 | 0 | 0 |
-| internal_binding | 2 | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 2 |
-| public_http | 86 | 86 | 86 | 0 | 0 | 0 | 0 | 0 | 0 |
-| rest | 71 | 71 | 71 | 0 | 0 | 0 | 0 | 0 | 32 |
+| graphql | 6 | 6 | 6 | 1 | 1 | 1 | 1 | 0 | 0 |
+| internal_binding | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| mcp | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 0 | 0 |
+| public_http | 85 | 85 | 85 | 4 | 4 | 4 | 4 | 4 | 0 |
+| rest | 72 | 72 | 72 | 3 | 3 | 3 | 3 | 0 | 32 |
 
 ## Access classification summary
 
 | Group | Count | I | S | R | B | P | V | D | X |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | blocked | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
-| mcp_remote | 26 | 26 | 26 | 0 | 0 | 0 | 0 | 0 | 26 |
-| public_direct | 6 | 6 | 6 | 0 | 0 | 0 | 0 | 0 | 0 |
-| raw_graphql | 6 | 6 | 6 | 0 | 0 | 0 | 0 | 0 | 0 |
-| raw_rest | 133 | 133 | 133 | 0 | 0 | 0 | 0 | 0 | 14 |
+| mcp_remote | 26 | 26 | 26 | 1 | 1 | 1 | 1 | 0 | 25 |
+| public_direct | 6 | 6 | 6 | 4 | 4 | 4 | 4 | 4 | 0 |
+| raw_graphql | 6 | 6 | 6 | 1 | 1 | 1 | 1 | 0 | 0 |
+| raw_rest | 133 | 133 | 133 | 3 | 3 | 3 | 3 | 0 | 14 |
 
 ## Read/write operation summary
 
 | Group | Count | I | S | R | B | P | V | D | X |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| read | 150 | 150 | 150 | 0 | 0 | 0 | 0 | 0 | 35 |
-| write | 22 | 22 | 22 | 0 | 0 | 0 | 0 | 0 | 6 |
+| read | 150 | 150 | 150 | 8 | 8 | 8 | 8 | 4 | 34 |
+| write | 22 | 22 | 22 | 1 | 1 | 1 | 1 | 0 | 6 |
 
 ## Blocker ledger
 
@@ -80,7 +81,6 @@ Denominator: **172**. Full parity is not claimed.
 | B-CONTAINER | 7 | 7 | open | sandbox-container |
 | B-DEX | 18 | 18 | open | dex-analysis |
 | B-OBS | 3 | 3 | open | workers-observability |
-| B-SHARED | 1 | 1 | open | shared |
 | B-STACK | 1 | 1 | open | stack-mcp |
 
 ## Capability details
@@ -108,8 +108,8 @@ Denominator: **172**. Full parity is not claimed.
 | container_ping | sandbox-container | custom_container | mcp_remote | read | Y | Y | N | N | N | N | N | Y | B-CONTAINER |
 | create_url_scan | radar | public_http | raw_rest | write | Y | Y | N | N | N | N | N | N |  |
 | d1_database_create | workers-bindings | rest | raw_rest | write | Y | Y | N | N | N | N | N | N |  |
-| d1_database_delete | workers-bindings | rest | raw_rest | write | Y | Y | N | N | N | N | N | N |  |
-| d1_database_get | workers-bindings | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
+| d1_database_delete | workers-bindings | rest | raw_rest | write | Y | Y | Y | Y | Y | Y | N | N |  |
+| d1_database_get | workers-bindings | rest | raw_rest | read | Y | Y | Y | Y | Y | Y | N | N |  |
 | d1_database_query | workers-bindings | rest | raw_rest | write | Y | Y | N | N | N | N | N | N |  |
 | d1_databases_list | workers-bindings | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | dex_analyze_warp_diag | dex-analysis | rest | mcp_remote | read | Y | Y | N | N | N | N | N | Y | B-DEX |
@@ -183,14 +183,14 @@ Denominator: **172**. Full parity is not claimed.
 | get_origins_data | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_outages | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_outages_by_location | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
-| get_post | cloudflare-blog | public_http | public_direct | read | Y | Y | N | N | N | N | N | N |  |
+| get_post | cloudflare-blog | public_http | public_direct | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | get_robots_txt_data | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_speed_histogram | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_tcp_resets_timeouts_data | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_tld_details | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_traffic_anomalies | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_traffic_anomalies_by_location | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
-| get_url_html_content | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
+| get_url_html_content | browser-rendering | rest | raw_rest | read | Y | Y | Y | Y | Y | Y | N | N |  |
 | get_url_json | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_url_links | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_url_markdown | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
@@ -203,7 +203,7 @@ Denominator: **172**. Full parity is not claimed.
 | graphql_api_explorer | graphql | graphql | raw_graphql | read | Y | Y | N | N | N | N | N | N |  |
 | graphql_complete_schema | graphql | graphql | raw_graphql | read | Y | Y | N | N | N | N | N | N |  |
 | graphql_query | graphql | graphql | raw_graphql | write | Y | Y | N | N | N | N | N | N |  |
-| graphql_schema_overview | graphql | graphql | raw_graphql | read | Y | Y | N | N | N | N | N | N |  |
+| graphql_schema_overview | graphql | graphql | raw_graphql | read | Y | Y | Y | Y | Y | Y | N | N |  |
 | graphql_schema_search | graphql | graphql | raw_graphql | read | Y | Y | N | N | N | N | N | N |  |
 | graphql_type_details | graphql | graphql | raw_graphql | read | Y | Y | N | N | N | N | N | N |  |
 | hyperdrive_config_delete | workers-bindings | rest | raw_rest | write | Y | Y | N | N | N | N | N | N |  |
@@ -228,9 +228,9 @@ Denominator: **172**. Full parity is not claimed.
 | list_libraries | stack-mcp | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | list_logs | ai-gateway | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | list_origins | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
-| list_posts | cloudflare-blog | public_http | public_direct | read | Y | Y | N | N | N | N | N | N |  |
+| list_posts | cloudflare-blog | public_http | public_direct | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | list_rags | autorag | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
-| list_tags | cloudflare-blog | public_http | public_direct | read | Y | Y | N | N | N | N | N | N |  |
+| list_tags | cloudflare-blog | public_http | public_direct | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | list_tlds | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | logpush_jobs_by_account_id | logpush | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | mcp_demo_day_info | demo-day | public_http | public_direct | read | Y | Y | N | N | N | N | N | N |  |
@@ -244,9 +244,9 @@ Denominator: **172**. Full parity is not claimed.
 | r2_buckets_list | workers-bindings | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | scrape_url_elements | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | search | autorag | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
-| search_cloudflare_documentation | shared | internal_binding | mcp_remote | read | Y | Y | N | N | N | N | N | Y | B-SHARED |
+| search_cloudflare_documentation | shared | mcp | mcp_remote | read | Y | Y | Y | Y | Y | Y | N | N |  |
 | search_dev_stack | stack-mcp | internal_binding | blocked | read | Y | Y | N | N | N | N | N | Y | B-STACK |
-| search_posts | cloudflare-blog | public_http | public_direct | read | Y | Y | N | N | N | N | N | N |  |
+| search_posts | cloudflare-blog | public_http | public_direct | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | search_url_scans | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | show_account_dns_settings | dns-analytics | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | show_zone_dns_settings | dns-analytics | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |

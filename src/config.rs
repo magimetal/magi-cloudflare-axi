@@ -22,6 +22,7 @@ pub struct Config {
 }
 #[derive(Debug, Clone)]
 pub enum Auth {
+    None,
     Bearer(String),
     KeyEmail { key: String, email: String },
     KeyBearer(String),
@@ -29,6 +30,7 @@ pub enum Auth {
 impl Auth {
     pub fn label(&self) -> &'static str {
         match self {
+            Self::None => "none",
             Self::Bearer(_) => "bearer",
             Self::KeyEmail { .. } => "global_key_headers",
             Self::KeyBearer(_) => "compatibility_bearer",

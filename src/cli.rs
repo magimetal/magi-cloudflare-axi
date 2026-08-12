@@ -246,6 +246,31 @@ pub enum CapabilityCommand {
         /// Exact registered source tool name.
         name: String,
     },
+    /// Validate or invoke a local capability contract.
+    Schema {
+        /// Exact capability name.
+        name: String,
+    },
+    Invoke {
+        /// Exact capability name.
+        name: String,
+        #[arg(long, conflicts_with_all = ["file", "stdin"])]
+        input: Option<String>,
+        #[arg(long, conflicts_with_all = ["input", "stdin"])]
+        file: Option<PathBuf>,
+        #[arg(long, conflicts_with_all = ["input", "file"])]
+        stdin: bool,
+        #[arg(long)]
+        allow_write: bool,
+        #[arg(long)]
+        allow_metered: bool,
+        #[arg(long)]
+        allow_egress: bool,
+        #[arg(long)]
+        allow_long_running: bool,
+        #[arg(long)]
+        confirm: Option<String>,
+    },
 }
 #[derive(Args, Debug, Clone)]
 pub struct ApiArgs {
@@ -316,7 +341,8 @@ pub fn home(
                     body: None,
                     allow_write: false,
                     confirm_delete: None,
-                    retry_read_post: false,
+                    retry_policy: crate::client::RetryPolicy::TransientRead,
+                    allow_classified_read_post: false,
                 })
             }) {
                 Ok(response) => {

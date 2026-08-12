@@ -576,8 +576,8 @@ fn graphql_errors_fail_even_on_http_success() {
 #[test]
 fn secrets_are_redacted_from_errors() {
     let server = Server::start(vec![
+        (500, r#"{"errors":[{"code":"secret-token"}]}"#),
         (500, r#"{"errors":[{"message":"secret-token"}]}"#),
-        (500, "{}"),
         (500, "{}"),
     ]);
     let (out, _) = run(
@@ -940,6 +940,7 @@ fn oversized_rest_json_file_and_stdin_rejected_before_network() {
             "api",
             "POST",
             "/x",
+            "--allow-write",
             "--file",
             file.to_str().unwrap(),
         ],
@@ -950,7 +951,15 @@ fn oversized_rest_json_file_and_stdin_rejected_before_network() {
     assert!(String::from_utf8_lossy(&file_output.stdout).contains("exceeds 1 MiB"));
 
     let (stdin_output, _) = run_with_stdin(
-        &["--format", "json", "api", "POST", "/x", "--stdin"],
+        &[
+            "--format",
+            "json",
+            "api",
+            "POST",
+            "/x",
+            "--allow-write",
+            "--stdin",
+        ],
         body.as_bytes(),
         Some("http://127.0.0.1:9"),
         None,
@@ -1087,4 +1096,1110 @@ fn get_commands_use_resolved_account_and_zone_selectors() {
             );
         }
     }
+}
+
+#[test]
+fn capability_d1_database_get_exact_request() {
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"result":{"uuid":"00000000-0000-0000-0000-000000000000","name":"fixture"}}"#,
+    )]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--input",
+            r#"{"database_id":"00000000-0000-0000-0000-000000000000","ignored":true}"#,
+        ],
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    assert!(output.stderr.is_empty());
+    let value = json_stdout(&output);
+    assert_eq!(value["uuid"], "00000000-0000-0000-0000-000000000000");
+    assert_eq!(value["name"], "fixture");
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "GET");
+    assert_eq!(
+        requests[0].target,
+        "/client/v4/accounts/0123456789abcdef0123456789abcdef/d1/database/00000000-0000-0000-0000-000000000000"
+    );
+    assert!(
+        requests[0]
+            .headers
+            .to_ascii_lowercase()
+            .contains("authorization: bearer fixture-token")
+    );
+    assert!(requests[0].body.is_empty());
+}
+
+#[test]
+fn capability_d1_database_get_key_email_auth_uses_explicit_headers() {
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"result":{"uuid":"00000000-0000-0000-0000-000000000000"}}"#,
+    )]);
+    let directory = tempfile::tempdir().unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+        .args([
+            "--format",
+            "json",
+            "--endpoint",
+            &server.endpoint,
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--input",
+            r#"{"database_id":"00000000-0000-0000-0000-000000000000"}"#,
+        ])
+        .current_dir(directory.path())
+        .env("HOME", directory.path())
+        .env("XDG_CONFIG_HOME", directory.path())
+        .env_remove("CLOUDFLARE_API_TOKEN")
+        .env("CLOUDFLARE_API_KEY", "fixture-key")
+        .env("CLOUDFLARE_API_EMAIL", "fixture@example.com")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let request = &server.finish()[0];
+    let headers = request.headers.to_ascii_lowercase();
+    assert!(headers.contains("x-auth-key: fixture-key"));
+    assert!(headers.contains("x-auth-email: fixture@example.com"));
+    assert!(!headers.contains("authorization: bearer"));
+}
+
+#[test]
+fn capability_cli_account_and_endpoint_precede_malformed_config() {
+    let directory = tempfile::tempdir().unwrap();
+    std::fs::write(directory.path().join(".cloudflare-axi.toml"), "[").unwrap();
+    for (extra, expected_code, expected) in [
+        (
+            vec!["--account", "bad/account"],
+            2,
+            "account_id must be one safe",
+        ),
+        (vec!["--endpoint", "http://example.com"], 1, "HTTPS"),
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+            .args([
+                "--format",
+                "json",
+                "capability",
+                "invoke",
+                "d1_database_get",
+                "--input",
+                r#"{"database_id":"00000000-0000-0000-0000-000000000000"}"#,
+            ])
+            .args(&extra)
+            .current_dir(directory.path())
+            .env("HOME", directory.path())
+            .env("XDG_CONFIG_HOME", directory.path())
+            .env_remove("CLOUDFLARE_API_TOKEN")
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(expected_code));
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert!(text.contains(expected), "{text}");
+        assert!(!text.contains("cannot parse config"), "{text}");
+    }
+}
+
+#[test]
+fn capability_d1_database_get_uses_explicit_transient_retry_policy() {
+    let server = Server::start(vec![
+        (500, r#"{"errors":[{"code":1000}]}"#),
+        (500, r#"{"errors":[{"code":1000}]}"#),
+        (500, r#"{"errors":[{"code":1000}]}"#),
+    ]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--input",
+            r#"{"database_id":"00000000-0000-0000-0000-000000000000"}"#,
+        ],
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stderr.is_empty());
+    assert_eq!(server.finish().len(), 3);
+}
+
+#[test]
+fn capability_d1_database_get_rejects_malformed_success_responses() {
+    for body in [
+        "not-json",
+        r#"{"success":true}"#,
+        r#"{"success":true,"errors":{}}"#,
+        r#"{"success":true,"errors":[],"result":[]}"#,
+        r#"{"success":false,"result":{"unexpected":true}}"#,
+        r#"{"success":true,"errors":[{"code":1000}],"result":null}"#,
+    ] {
+        let server = Server::start(vec![(200, body)]);
+        let (output, _) = run(
+            &[
+                "--format",
+                "json",
+                "--account",
+                "0123456789abcdef0123456789abcdef",
+                "capability",
+                "invoke",
+                "d1_database_get",
+                "--input",
+                r#"{"database_id":"00000000-0000-0000-0000-000000000000"}"#,
+            ],
+            Some(&server.endpoint),
+            Some("fixture-token"),
+        );
+        assert!(!output.status.success(), "response accepted: {body}");
+        assert_eq!(server.finish().len(), 1);
+    }
+}
+
+#[test]
+fn capability_endpoint_validation_precedes_auth_resolution() {
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--endpoint",
+            "http://example.com/client/v4",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--input",
+            r#"{"database_id":"00000000-0000-0000-0000-000000000000"}"#,
+        ],
+        None,
+        None,
+    );
+    assert!(!output.status.success());
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        text.contains("HTTPS") || text.contains("endpoint"),
+        "{text}"
+    );
+    assert!(!text.contains("CLOUDFLARE_API_TOKEN"));
+}
+
+#[test]
+fn capability_inline_file_and_stdin_inputs_are_equivalent() {
+    let input = r#"{"database_id":"00000000-0000-0000-0000-000000000000","account_id":"0123456789abcdef0123456789abcdef"}"#;
+    let expected_path = "/client/v4/accounts/0123456789abcdef0123456789abcdef/d1/database/00000000-0000-0000-0000-000000000000";
+
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"result":{"source":"inline"}}"#,
+    )]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--input",
+            input,
+        ],
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(output.status.success());
+    assert_eq!(json_stdout(&output)["source"], "inline");
+    assert_eq!(server.finish()[0].target, expected_path);
+
+    let file_dir = tempfile::tempdir().unwrap();
+    let file = file_dir.path().join("input.json");
+    std::fs::write(&file, input).unwrap();
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"result":{"source":"file"}}"#,
+    )]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--file",
+            file.to_str().unwrap(),
+        ],
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(output.status.success());
+    assert_eq!(json_stdout(&output)["source"], "file");
+    assert_eq!(server.finish()[0].target, expected_path);
+
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"result":{"source":"stdin"}}"#,
+    )]);
+    let (output, _) = run_with_stdin(
+        &[
+            "--format",
+            "json",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--stdin",
+        ],
+        input.as_bytes(),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(output.status.success());
+    assert_eq!(json_stdout(&output)["source"], "stdin");
+    assert_eq!(server.finish()[0].target, expected_path);
+}
+
+#[test]
+fn capability_input_must_be_object_and_within_one_mib() {
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--input",
+            "[]",
+        ],
+        Some("http://127.0.0.1:1"),
+        None,
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("input does not match schema"));
+
+    let directory = tempfile::tempdir().unwrap();
+    let file = directory.path().join("input.json");
+    std::fs::write(
+        &file,
+        format!("{{\"database_id\":\"{}\"}}", "x".repeat(1024 * 1024)),
+    )
+    .unwrap();
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--file",
+            file.to_str().unwrap(),
+        ],
+        Some("http://127.0.0.1:1"),
+        None,
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("request body exceeds 1 MiB"));
+}
+
+#[test]
+fn capability_input_account_conflict_precedes_auth_and_network() {
+    let directory = tempfile::tempdir().unwrap();
+    std::fs::write(
+        directory.path().join(".cloudflare-axi.toml"),
+        "account_id = 'configured'\n",
+    )
+    .unwrap();
+    let mut command = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"));
+    command
+        .args([
+            "--format",
+            "json",
+            "--endpoint",
+            "http://127.0.0.1:1",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--input",
+            r#"{"database_id":"00000000-0000-0000-0000-000000000000","account_id":"provided"}"#,
+        ])
+        .current_dir(directory.path())
+        .env("HOME", directory.path())
+        .env("XDG_CONFIG_HOME", directory.path())
+        .env_remove("CLOUDFLARE_API_TOKEN");
+    let output = command.output().unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("conflicts with resolved account scope")
+    );
+}
+
+#[test]
+fn invalid_capability_account_and_path_precede_malformed_config() {
+    for input in [
+        r#"{"database_id":"00000000-0000-0000-0000-000000000000","account_id":"../bad"}"#,
+        r#"{"database_id":"../bad"}"#,
+    ] {
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(directory.path().join(".cloudflare-axi.toml"), "[").unwrap();
+        let mut command = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"));
+        command
+            .args([
+                "--format",
+                "json",
+                "--endpoint",
+                "http://127.0.0.1:1",
+                "capability",
+                "invoke",
+                "d1_database_get",
+                "--input",
+                input,
+            ])
+            .current_dir(directory.path())
+            .env("HOME", directory.path())
+            .env("XDG_CONFIG_HOME", directory.path())
+            .env_remove("CLOUDFLARE_API_TOKEN");
+        let output = command.output().unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert!(!text.contains("config"), "{text}");
+        assert!(!text.contains("connection"), "{text}");
+    }
+}
+
+#[test]
+fn capability_non_retry_status_is_requested_once() {
+    let server = Server::start(vec![(400, r#"{"errors":[{"code":1000}]}"#)]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "d1_database_get",
+            "--input",
+            r#"{"database_id":"00000000-0000-0000-0000-000000000000"}"#,
+        ],
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(server.finish().len(), 1);
+}
+
+struct RawResponseServer {
+    endpoint: String,
+    requests: Arc<Mutex<usize>>,
+    join: Option<thread::JoinHandle<()>>,
+}
+
+impl RawResponseServer {
+    fn start(responses: Vec<&'static str>) -> Self {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let endpoint = format!("http://{}/client/v4", listener.local_addr().unwrap());
+        let requests = Arc::new(Mutex::new(0));
+        let seen = Arc::clone(&requests);
+        let join = thread::spawn(move || {
+            for response in responses {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut bytes = Vec::new();
+                let mut chunk = [0; 4096];
+                loop {
+                    let n = stream.read(&mut chunk).unwrap();
+                    assert!(n > 0, "client closed before request headers");
+                    bytes.extend_from_slice(&chunk[..n]);
+                    if bytes.windows(4).any(|window| window == b"\r\n\r\n") {
+                        break;
+                    }
+                }
+                *seen.lock().unwrap() += 1;
+                stream.write_all(response.as_bytes()).unwrap();
+            }
+        });
+        Self {
+            endpoint,
+            requests,
+            join: Some(join),
+        }
+    }
+
+    fn finish(mut self) -> usize {
+        self.join.take().unwrap().join().unwrap();
+        *self.requests.lock().unwrap()
+    }
+}
+
+#[test]
+fn transient_read_failure_retries_and_succeeds() {
+    let server = RawResponseServer::start(vec![
+        "HTTP/1.1 200 OK\r\nContent-Length: 32\r\nConnection: close\r\n\r\n{\"result\":",
+        "HTTP/1.1 200 OK\r\nContent-Length: 15\r\nConnection: close\r\n\r\n{\"result\":true}",
+    ]);
+    let (output, _) = run(
+        &["--format", "json", "api", "GET", "/x"],
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(server.finish(), 2);
+}
+
+#[test]
+fn rate_limit_retry_after_malformed_is_bounded_and_exact() {
+    let server = RawResponseServer::start(vec![
+        "HTTP/1.1 429 Too Many Requests\r\nRetry-After: malformed\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}",
+        "HTTP/1.1 429 Too Many Requests\r\nRetry-After: malformed\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}",
+        "HTTP/1.1 429 Too Many Requests\r\nRetry-After: malformed\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}",
+    ]);
+    let (output, _) = run(
+        &["--format", "json", "api", "GET", "/x"],
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(!output.status.success());
+    assert_eq!(server.finish(), 3);
+}
+
+#[test]
+fn unsupported_capability_preflight_precedes_missing_file() {
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "capability",
+            "invoke",
+            "unsupported-capability",
+            "--file",
+            "/nonexistent/preflight-input.json",
+        ],
+        Some("http://127.0.0.1:1"),
+        None,
+    );
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(text.contains("no complete route contract"), "{text}");
+    assert!(!text.contains("cannot read"), "{text}");
+}
+
+#[test]
+fn raw_write_guard_precedes_missing_file() {
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "api",
+            "POST",
+            "/x",
+            "--file",
+            "/nonexistent/preflight-body.json",
+        ],
+        Some("http://127.0.0.1:1"),
+        None,
+    );
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        text.contains("write API calls require --allow-write"),
+        "{text}"
+    );
+    assert!(!text.contains("cannot read"), "{text}");
+}
+
+const TEST_ACCOUNT: &str = "account-123";
+const TEST_DATABASE: &str = "123e4567-e89b-12d3-a456-426614174000";
+
+fn capability_args<'a>(name: &'a str, input: &'a str) -> Vec<&'a str> {
+    vec![
+        "--format",
+        "json",
+        "--account",
+        TEST_ACCOUNT,
+        "capability",
+        "invoke",
+        name,
+        "--input",
+        input,
+    ]
+}
+
+fn assert_usage_before_network(args: &[&str], expected: &str) {
+    let (out, _) = run(args, Some("http://example.com"), None);
+    assert_eq!(out.status.code(), Some(2), "{args:?}");
+    assert!(out.stderr.is_empty());
+    assert!(String::from_utf8_lossy(&out.stdout).contains(expected));
+}
+
+#[test]
+fn capability_d1_database_delete_exact_request() {
+    let input = format!(r#"{{"database_id":"{TEST_DATABASE}"}}"#);
+    for flag in [
+        "--allow-write",
+        "--allow-metered",
+        "--allow-egress",
+        "--confirm",
+    ] {
+        let mut args = capability_args("d1_database_delete", &input);
+        args.extend(match flag {
+            "--confirm" => vec!["--allow-write", "--allow-metered", "--allow-egress"],
+            _ => vec![
+                "--allow-write",
+                "--allow-metered",
+                "--allow-egress",
+                "--confirm",
+                "d1_database_delete",
+            ],
+        });
+        if flag == "--confirm" {
+            args.retain(|arg| {
+                *arg != "--allow-write" && *arg != "--allow-metered" && *arg != "--allow-egress"
+            });
+            args.extend(["--allow-write", "--allow-metered", "--allow-egress"]);
+        } else {
+            args.retain(|arg| *arg != flag);
+        }
+        assert_usage_before_network(&args, flag);
+    }
+
+    let server = Server::start(vec![(204, "")]);
+    let mut args = capability_args("d1_database_delete", &input);
+    args.extend([
+        "--allow-write",
+        "--allow-metered",
+        "--allow-egress",
+        "--confirm",
+        "d1_database_delete",
+    ]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(
+        out.status.success(),
+        "stdout={:?} stderr={:?}",
+        out.stdout,
+        out.stderr
+    );
+    assert_eq!(json_stdout(&out), Value::Null);
+    assert!(out.stderr.is_empty());
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "DELETE");
+    assert_eq!(
+        requests[0].target,
+        format!("/client/v4/accounts/{TEST_ACCOUNT}/d1/database/{TEST_DATABASE}")
+    );
+    assert!(
+        requests[0]
+            .headers
+            .to_ascii_lowercase()
+            .contains("authorization: bearer token")
+    );
+    assert!(
+        requests[0]
+            .headers
+            .to_ascii_lowercase()
+            .contains("content-length: 0")
+    );
+    assert!(requests[0].body.is_empty());
+
+    for (status, body) in [
+        (200, r#"{"success":false,"errors":[{"code":1000}]}"#),
+        (500, "{}"),
+    ] {
+        let server = Server::start(vec![(status, body)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert!(!out.status.success());
+        assert!(out.stderr.is_empty());
+        assert_eq!(server.finish().len(), 1);
+    }
+}
+
+#[test]
+fn capability_get_url_html_content_exact_request() {
+    let input = r#"{"url":"  https://example.com/path  "}"#;
+    for omitted in ["--allow-metered", "--allow-egress", "--allow-long-running"] {
+        let args = capability_args("get_url_html_content", input);
+        assert_usage_before_network(&args, omitted);
+    }
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"result":"<html>ok</html>"}"#,
+    )]);
+    let mut args = capability_args("get_url_html_content", input);
+    args.extend(["--allow-metered", "--allow-egress", "--allow-long-running"]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(out.status.success());
+    assert_eq!(json_stdout(&out), "<html>ok</html>");
+    assert!(out.stderr.is_empty());
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "POST");
+    assert_eq!(
+        requests[0].target,
+        format!("/client/v4/accounts/{TEST_ACCOUNT}/browser-rendering/content")
+    );
+    assert!(
+        requests[0]
+            .headers
+            .to_ascii_lowercase()
+            .contains("authorization: bearer token")
+    );
+    assert!(
+        requests[0]
+            .headers
+            .to_ascii_lowercase()
+            .contains("content-type: application/json")
+    );
+    assert_eq!(
+        serde_json::from_str::<Value>(&requests[0].body).unwrap(),
+        serde_json::json!({"url":"https://example.com/path"})
+    );
+
+    for body in [
+        r#"{"success":true,"errors":[],"result":7}"#,
+        r#"{"success":true,"errors":[{"message":"bad"}],"result":"x"}"#,
+    ] {
+        let server = Server::start(vec![(200, body)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert!(!out.status.success());
+        assert_eq!(server.finish().len(), 1);
+    }
+    let server = Server::start(vec![(500, "{}")]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_graphql_schema_overview_exact_request() {
+    for input in [r#"{"page":0}"#, r#"{"pageSize":0}"#] {
+        let args = capability_args("graphql_schema_overview", input);
+        let (out, _) = run(&args, Some("http://127.0.0.1:1"), None);
+        assert_eq!(out.status.code(), Some(2), "{input}: {:?}", out);
+    }
+    let response = r#"{"data":{"__schema":{"queryType":{"name":"Query"},"mutationType":null,"subscriptionType":null,"types":[{"name":"A","kind":"OBJECT","description":"a"},{"name":"B","kind":"SCALAR","description":"b"}]}},"errors":[]}"#;
+    let server = Server::start(vec![(200, response)]);
+    let args = capability_args("graphql_schema_overview", r#"{"page":1,"pageSize":10}"#);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(
+        out.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_eq!(
+        json_stdout(&out)["pagination"],
+        serde_json::json!({"page":1,"pageSize":10,"totalTypes":2,"totalPages":1,"hasNextPage":false,"hasPreviousPage":false})
+    );
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "POST");
+    assert_eq!(requests[0].target, "/client/v4/graphql");
+    assert!(
+        requests[0]
+            .headers
+            .to_ascii_lowercase()
+            .contains("authorization: bearer token")
+    );
+    let body: Value = serde_json::from_str(&requests[0].body).unwrap();
+    assert_eq!(body.as_object().unwrap().len(), 1);
+    assert_eq!(
+        body["query"],
+        "\n\t\tquery SchemaOverview {\n\t\t\t__schema {\n\t\t\t\tqueryType { name }\n\t\t\t\tmutationType { name }\n\t\t\t\tsubscriptionType { name }\n\t\t\t\ttypes {\n\t\t\t\t\tname\n\t\t\t\t\tkind\n\t\t\t\t\tdescription\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t"
+    );
+    for response in [
+        r#"{"errors":[{"message":"bad"}]}"#,
+        r#"{"data":{"__schema":{"types":{}}}}"#,
+    ] {
+        let server = Server::start(vec![(200, response)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert!(!out.status.success());
+        assert_eq!(server.finish().len(), 1);
+    }
+    let server = Server::start(vec![(500, "{}"), (500, "{}"), (500, "{}")]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 3);
+}
+
+#[test]
+fn capability_browser_guard_permutations_precede_endpoint_auth_and_network() {
+    for omitted in ["--allow-metered", "--allow-egress", "--allow-long-running"] {
+        let args = capability_args("get_url_html_content", r#"{"url":"https://example.com"}"#);
+        let mut args = args;
+        args.extend(["--allow-metered", "--allow-egress", "--allow-long-running"]);
+        args.retain(|arg| *arg != omitted);
+        assert_usage_before_network(&args, omitted);
+    }
+}
+
+#[test]
+fn capability_browser_invalid_urls_precede_endpoint_auth_and_network() {
+    for url in ["relative/path", "://malformed"] {
+        let input = format!(r#"{{"url":"{url}"}}"#);
+        let mut args = capability_args("get_url_html_content", &input);
+        args.extend(["--allow-metered", "--allow-egress", "--allow-long-running"]);
+        let (out, _) = run(&args, Some("http://example.com"), None);
+        assert_eq!(out.status.code(), Some(2), "{url}");
+        assert!(out.stderr.is_empty());
+        let text = String::from_utf8_lossy(&out.stdout);
+        assert!(text.contains("url must be valid"), "{text}");
+        assert!(!text.contains("authentication"), "{text}");
+        assert!(!text.contains("HTTPS"), "{text}");
+    }
+}
+
+#[test]
+fn capability_graphql_schema_overview_defaults_page_one_and_size_100() {
+    let types = (0..11)
+        .map(|index| format!(r#"{{"name":"Type{index}","kind":"OBJECT"}}"#))
+        .collect::<Vec<_>>()
+        .join(",");
+    let response = format!(
+        r#"{{"data":{{"__schema":{{"queryType":{{"name":"Query"}},"mutationType":null,"subscriptionType":null,"types":[{types}]}}}}}}"#
+    );
+    let response: &'static str = Box::leak(response.into_boxed_str());
+    let server = Server::start(vec![(200, response)]);
+    let args = capability_args("graphql_schema_overview", "{}");
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(out.status.success(), "{out:?}");
+    let value = json_stdout(&out);
+    assert_eq!(
+        value["pagination"],
+        serde_json::json!({"page":1,"pageSize":100,"totalTypes":11,"totalPages":1,"hasNextPage":false,"hasPreviousPage":false})
+    );
+    assert_eq!(value["data"]["__schema"]["types"][0]["name"], "Type0");
+    assert_eq!(value["data"]["__schema"]["types"][10]["name"], "Type10");
+    let request = &server.finish()[0];
+    let body: Value = serde_json::from_str(&request.body).unwrap();
+    assert_eq!(body.as_object().unwrap().len(), 1);
+    assert!(body["query"].as_str().unwrap().contains("types"));
+}
+
+#[test]
+fn capability_graphql_schema_overview_slices_page_two_and_empty_page() {
+    let types = (0..11)
+        .map(|index| format!(r#"{{"name":"Type{index}","kind":"OBJECT"}}"#))
+        .collect::<Vec<_>>()
+        .join(",");
+    let response = format!(
+        r#"{{"data":{{"__schema":{{"queryType":{{"name":"Query"}},"mutationType":null,"subscriptionType":null,"types":[{types}]}}}}}}"#
+    );
+    let response: &'static str = Box::leak(response.into_boxed_str());
+    for (input, expected) in [
+        (r#"{"page":2,"pageSize":10}"#, vec!["Type10"]),
+        (r#"{"page":3,"pageSize":10}"#, Vec::new()),
+    ] {
+        let server = Server::start(vec![(200, response)]);
+        let args = capability_args("graphql_schema_overview", input);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert!(out.status.success(), "{out:?}");
+        let value = json_stdout(&out);
+        let names = value["data"]["__schema"]["types"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|value| value["name"].as_str().unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(names, expected);
+        server.finish();
+    }
+}
+
+#[test]
+fn capability_graphql_schema_overview_accepts_page_size_1000() {
+    let server = Server::start(vec![(
+        200,
+        r#"{"data":{"__schema":{"queryType":{"name":"Query"},"mutationType":null,"subscriptionType":null,"types":[]}}}"#,
+    )]);
+    let args = capability_args("graphql_schema_overview", r#"{"page":1,"pageSize":1000}"#);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(json_stdout(&out)["pagination"]["pageSize"], 1000);
+    server.finish();
+}
+
+#[test]
+fn capability_graphql_schema_overview_accepts_fractional_numbers_and_huge_pages() {
+    let types = (0..20)
+        .map(|index| format!(r#"{{"name":"Type{index}","kind":"OBJECT"}}"#))
+        .collect::<Vec<_>>()
+        .join(",");
+    let response = Box::leak(
+        format!(r#"{{"data":{{"__schema":{{"queryType":{{"name":"Query"}},"mutationType":null,"subscriptionType":null,"types":[{types}]}}}}}}"#)
+            .into_boxed_str(),
+    );
+    for (input, expected) in [
+        (r#"{"page":1.55,"pageSize":10.8}"#, vec!["Type5", "Type15"]),
+        (r#"{"page":1e300,"pageSize":10}"#, Vec::new()),
+    ] {
+        let server = Server::start(vec![(200, response)]);
+        let args = capability_args("graphql_schema_overview", input);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert!(out.status.success(), "{out:?}");
+        let value = json_stdout(&out);
+        let types = value["data"]["__schema"]["types"].as_array().unwrap();
+        let boundary = types
+            .first()
+            .into_iter()
+            .chain(types.last())
+            .map(|value| value["name"].as_str().unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(boundary, expected);
+        server.finish();
+    }
+}
+
+fn blog_args<'a>(name: &'a str, input: &'a str) -> Vec<&'a str> {
+    vec![
+        "--format",
+        "json",
+        "capability",
+        "invoke",
+        name,
+        "--input",
+        input,
+    ]
+}
+
+fn run_blog(name: &str, input: &str, endpoint: &str, token: Option<&str>) -> Output {
+    let args = blog_args(name, input);
+    run(&args, Some(endpoint), token).0
+}
+
+#[test]
+fn capability_cloudflare_blog_public_reads_exact_requests() {
+    let post = r#"{"slug":"workers/python support/é","title":"Title","excerpt":"Excerpt","url":"https://blog.example/post","publishedAt":null,"tags":["workers"],"authors":["Ada"],"content":"Body","extra":true}"#;
+    let server = Server::start(vec![(200, post)]);
+    let out = run_blog(
+        "get_post",
+        r#"{"slug":"workers/python support/é"}"#,
+        &server.endpoint,
+        Some("token"),
+    );
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    assert_eq!(json_stdout(&out)["content"], "Body");
+    assert!(json_stdout(&out).get("extra").is_none());
+    let request = &server.finish()[0];
+    assert_eq!(request.method, "GET");
+    assert_eq!(
+        request.target,
+        "/client/v4/api/mcp/posts/workers%2Fpython%20support%2F%C3%A9"
+    );
+    assert!(request.body.is_empty());
+    let headers = request.headers.to_ascii_lowercase();
+    assert!(
+        !headers.contains("authorization:")
+            && !headers.contains("x-auth-")
+            && !headers.contains("cf-account")
+    );
+
+    let server = Server::start(vec![(
+        200,
+        r#"{"posts":[{"slug":"s","title":"T","excerpt":"E","url":"u","publishedAt":"now","tags":[],"authors":[],"ignored":1}],"nextCursor":"a b"}"#,
+    )]);
+    let out = run_blog(
+        "list_posts",
+        r#"{"limit":7,"cursor":"a b/é","tag":"zero trust"}"#,
+        &server.endpoint,
+        Some("token"),
+    );
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    assert_eq!(json_stdout(&out)["posts"][0].get("ignored"), None);
+    assert_eq!(
+        server.finish()[0].target,
+        "/client/v4/api/mcp/posts?limit=7&cursor=a+b%2F%C3%A9&tag=zero+trust"
+    );
+
+    let server = Server::start(vec![(200, r#"{"posts":[],"nextCursor":null}"#)]);
+    let out = run_blog(
+        "list_posts",
+        r#"{"limit":7,"cursor":"","tag":""}"#,
+        &server.endpoint,
+        None,
+    );
+    assert!(out.status.success());
+    assert_eq!(
+        server.finish()[0].target,
+        "/client/v4/api/mcp/posts?limit=7"
+    );
+
+    let server = Server::start(vec![(
+        200,
+        r#"{"tags":[{"slug":"workers","label":"Workers","extra":1}]}"#,
+    )]);
+    let out = run_blog("list_tags", "{}", &server.endpoint, Some("token"));
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    assert_eq!(
+        json_stdout(&out),
+        serde_json::json!({"tags":[{"slug":"workers","label":"Workers"}]})
+    );
+    assert_eq!(server.finish()[0].target, "/client/v4/api/mcp/tags");
+
+    let text = "x".repeat(301);
+    let body = format!(
+        r#"{{"success":true,"result":{{"chunks":[{{"score":0.2,"text":"{text}","item":{{"key":"/a","metadata":{{"title":"low"}}}}}},{{"score":0.9,"text":"ignored","item":{{"key":"/a","metadata":{{"title":"high","description":"desc"}}}}}},{{"score":0.4,"text":"{text}","item":{{"key":"/b","metadata":{{}}}}}}]}}}}"#
+    );
+    let body: &'static str = Box::leak(body.into_boxed_str());
+    let server = Server::start(vec![(200, body)]);
+    let out = run_blog(
+        "search_posts",
+        r#"{"query":"workers é"}"#,
+        &server.endpoint,
+        Some("token"),
+    );
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let value = json_stdout(&out);
+    assert_eq!(value["results"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        value["results"][0],
+        serde_json::json!({"url":"/a","title":"high","excerpt":"desc","score":0.9})
+    );
+    assert_eq!(
+        value["results"][1]["excerpt"]
+            .as_str()
+            .unwrap()
+            .chars()
+            .count(),
+        300
+    );
+    let request = &server.finish()[0];
+    assert_eq!(request.method, "POST");
+    assert_eq!(request.target, "/client/v4/search");
+    assert_eq!(request.body, r#"{"query":"workers é"}"#);
+    assert!(
+        request
+            .headers
+            .to_ascii_lowercase()
+            .contains("content-type: application/json")
+    );
+    let headers = request.headers.to_ascii_lowercase();
+    assert!(
+        !headers.contains("authorization:")
+            && !headers.contains("x-auth-")
+            && !headers.contains("cf-account")
+    );
+}
+
+#[test]
+fn capability_cloudflare_blog_invalid_input_and_endpoint_precede_network() {
+    for (name, input) in [
+        ("get_post", "{}"),
+        ("search_posts", r#"{"query":1}"#),
+        ("list_posts", r#"{"limit":0}"#),
+    ] {
+        let out = run_blog(name, input, "http://example.com", None);
+        assert_eq!(out.status.code(), Some(2), "{name}: {:?}", out);
+    }
+    for endpoint in ["http://example.com", "http://127.0.0.1.evil"] {
+        let out = run_blog("list_tags", "{}", endpoint, None);
+        assert_eq!(out.status.code(), Some(1), "{endpoint}: {:?}", out);
+    }
+}
+
+#[test]
+fn capability_cloudflare_blog_explicit_empty_outputs() {
+    for (name, body, input, expected) in [
+        (
+            "list_posts",
+            r#"{"posts":[],"nextCursor":null}"#,
+            "{}",
+            r#"{"posts":[],"nextCursor":null}"#,
+        ),
+        ("list_tags", r#"{"tags":[]}"#, "{}", r#"{"tags":[]}"#),
+        (
+            "search_posts",
+            r#"{"success":true,"result":{"chunks":[]}}"#,
+            r#"{"query":"x"}"#,
+            r#"{"results":[]}"#,
+        ),
+    ] {
+        let server = Server::start(vec![(200, body)]);
+        let out = run_blog(name, input, &server.endpoint, None);
+        assert!(out.status.success(), "{name}: {:?}", out);
+        assert_eq!(
+            json_stdout(&out),
+            serde_json::from_str::<Value>(expected).unwrap()
+        );
+        assert_eq!(server.finish().len(), 1);
+    }
+}
+
+#[test]
+fn capability_cloudflare_blog_bad_responses_are_single_request_failures() {
+    let cases = [
+        ("get_post", r#"not-json"#),
+        ("get_post", r#"{"success":true}"#),
+        ("list_posts", r#"{"success":true,"result":[]}"#),
+        ("list_tags", r#"{"success":false,"result":{"tags":[]}}"#),
+        ("search_posts", r#"{"success":true,"result":{}}"#),
+    ];
+    for (name, body) in cases {
+        let server = Server::start(vec![(200, body)]);
+        let input = if name == "search_posts" {
+            r#"{"query":"x"}"#
+        } else if name == "get_post" {
+            r#"{"slug":"x"}"#
+        } else {
+            "{}"
+        };
+        let out = run_blog(name, input, &server.endpoint, Some("token"));
+        assert!(!out.status.success(), "{name}: {body}");
+        assert_eq!(server.finish().len(), 1);
+    }
+    for name in ["get_post", "list_posts", "list_tags", "search_posts"] {
+        let server = Server::start(vec![(500, "{}"); 1]);
+        let input = if name == "search_posts" {
+            r#"{"query":"x"}"#
+        } else if name == "get_post" {
+            r#"{"slug":"x"}"#
+        } else {
+            "{}"
+        };
+        let out = run_blog(name, input, &server.endpoint, Some("token"));
+        assert!(!out.status.success(), "{name}");
+        assert_eq!(server.finish().len(), 1);
+    }
+}
+
+#[test]
+fn capability_cloudflare_blog_response_limit_and_redirect_are_hermetic() {
+    let oversized: &'static str = Box::leak("x".repeat(8 * 1024 * 1024 + 1).into_boxed_str());
+    let server = Server::start(vec![(200, oversized)]);
+    let out = run_blog("list_tags", "{}", &server.endpoint, None);
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 1);
+
+    let server = RedirectServer::start();
+    let out = run_blog("list_tags", "{}", &server.endpoint, Some("secret"));
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 1);
 }

@@ -1,10 +1,10 @@
 ---
 title: Cloudflare full capability parity roadmap
-status: active
+status: phase-3-complete-for-proven-cohort
 owner: magimetal
 created: 2026-08-10
-last_reviewed: 2026-08-10
-current_phase: phase-1-complete
+last_reviewed: 2026-08-11
+current_phase: phase-3-complete-for-proven-cohort
 baseline_source_commit: 70ff690553722f731849ede6ba9ce98958395a23
 baseline_capabilities: 172
 canonical_tracker: capabilities/cloudflare-mcp-parity.json
@@ -39,12 +39,28 @@ Registered-name presence alone remains **inventory parity**, not full parity.
 | Canonical input schemas | 172/172 | 172/172 |
 | Method metadata | 147/172 | Route-dependent |
 | Path metadata | 6/172 | Every direct route complete |
-| Capability-specific complete routes | 0/172 | 172/172 |
-| Capability contract tests | 0/172 | 172/172 |
-| Reads | 150 inventoried | 150 verified |
-| Writes | 22 inventoried | 22 verified hermetically |
-| Entries carrying blockers | 41 | 0 |
-| Families | 18 | 18 complete |
+| Capability-specific complete routes | 9/172 | 172/172, or maximal attainable parity with explicit blockers |
+| Capability contract tests | 9/172 | 172/172 hermetically verified |
+
+Phase 3 exit gate for proven direct unauthenticated Blog cohort:
+
+```text
+I = S = 172
+R = B = P = V = 9
+D = 4
+X = 40
+Blog direct reads = 4/4 complete and discovery-verified
+163 routes unresolved
+```
+
+Phase 3 completed `2026-08-11` for four Blog operations only. Research pool correction: initial 80 legacy `public_http` reads = Browser 9 + Radar 65 + Blog 4 + demo 1 + stack 1. Browser/Radar require authoritative route, transport, scope, and authentication reclassification during Phase 4 research; demo/stack require source-hosted or MCP route research during Phase 5. DNS Analytics is outside this legacy pool.
+
+| Scope | Current | Target |
+|---|---:|---:|
+| Verified reads | 8/150 | 150/150 |
+| Hermetically verified writes | 1/22 | 22/22 |
+| Open blocker entries | 40 | 0 |
+| Fully verified families | 1/18 | 18/18 |
 
 Current access classifications:
 
@@ -60,13 +76,15 @@ Current transport inventory:
 
 | Transport | Count |
 |---|---:|
-| `public_http` | 86 |
-| `rest` | 71 |
+| `public_http` | 85 |
+| `rest` | 72 |
 | `custom_container` | 7 |
 | `graphql` | 6 |
-| `internal_binding` | 2 |
+| `internal_binding` | 1 |
+| `mcp` | 1 |
 
-The six existing method/path pairs all identify `POST /graphql`; they do not yet prove operation-specific documents, variables, outputs, or behavior.
+The six legacy catalog records carrying both `method` and `path_template` identify `POST /graphql`; operation-contract artifacts separately contain nine complete routes.
+
 
 ## Completion formula
 
@@ -189,13 +207,13 @@ Safety is operation-independent:
 |---|---|---|---|---|
 | W1 | Source extraction | Deterministic names, schemas, registrations, dependency closure, and hashes | magimetal | complete |
 | W2 | Catalog model | Versioned parity status/evidence model and generated rollups | magimetal | complete |
-| W3 | Invocation dispatcher | `capability schema/invoke` with pre-network validation | magimetal | not_started |
-| W4 | Route mapping | Exact REST, GraphQL, public, and hosted MCP routes | magimetal | not_started |
-| W5 | Safety policy | Per-capability mutation, metering, destruction, egress, retry rules | magimetal | not_started |
-| W6 | Verification | Real-binary hermetic contract tests for all capabilities | magimetal | not_started |
-| W7 | Discovery/docs | Generated matrix, help, examples, README, and skill synchronization | magimetal | not_started |
-| W8 | Blocker closure | Evidence-backed resolution of 41 current blockers | magimetal | not_started |
-| W9 | Drift governance | Pinned validation and latest-upstream change reports | magimetal | active |
+| W3 | Invocation dispatcher | `capability schema/invoke` with pre-network validation | magimetal | phase-2-slice-complete |
+| W4 | Route mapping | Exact REST, GraphQL, public, and hosted MCP routes | magimetal | phase-2-slice-complete |
+| W5 | Safety policy | Per-capability mutation, metering, destruction, egress, retry rules | magimetal | phase-2-slice-complete |
+| W6 | Verification | Real-binary hermetic contract tests for all capabilities | magimetal | phase-2-slice-complete |
+| W7 | Discovery/docs | Generated matrix, help, examples, README, and skill synchronization | magimetal | phase-2-slice-complete |
+| W8 | Blocker closure | Evidence-backed resolution of 40 current blockers | magimetal | not_started |
+| W9 | Drift governance | Pinned validation and latest-upstream change reports | magimetal | complete |
 
 ## Phase plan
 
@@ -255,65 +273,63 @@ Exit gate:
 
 ### Phase 2 — Route contracts and dispatcher vertical slices
 
-**Status:** `not_started`
+**Status:** `complete for five representative slices; 167 deferred`
 
 **Objective:** Prove shared invocation architecture across transports before bulk expansion.
 
 Tasks:
 
-- [ ] Define REST method, path placeholders, query mapping, body mapping, and scope contract.
-- [ ] Define GraphQL document, operation name, variable mapping, and response projection contract.
-- [ ] Define public URL, content type, pagination, and artifact contract.
-- [ ] Define hosted MCP server, tool, protocol, schema provenance, and result normalization contract.
-- [ ] Replace generic SDK labels with callable operation evidence.
-- [ ] Define operation-independent guard evaluation before config/auth/network.
-- [ ] Add hermetic negative tests for metered, write, destructive, data-egress, and long-running guard classes.
-- [ ] Implement `capability schema`.
-- [ ] Implement `capability invoke` with inline/file/stdin JSON input.
-- [ ] Complete representative vertical slices: REST read, public read, GraphQL read, hosted MCP read, and one hermetic write.
+- [x] Define REST method, path placeholders, query mapping, body mapping, and scope contract.
+- [x] Define GraphQL document, operation name, variable mapping, and response projection contract.
+- [x] Define public URL, content type, pagination, and artifact contract.
+- [x] Define hosted MCP server, tool, protocol, schema provenance, and result normalization contract.
+- [x] Replace generic SDK labels with callable operation evidence.
+- [x] Define operation-independent guard evaluation before config/auth/network.
+- [x] Add hermetic negative tests for metered, write, destructive, data-egress, and long-running guard classes.
+- [x] Implement `capability schema`.
+- [x] Implement `capability invoke` with inline/file/stdin JSON input.
+- [x] Complete representative vertical slices: REST read, public read, GraphQL read, hosted MCP read, and one hermetic write.
+
+Current Phase 2 evidence (`2026-08-11`): five representative operation contracts bind D1 GET/DELETE, browser REST POST, GraphQL POST, and public no-auth MCP `tools/call`. Catalog/dashboard vector is `I=172; S=172; R=B=P=V=5; D=0; X=40`; 167 routes remain deferred to Phases 3–7. GraphQL and MCP contracts include exact semantic and protocol pins; all representative request, output, safety, and pre-network checks are hermetic. This is not an all-routes completion claim.
 
 Exit gate:
 
-- [ ] Five representative slices pass real-binary contract tests.
-- [ ] Exact method, URL, headers, query, body, output, stderr, and exit code are asserted.
-- [ ] Invalid inputs fail before config, auth, or network.
-- [ ] Mutations and MCP calls are sent once only.
-- [ ] Every guard class has a pre-network rejection test.
-- [ ] Every capability is classified route-complete or `external_blocked`; no guessed routes.
+- [x] Five representative slices pass real-binary contract tests.
+- [x] Exact method, URL, headers, query, body, output, stderr, and exit code are asserted.
+- [x] Invalid inputs fail before config, auth, or network.
+- [x] Mutations and MCP calls are sent once only.
+- [x] Every guard class has a pre-network rejection test.
+- [x] Five representative routes complete; 167 deferred to Phases 3–7.
+### Phase 3 — Proven direct unauthenticated Blog reads
 
-### Phase 3 — Public and unauthenticated read parity
+**Status:** `complete for proven cohort`
 
-**Status:** `not_started`
+**Objective:** Complete four source-proven Cloudflare Blog reads without expanding completion claims to unresolved legacy `public_http` entries.
 
-**Objective:** Complete public HTTP reads first because they have lowest credential risk.
+Completed cohort:
 
-Primary batch: 81 read-classified `public_http` capabilities, dominated by Radar, Browser Rendering, Cloudflare Blog, and DNS Analytics families. Five `public_http` writes remain in Phase 6.
+- [x] `get_post`
+- [x] `list_posts`
+- [x] `list_tags`
+- [x] `search_posts`
+- [x] Exact routes, behavior, policy, response bounds, empty states, and hermetic tests.
+- [x] Generated discovery and non-interactive examples.
+- [x] No authentication headers or live provider calls.
 
-Per-capability gate:
+Exit evidence: Blog reads 4/4 discovery-verified; global vector `I=172; S=172; R=B=P=V=9; D=4; X=40`; 163 routes unresolved.
 
-- [ ] Schema validation before network.
-- [ ] Exact URL/query route evidence.
-- [ ] Success, explicit empty state, provider error, malformed response, and response bound tests.
-- [ ] Pagination semantics defined where applicable.
-- [ ] Metering classification reviewed even when operation is a read.
-- [ ] `--allow-metered` is enforced before config/auth/network for every metered read.
-- [ ] Generated help and one non-interactive example.
+The remaining 76 legacy `public_http` reads are not Phase 3 completions. Browser/Radar require authoritative route, transport, scope, and authentication reclassification during Phase 4 research; demo/stack require source-hosted or MCP route research during Phase 5.
 
-Phase exit gate:
-
-- [ ] All publicly reachable reads verified.
-- [ ] No public capability requires caller-invented URL/path details.
-- [ ] Public blocker count 0, or exact external blocker ledger published.
-
-### Phase 4 — Authenticated REST read parity
+### Phase 4 — Authenticated direct API read parity
 
 **Status:** `not_started`
 
-**Objective:** Complete account- and zone-scoped REST reads.
+**Objective:** Complete authenticated direct API reads and correct legacy Browser/Radar transport, scope, and authentication metadata from authoritative evidence.
 
 Tasks:
 
 - [ ] Map exact account/zone selectors and placeholder encoding.
+- [ ] Replace legacy `public_http`/public-scope labels only after exact endpoint and authentication evidence is bound.
 - [ ] Verify request projections, pagination, totals, and continuation commands.
 - [ ] Reuse centralized endpoint/auth/redirect/request-bound controls.
 - [ ] Add family-batched hermetic fixtures to avoid one bespoke server per tool.
@@ -384,7 +400,7 @@ Exit gate:
 
 **Status:** `not_started`
 
-**Objective:** Reduce current blocker count from 41 to zero.
+**Objective:** Reduce current blocker count from 40 to zero.
 
 Current blocker ledger:
 
@@ -394,7 +410,6 @@ Current blocker ledger:
 | B-CASB | `cloudflare-one-casb` | 11 | Source-specific or undocumented product API | unassigned | open |
 | B-CONTAINER | `sandbox-container` | 7 | Internal container runtime/public exposure | unassigned | open |
 | B-OBS | `workers-observability` | 3 | Endpoint/runtime mapping | unassigned | open |
-| B-SHARED | `shared` | 1 | Internal AI binding | unassigned | open |
 | B-STACK | `stack-mcp` | 1 | Public execution route | unassigned | open |
 
 Closure order:
@@ -532,9 +547,9 @@ Update this table only when gate evidence exists.
 |---|---|---|---|---|---|
 | 0 — Measurement | Inventory baseline | Versioned tracker + generated dashboard CI | — | complete | 2026-08-10 |
 | 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | complete | 2026-08-10 |
-| 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; all routes classified | — | not_started | — |
-| 3 — Public reads | Phase 2 complete | Public read batch verified | — | not_started | — |
-| 4 — Authenticated REST reads | Phase 2 complete | Direct REST reads verified | — | not_started | — |
+| 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; 167 capability routes deferred | — | complete | 2026-08-11 |
+| 3 — Proven Blog reads | Phase 2 complete | Four Blog reads verified and discovery-verified; 163 total routes unresolved | — | complete-for-proven-cohort | 2026-08-11 |
+| 4 — Authenticated direct API reads | Phase 3 cohort complete | Direct API reads verified | — | not_started | — |
 | 5 — GraphQL/MCP reads | Phase 2 complete | GraphQL reads 5/5 and exposed MCP reads verified | — | not_started | — |
 | 6 — Writes | Phase 2 complete | Writes 22/22 hermetically verified | — | not_started | — |
 | 7 — Blockers | Route research available | Blockers 0 | — | not_started | — |

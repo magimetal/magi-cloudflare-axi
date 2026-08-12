@@ -665,3 +665,166 @@ fn mcp_redirect_does_not_forward_token_or_account() {
     assert!(requests[0].contains("fake-token"));
     assert!(requests[0].contains("fake-account"));
 }
+
+fn invoke_args(endpoint: &str, extra: &[&str]) -> Vec<String> {
+    let mut args = vec![
+        "--format".into(),
+        "json".into(),
+        "--mcp-endpoint".into(),
+        endpoint.into(),
+        "capability".into(),
+        "invoke".into(),
+        "search_cloudflare_documentation".into(),
+        "--input".into(),
+        r#"{"query":"Workers"}"#.into(),
+    ];
+    args.extend(extra.iter().map(|value| (*value).into()));
+    args
+}
+
+fn run_owned(args: &[String]) -> std::process::Output {
+    let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
+    run(&refs)
+}
+
+#[test]
+fn capability_search_cloudflare_documentation_exact_request() {
+    let (url, handle) = endpoint(rpc(
+        r#"{"jsonrpc":"2.0","id":1,"result":{"structuredContent":{"results":[{"similarity":0.95,"id":"workers","url":"https://developers.cloudflare.com/workers/","title":"Workers","text":"Workers documentation"}],"uncontracted":"drop"}}}"#,
+    ));
+    let args = invoke_args(&url, &["--allow-metered"]);
+    let output = command(&args.iter().map(String::as_str).collect::<Vec<_>>())
+        .env("CLOUDFLARE_API_TOKEN", "supplied-token")
+        .env("CLOUDFLARE_ACCOUNT_ID", "env-account")
+        .arg("--account")
+        .arg("cli-account")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap(),
+        serde_json::json!({"results":[{"similarity":0.95,"id":"workers","url":"https://developers.cloudflare.com/workers/","title":"Workers","text":"Workers documentation"}]})
+    );
+    let request = handle.join().unwrap();
+    let headers = request
+        .split("\r\n\r\n")
+        .next()
+        .unwrap()
+        .to_ascii_lowercase();
+    assert_eq!(request.matches("POST ").count(), 1);
+    assert!(headers.contains("mcp-protocol-version: 2026-07-28"));
+    assert!(headers.contains("mcp-method: tools/call"));
+    assert!(headers.contains("mcp-name: search_cloudflare_documentation"));
+    assert!(!headers.contains("authorization:"));
+    assert!(!headers.contains("cf-account-id:"));
+    let body: serde_json::Value =
+        serde_json::from_str(request.split("\r\n\r\n").nth(1).unwrap()).unwrap();
+    assert_eq!(
+        body,
+        serde_json::json!({
+            "jsonrpc":"2.0",
+            "id":1,
+            "method":"tools/call",
+            "params":{
+                "name":"search_cloudflare_documentation",
+                "arguments":{"query":"Workers"},
+                "_meta":{
+                    "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+                    "io.modelcontextprotocol/clientInfo":{
+                        "name":"magi-cloudflare-axi",
+                        "version":env!("CARGO_PKG_VERSION")
+                    },
+                    "io.modelcontextprotocol/clientCapabilities":{}
+                }
+            }
+        })
+    );
+}
+
+#[test]
+fn capability_invoke_rejects_missing_metered_before_endpoint_validation() {
+    let args = invoke_args("http://[malformed", &[]);
+    let output = command(&args.iter().map(String::as_str).collect::<Vec<_>>())
+        .env("CLOUDFLARE_API_TOKEN", "supplied-token")
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("--allow-metered"));
+}
+
+#[test]
+fn capability_invoke_rejects_missing_structured_content() {
+    let (url, handle) = endpoint(rpc(r#"{"result":{"content":[]}}"#));
+    let output = run_owned(&invoke_args(&url, &["--allow-metered"]));
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stdout).contains("structuredContent"));
+    handle.join().unwrap();
+}
+
+#[test]
+fn capability_invoke_rejects_wrong_structured_content_shape() {
+    for response in [
+        r#"{"result":{"structuredContent":{"results":{}}}}"#,
+        r#"{"result":{"structuredContent":{"other":[]}}}"#,
+    ] {
+        let (url, handle) = endpoint(rpc(response));
+        let output = run_owned(&invoke_args(&url, &["--allow-metered"]));
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stdout).contains("{results:[...]"));
+        handle.join().unwrap();
+    }
+}
+
+#[test]
+fn capability_invoke_rejects_json_rpc_and_tool_errors() {
+    for response in [
+        r#"{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"bad"}}"#,
+        r#"{"jsonrpc":"2.0","id":1,"result":{"isError":true}}"#,
+    ] {
+        let (url, handle) = endpoint(rpc(response));
+        let output = run_owned(&invoke_args(&url, &["--allow-metered"]));
+        assert!(!output.status.success());
+        handle.join().unwrap();
+    }
+}
+
+#[test]
+fn capability_invoke_http_500_is_requested_exactly_once() {
+    let (url, handle) =
+        endpoint("HTTP/1.1 500 Test\r\nContent-Length: 3\r\nConnection: close\r\n\r\nbad");
+    let output = run_owned(&invoke_args(&url, &["--allow-metered"]));
+    assert!(!output.status.success());
+    let request = handle.join().unwrap();
+    assert_eq!(request.matches("POST ").count(), 1);
+}
+
+#[test]
+fn capability_invoke_validates_docs_result_records_and_accepts_empty_results() {
+    let (url, handle) = endpoint(rpc(r#"{"result":{"structuredContent":{"results":[]}}}"#));
+    let output = run_owned(&invoke_args(&url, &["--allow-metered"]));
+    assert!(output.status.success());
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap(),
+        serde_json::json!({"results":[]})
+    );
+    handle.join().unwrap();
+
+    for result in [
+        r#"{}"#,
+        r#"{"similarity":"high","id":"id","url":"url","title":"title","text":"text"}"#,
+        r#"{"similarity":0.5,"id":1,"url":"url","title":"title","text":"text"}"#,
+        r#"{"similarity":0.5,"id":"id","url":1,"title":"title","text":"text"}"#,
+        r#"{"similarity":0.5,"id":"id","url":"url","title":1,"text":"text"}"#,
+        r#"{"similarity":0.5,"id":"id","url":"url","title":"title","text":1}"#,
+    ] {
+        let response = Box::leak(
+            format!(r#"{{"result":{{"structuredContent":{{"results":[{result}]}}}}}}"#)
+                .into_boxed_str(),
+        );
+        let (url, handle) = endpoint(rpc(response));
+        let output = run_owned(&invoke_args(&url, &["--allow-metered"]));
+        assert!(!output.status.success(), "accepted {result}");
+        handle.join().unwrap();
+    }
+}

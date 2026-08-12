@@ -94,6 +94,76 @@ fn run(root: &std::path::Path, args: &[&str]) -> std::process::Output {
     clean_cloudflare_env(&mut command);
     command.output().unwrap()
 }
+
+#[test]
+fn capability_schema_is_offline_and_ignores_malformed_config() {
+    let directory = tempfile::tempdir().unwrap();
+    std::fs::write(directory.path().join(".cloudflare-axi.toml"), "[").unwrap();
+    let mut command = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"));
+    command
+        .args([
+            "--format",
+            "json",
+            "capability",
+            "schema",
+            "d1_database_get",
+        ])
+        .current_dir(directory.path());
+    clean_cloudflare_env(&mut command);
+    let output = command.output().unwrap();
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(value["name"], "d1_database_get");
+    assert_eq!(
+        value["raw_input_schema"]["required"],
+        serde_json::json!(["database_id"])
+    );
+    assert_eq!(
+        value["source"]["commit"],
+        "70ff690553722f731849ede6ba9ce98958395a23"
+    );
+}
+
+#[test]
+fn capability_preflight_errors_win_over_config_auth_and_network() {
+    let directory = tempfile::tempdir().unwrap();
+    std::fs::write(directory.path().join(".cloudflare-axi.toml"), "[").unwrap();
+    for (name, input, expected) in [
+        (
+            "d1_database_get",
+            r#"{"database_id":"bad"}"#,
+            "database_id must be a UUID",
+        ),
+        ("d1_database_delete", "{}", "requires safety flags"),
+    ] {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"));
+        command
+            .args([
+                "--format",
+                "json",
+                "--endpoint",
+                "http://127.0.0.1:1",
+                "capability",
+                "invoke",
+                name,
+                "--input",
+                input,
+            ])
+            .current_dir(directory.path());
+        clean_cloudflare_env(&mut command);
+        let output = command.output().unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        assert!(output.stderr.is_empty());
+        let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert!(
+            value["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains(expected)
+        );
+    }
+}
 #[test]
 fn session_claude_filesystem_setup() {
     let d = tempfile::tempdir().unwrap();
@@ -482,4 +552,28 @@ fn session_managed_files_are_private_and_preserve_existing_mode() {
             .success()
     );
     assert_eq!(std::fs::metadata(path).unwrap().mode() & 0o777, 0o640);
+}
+
+#[test]
+fn capability_blog_discovery_examples_are_exact() {
+    for (name, example) in [
+        ("get_post", "get_post --input '{\"slug\":\"<slug>\"}'"),
+        ("list_posts", "list_posts --input '{}'"),
+        ("list_tags", "list_tags --input '{}'"),
+        (
+            "search_posts",
+            "search_posts --input '{\"query\":\"<query>\"}'",
+        ),
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+            .args(["--format", "json", "capability", "get", name])
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(
+            value["next_command"],
+            format!("magi-cloudflare-axi capability invoke {example}")
+        );
+    }
 }

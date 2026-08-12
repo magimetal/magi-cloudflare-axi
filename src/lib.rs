@@ -4,6 +4,7 @@ mod client;
 mod config;
 mod error;
 mod mcp;
+mod operation;
 mod session;
 use clap::Parser;
 use cli::*;
@@ -125,7 +126,8 @@ fn scope_list(
         body: None,
         allow_write: false,
         confirm_delete: None,
-        retry_read_post: false,
+        retry_policy: client::RetryPolicy::TransientRead,
+        allow_classified_read_post: false,
     })?;
     let mut rows = response
         .result
@@ -425,6 +427,20 @@ fn run(c: Cli) -> Result<(), AppError> {
             )?
         }
         Some(Command::Api(a)) => {
+            let read = matches!(a.method.to_ascii_uppercase().as_str(), "GET" | "HEAD");
+            if a.paginate && !read {
+                return Err(AppError::usage(
+                    "--paginate is allowed only with GET or HEAD",
+                ));
+            }
+            client::preflight_raw(
+                &a.method,
+                &a.path,
+                c.endpoint.as_deref(),
+                a.allow_write,
+                a.confirm_delete.as_deref(),
+                (a.file.as_deref(), a.stdin, a.body.as_deref()),
+            )?;
             let b = client::read_body(a.file.as_deref(), a.stdin, a.body.as_deref())?;
             let read = matches!(a.method.to_ascii_uppercase().as_str(), "GET" | "HEAD");
             if a.paginate {
@@ -496,6 +512,48 @@ fn run(c: Cli) -> Result<(), AppError> {
                 .map_err(|_| AppError::api("embedded capability inventory is invalid"))?
                 .ok_or_else(|| AppError::usage(format!("unknown capability '{name}'")))?;
             capability::access_recipe(&entry)
+        }
+        Some(Command::Capability {
+            command: CapabilityCommand::Schema { name },
+        }) => capability::schema(&name)?,
+        Some(Command::Capability {
+            command:
+                CapabilityCommand::Invoke {
+                    name,
+                    input,
+                    file,
+                    stdin,
+                    allow_write,
+                    allow_metered,
+                    allow_egress,
+                    allow_long_running,
+                    confirm,
+                },
+        }) => {
+            let flags = operation::GuardFlags {
+                allow_write,
+                allow_metered,
+                allow_egress,
+                allow_long_running,
+                confirm: confirm.as_deref(),
+            };
+            operation::preflight(
+                &name,
+                None,
+                c.endpoint.as_deref(),
+                c.account.as_deref(),
+                flags,
+            )?;
+            let body = client::read_body(file.as_deref(), stdin, input.as_deref())?
+                .unwrap_or_else(|| json!({}));
+            operation::preflight(
+                &name,
+                Some(&body),
+                c.endpoint.as_deref(),
+                c.account.as_deref(),
+                flags,
+            )?;
+            operation::invoke(&name, body, c.endpoint, c.account, c.mcp_endpoint, flags)?
         }
         Some(Command::Tool { command }) => {
             let resolved = config::load(c.endpoint.clone(), c.account.clone(), c.zone.clone())?;
@@ -586,12 +644,29 @@ mod tests {
     #[test]
     fn guidance_artifacts_keep_core_contract_in_sync() {
         let readme = include_str!("../README.md");
+        let contract = include_str!("../docs/plans/cloudflare-axi-contract.md");
+        let roadmap = include_str!("../docs/plans/cloudflare-full-capability-parity-roadmap.md");
         let skill = include_str!("../skills/magi-cloudflare-axi/SKILL.md");
         for phrase in [
+            "schema v3",
+            "I=172; S=172; R=B=P=V=9; D=4; X=40",
+            "capability invoke d1_database_get",
+        ] {
+            assert!(readme.contains(phrase), "README missing {phrase}");
+            assert!(contract.contains(phrase), "contract missing {phrase}");
+            assert!(skill.contains(phrase), "skill missing {phrase}");
+        }
+        for artifact in [readme, contract, skill] {
+            assert!(artifact.contains("Phase 3"));
+        }
+        assert!(roadmap.contains("current_phase: phase-3-complete-for-proven-cohort"));
+        assert!(roadmap.contains("Blog direct reads = 4/4 complete and discovery-verified"));
+        assert!(roadmap.contains("163 routes unresolved"));
+        for phrase in [
             "registration-input schema",
-            "I=172; S=172;",
             "--allow-write --allow-metered --confirm",
             "tool schema search --server cloudflare",
+            "capability schema d1_database_get",
         ] {
             assert!(readme.contains(phrase), "README missing {phrase}");
             assert!(skill.contains(phrase), "skill missing {phrase}");

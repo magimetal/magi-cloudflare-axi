@@ -6,7 +6,32 @@ use std::collections::{BTreeMap, BTreeSet};
 const CATALOG: &str = include_str!("../capabilities/cloudflare-mcp-parity.json");
 const SCHEMAS: &str = include_str!("../capabilities/cloudflare-input-schemas.json");
 const FIXTURES: &str = include_str!("../capabilities/cloudflare-schema-fixtures.json");
+const OPERATIONS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 pub const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
+const OPERATION_BUNDLE_SHA256: &str =
+    "9c083c24d8fb3a88196534ed74fc391d5336f545be20fc8c7e1c6b9cf4fffc68";
+const OPERATION_NAMES: [&str; 9] = [
+    "d1_database_delete",
+    "d1_database_get",
+    "get_post",
+    "get_url_html_content",
+    "graphql_schema_overview",
+    "list_posts",
+    "list_tags",
+    "search_cloudflare_documentation",
+    "search_posts",
+];
+const OPERATION_HASHES: [&str; 9] = [
+    "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
+    "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
+    "c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1",
+    "5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909",
+    "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc",
+    "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c",
+    "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd",
+    "9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41",
+    "50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91",
+];
 const DENOMINATOR: usize = 172;
 const DIALECT: &str = "https://json-schema.org/draft/2020-12/schema";
 const SCHEMA_EVIDENCE_ID: &str = "ev-phase1-canonical-schemas";
@@ -16,8 +41,8 @@ const DEPENDENCY_PROVENANCE_COUNT: usize = 803;
 const DEPENDENCY_PROVENANCE_SHA256: &str =
     "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04";
 const LEGACY_METADATA_SHA256: &str =
-    "fa2d722b3953d2737f2ad69ccc0a8c240acc25cef3d9c8119c6fb63162786f00";
-const LEGACY_METADATA_FNV1A: u64 = 0xadea63317dd97177;
+    "fd27d3dbd35b4fb0c098aa3160bf563482f01bab7e37870c4e178761f39d40d1";
+const LEGACY_METADATA_FNV1A: u64 = 0x1ab48618bee73ca1;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -87,12 +112,6 @@ status_enum!(EvidenceDimension {
     Discovery,
     ExternalBlocker
 });
-status_enum!(EvidenceKind {
-    Missing,
-    SourceVerified,
-    OfficialVerified,
-    HermeticVerified
-});
 status_enum!(LedgerBlockerStatus { Open, Resolved });
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -148,16 +167,48 @@ pub struct BlockerDimension {
     pub evidence_ids: Vec<String>,
 }
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(tag = "kind", deny_unknown_fields)]
+pub enum EvidenceProvenance {
+    #[serde(rename = "missing")]
+    Missing { context_ref: String, fact: String },
+    #[serde(rename = "pinned_git")]
+    PinnedGit {
+        repo: String,
+        commit: String,
+        source_ref: String,
+        blob: Option<String>,
+        span: Option<String>,
+        source_sha256: Option<String>,
+    },
+    #[serde(rename = "official_docs")]
+    OfficialDocs {
+        url: String,
+        documentation_date: String,
+        fact_sha256: String,
+    },
+    #[serde(rename = "generated_artifact")]
+    GeneratedArtifact {
+        artifact: String,
+        sha256: String,
+        fact: String,
+        #[serde(default)]
+        capability: Option<String>,
+        #[serde(default)]
+        contract_sha256: Option<String>,
+    },
+    #[serde(rename = "hermetic_test")]
+    HermeticTest { test_id: String, fact: String },
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Evidence {
     pub id: String,
     pub dimension: EvidenceDimension,
-    pub source_repo: String,
-    pub source_commit: String,
-    pub source_ref: String,
-    pub kind: EvidenceKind,
     pub fact: String,
+    pub provenance: EvidenceProvenance,
 }
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Blocker {
@@ -177,11 +228,27 @@ pub struct SchemaArtifacts {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+pub struct OperationContractArtifact {
+    pub capability: String,
+    pub contract_sha256: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct OperationArtifacts {
+    pub path: String,
+    pub bundle_sha256: String,
+    pub contracts: Vec<OperationContractArtifact>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Catalog {
     pub schema_version: u32,
     pub catalog_id: String,
     pub source: Source,
     pub schema_artifacts: SchemaArtifacts,
+    pub operation_artifacts: OperationArtifacts,
     pub denominator: usize,
     pub legacy_metadata_sha256: String,
     pub evidence: Vec<Evidence>,
@@ -203,6 +270,20 @@ fn invalid(message: impl Into<String>) -> serde_json::Error {
         message.into(),
     ))
 }
+fn provenance_is(provenance: &EvidenceProvenance, expected: &str) -> bool {
+    matches!(
+        (provenance, expected),
+        (EvidenceProvenance::Missing { .. }, "missing")
+            | (EvidenceProvenance::PinnedGit { .. }, "pinned_git")
+            | (EvidenceProvenance::OfficialDocs { .. }, "official_docs")
+            | (
+                EvidenceProvenance::GeneratedArtifact { .. },
+                "generated_artifact"
+            )
+            | (EvidenceProvenance::HermeticTest { .. }, "hermetic_test")
+    )
+}
+
 fn validate_evidence_ids<'a>(
     ids: &'a [String],
     dimension: EvidenceDimension,
@@ -217,32 +298,25 @@ fn validate_evidence_ids<'a>(
         let item = evidence
             .get(id.as_str())
             .ok_or_else(|| invalid("dangling evidence ID"))?;
-        if item.dimension != dimension
-            || item.source_repo != "https://github.com/cloudflare/mcp-server-cloudflare"
-            || item.source_commit != SOURCE_COMMIT
-            || item.source_ref.is_empty()
-        {
-            return Err(invalid("evidence dimension or provenance mismatch"));
+        if item.dimension != dimension || item.fact.is_empty() {
+            return Err(invalid("evidence dimension or fact mismatch"));
         }
+        validate_provenance(item)?;
         used.insert(id);
     }
     Ok(())
 }
-fn has_evidence_kind(
-    ids: &[String],
-    evidence: &BTreeMap<&str, &Evidence>,
-    kind: EvidenceKind,
-) -> bool {
+
+fn has_provenance(ids: &[String], evidence: &BTreeMap<&str, &Evidence>, expected: &str) -> bool {
     ids.iter().any(|id| {
         evidence
             .get(id.as_str())
-            .is_some_and(|item| item.kind == kind)
+            .is_some_and(|item| provenance_is(&item.provenance, expected))
     })
 }
 
 fn has_authoritative_evidence(ids: &[String], evidence: &BTreeMap<&str, &Evidence>) -> bool {
-    has_evidence_kind(ids, evidence, EvidenceKind::SourceVerified)
-        || has_evidence_kind(ids, evidence, EvidenceKind::OfficialVerified)
+    has_provenance(ids, evidence, "pinned_git") || has_provenance(ids, evidence, "official_docs")
 }
 
 fn counts<'a>(values: impl Iterator<Item = &'a str>) -> BTreeMap<&'a str, usize> {
@@ -289,6 +363,261 @@ fn json_sha256(value: &Value) -> Result<String, serde_json::Error> {
         .collect())
 }
 
+fn safe_relative_path(value: &str) -> bool {
+    !value.is_empty()
+        && !value.starts_with('/')
+        && !value.contains('\\')
+        && !value
+            .split('/')
+            .any(|part| part.is_empty() || part == "." || part == "..")
+}
+
+fn valid_source_ref(value: &str) -> bool {
+    if value == SCHEMA_SOURCE_REF {
+        return true;
+    }
+    let Some((path, location)) = value.rsplit_once(':') else {
+        return false;
+    };
+    safe_relative_path(path) && location.split(';').all(valid_line_span)
+}
+
+fn valid_line_span(value: &str) -> bool {
+    value.split(';').all(|part| {
+        if let Ok(line) = part.parse::<usize>() {
+            return line > 0;
+        }
+        let Some((start, end)) = part.split_once('-') else {
+            return false;
+        };
+        start.parse::<usize>().is_ok_and(|s| s > 0)
+            && end
+                .parse::<usize>()
+                .is_ok_and(|e| e >= start.parse::<usize>().unwrap_or(0))
+    })
+}
+
+fn valid_date(value: &str) -> bool {
+    let Ok(parts) = value
+        .split('-')
+        .map(str::parse::<u32>)
+        .collect::<Result<Vec<_>, _>>()
+    else {
+        return false;
+    };
+    if parts.len() != 3 || value.len() != 10 {
+        return false;
+    }
+    let (year, month, day) = (parts[0], parts[1], parts[2]);
+    let leap = year.is_multiple_of(4) && (!year.is_multiple_of(100) || year.is_multiple_of(400));
+    let maximum = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if leap => 29,
+        2 => 28,
+        _ => return false,
+    };
+    (1..=maximum).contains(&day)
+}
+
+fn valid_test_id(value: &str) -> bool {
+    let Some((path, name)) = value.split_once("::") else {
+        return false;
+    };
+    path.starts_with("tests/")
+        && path.ends_with(".rs")
+        && safe_relative_path(path)
+        && !name.is_empty()
+        && name
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+}
+
+fn validate_provenance(item: &Evidence) -> Result<(), serde_json::Error> {
+    let valid = match &item.provenance {
+        EvidenceProvenance::Missing { context_ref, fact } => {
+            !context_ref.is_empty() && fact == &item.fact
+        }
+        EvidenceProvenance::PinnedGit {
+            repo,
+            commit,
+            source_ref,
+            blob,
+            span,
+            source_sha256,
+        } => {
+            let exact = match (blob, span, source_sha256) {
+                (None, None, None) => true,
+                (Some(blob), Some(span), Some(hash)) => {
+                    is_lower_hex(Some(blob), 40)
+                        && valid_line_span(span)
+                        && is_lower_hex(Some(hash), 64)
+                }
+                _ => false,
+            };
+            repo == "https://github.com/cloudflare/mcp-server-cloudflare"
+                && commit == SOURCE_COMMIT
+                && valid_source_ref(source_ref)
+                && exact
+        }
+        EvidenceProvenance::OfficialDocs {
+            url,
+            documentation_date,
+            fact_sha256,
+        } => {
+            url::Url::parse(url).is_ok_and(|parsed| {
+                parsed.scheme() == "https"
+                    && parsed.host_str().is_some()
+                    && parsed.username().is_empty()
+                    && parsed.password().is_none()
+                    && parsed.query().is_none()
+                    && parsed.fragment().is_none()
+            }) && valid_date(documentation_date)
+                && is_lower_hex(Some(fact_sha256), 64)
+        }
+        EvidenceProvenance::GeneratedArtifact {
+            artifact,
+            sha256,
+            fact,
+            capability,
+            contract_sha256,
+        } => {
+            [
+                "capabilities/cloudflare-input-schemas.json",
+                "capabilities/cloudflare-operation-contracts.json",
+            ]
+            .contains(&artifact.as_str())
+                && safe_relative_path(artifact)
+                && is_lower_hex(Some(sha256), 64)
+                && fact == &item.fact
+                && match (capability, contract_sha256) {
+                    (None, None) => true,
+                    (Some(name), Some(hash)) => !name.is_empty() && is_lower_hex(Some(hash), 64),
+                    _ => false,
+                }
+        }
+        EvidenceProvenance::HermeticTest { test_id, fact } => {
+            valid_test_id(test_id) && fact == &item.fact
+        }
+    };
+    if valid {
+        Ok(())
+    } else {
+        Err(invalid(format!("invalid provenance for {}", item.id)))
+    }
+}
+
+fn legacy_metadata_checksum_from_catalog(catalog: &Catalog) -> Result<u64, serde_json::Error> {
+    let mut capabilities = serde_json::to_value(&catalog.capabilities)?;
+    let rows = capabilities
+        .as_array_mut()
+        .ok_or_else(|| invalid("typed catalog capabilities must be an array"))?;
+    for capability in &mut *rows {
+        capability
+            .as_object_mut()
+            .ok_or_else(|| invalid("typed catalog capability must be an object"))?
+            .retain(|key, value| {
+                ![
+                    "source_ref",
+                    "parity",
+                    "input_fields",
+                    "schema_contract_sha256",
+                ]
+                .contains(&key.as_str())
+                    && !value.is_null()
+            });
+    }
+    let encoded = serde_json::to_vec(&canonical_json(Value::Array(rows.clone())))
+        .map_err(|error| invalid(error.to_string()))?;
+    Ok(encoded.iter().fold(0xcbf29ce484222325u64, |hash, byte| {
+        (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
+    }))
+}
+
+fn validate_operation_contract(contract: &Value) -> Result<(), serde_json::Error> {
+    let transport = contract["route"]["transport"]
+        .as_str()
+        .ok_or_else(|| invalid("operation route transport required"))?;
+    let operation = contract["safety"]["operation"].as_str().unwrap_or("");
+    let retry = contract["safety"]["retry_policy"].as_str().unwrap_or("");
+    if !["rest", "graphql", "mcp"].contains(&transport)
+        || contract["implementation"]["status"] != "verified"
+        || contract["route"]["auth"].as_str().is_none()
+        || ((operation == "write" && retry != "never")
+            || (operation != "write" && !matches!(retry, "never" | "transient_read")))
+    {
+        return Err(invalid("unsupported operation contract"));
+    }
+    if transport == "mcp"
+        && (contract["route"]["auth"] != "none"
+            || contract["route"]["method"] != "tools/call"
+            || contract["route"]["protocol"] != "2026-07-28"
+            || contract["route"]["tool"] != contract["capability"])
+    {
+        return Err(invalid("MCP operation route mismatch"));
+    }
+    if ["get_post", "list_posts", "list_tags", "search_posts"]
+        .contains(&contract["capability"].as_str().unwrap_or(""))
+    {
+        let host = if contract["capability"] == "search_posts" {
+            "search.blog.cloudflare.com"
+        } else {
+            "blog.cloudflare.com"
+        };
+        let method = if contract["capability"] == "search_posts" {
+            "POST"
+        } else {
+            "GET"
+        };
+        let handler = &contract["evidence"]["pinned_handler"];
+        let deployment = &contract["evidence"]["pinned_deployment"];
+        let (handler_lines, handler_sha) = match contract["capability"].as_str().unwrap_or("") {
+            "get_post" => (
+                "182-216",
+                "19ab680af0684117663fc33a93d6a3b32f1ea00d5fd6b739a1403e28086e449f",
+            ),
+            "list_posts" => (
+                "132-178",
+                "823824afc90a47456d129f8b165116954f5e9aa7515c49ab669c6b82dd3c739e",
+            ),
+            "list_tags" => (
+                "220-250",
+                "2326d45ff50c4d1f2dc202ccc70a5c2a1d46124b5ffba213c4aa546349b6aeaa",
+            ),
+            "search_posts" => (
+                "38-128",
+                "d034bddda8639a9f034c05df5ee4d9287ea05fb59aad85bd7e58ea01481e6334",
+            ),
+            _ => unreachable!(),
+        };
+        if operation != "read"
+            || contract["safety"]["destructive"] != false
+            || contract["safety"]["metered"] != false
+            || contract["safety"]["data_egress"] != false
+            || contract["safety"]["long_running"] != false
+            || retry != "never"
+            || contract["route"]["transport"] != "rest"
+            || contract["route"]["host"] != host
+            || contract["route"]["method"] != method
+            || contract["route"]["auth"] != "none"
+            || contract["implementation"]["adapter"] != "rest"
+            || handler["commit"] != SOURCE_COMMIT
+            || handler["file"] != "apps/cloudflare-blog/src/tools/blog.tools.ts"
+            || handler["blob_oid"] != "8088b2d44ad256afd06493fe266d2d6089103559"
+            || handler["lines"] != handler_lines
+            || handler["source_sha256"] != handler_sha
+            || deployment["commit"] != SOURCE_COMMIT
+            || deployment["file"] != "apps/cloudflare-blog/wrangler.jsonc"
+            || deployment["blob_oid"] != "ca5c1716fa35da43a862c1902f3822bba2a314ee"
+            || deployment["lines"] != "25-30;67-82"
+            || deployment["source_sha256"]
+                != "5daaacef4ef444ff1137b1466a0c402934bf13e6f8ed00751717f88006a5c05f"
+        {
+            return Err(invalid("Cloudflare Blog evidence or safety mismatch"));
+        }
+    }
+    Ok(())
+}
 fn is_lower_hex(value: Option<&str>, length: usize) -> bool {
     value.is_some_and(|value| {
         value.len() == length
@@ -714,6 +1043,134 @@ fn legacy_metadata_checksum(raw: &str) -> Result<u64, serde_json::Error> {
     }))
 }
 
+fn completed_route_matches(row: &Capability, contract: &Value) -> bool {
+    let route = &contract["route"];
+    let blog = ["get_post", "list_posts", "list_tags", "search_posts"].contains(&row.name.as_str());
+    let transport_matches = if row.name == "get_url_html_content" {
+        row.transport == "rest" && row.method.as_deref() == Some("POST")
+    } else if row.name == "search_cloudflare_documentation" {
+        row.transport == "mcp"
+    } else if blog {
+        row.transport == "public_http"
+            && row.method.as_deref() == contract["route"]["method"].as_str()
+    } else {
+        row.transport == route["transport"]
+    };
+    transport_matches && row.scope == route["scope"]
+}
+
+fn validate_operation_evidence(
+    row: &Capability,
+    contract: &Value,
+    evidence: &BTreeMap<&str, &Evidence>,
+) -> Result<(), serde_json::Error> {
+    let capability = row.name.as_str();
+    let blog = ["get_post", "list_posts", "list_tags", "search_posts"].contains(&capability);
+    let complete = |dimension| match dimension {
+        "route" => row.parity.route.status == RouteStatus::Complete,
+        "behavior" => matches!(
+            row.parity.behavior.status,
+            BehaviorStatus::Specified | BehaviorStatus::Verified
+        ),
+        "policy" => matches!(
+            row.parity.policy.status,
+            PolicyStatus::Classified | PolicyStatus::Verified
+        ),
+        "verification" => row.parity.verification.status == VerificationStatus::HermeticVerified,
+        "discovery" => matches!(
+            row.parity.discovery.status,
+            DiscoveryStatus::Generated | DiscoveryStatus::Verified
+        ),
+        _ => false,
+    };
+    let ids = |dimension| match dimension {
+        "route" => &row.parity.route.evidence_ids,
+        "behavior" => &row.parity.behavior.evidence_ids,
+        "policy" => &row.parity.policy.evidence_ids,
+        "verification" => &row.parity.verification.evidence_ids,
+        "discovery" => &row.parity.discovery.evidence_ids,
+        _ => unreachable!(),
+    };
+    for dimension in ["route", "behavior", "policy", "verification", "discovery"] {
+        if !complete(dimension) {
+            continue;
+        }
+        for id in ids(dimension) {
+            let item = evidence
+                .get(id.as_str())
+                .ok_or_else(|| invalid("operation evidence missing"))?;
+            let pinned = &contract["evidence"]["pinned_handler"];
+            let authoritative = match &item.provenance {
+                EvidenceProvenance::PinnedGit {
+                    repo,
+                    commit,
+                    source_ref,
+                    blob,
+                    span,
+                    source_sha256,
+                    ..
+                } => {
+                    *repo == "https://github.com/cloudflare/mcp-server-cloudflare"
+                        && *commit == SOURCE_COMMIT
+                        && source_ref
+                            == &format!(
+                                "{}:{}",
+                                pinned["file"].as_str().unwrap_or(""),
+                                pinned["lines"].as_str().unwrap_or("")
+                            )
+                        && blob.as_deref() == pinned["blob_oid"].as_str()
+                        && span.as_deref() == pinned["lines"].as_str()
+                        && source_sha256.as_deref() == pinned["source_sha256"].as_str()
+                }
+                EvidenceProvenance::OfficialDocs {
+                    url,
+                    documentation_date,
+                    fact_sha256,
+                } => contract["evidence"]["official_docs"]
+                    .as_object()
+                    .is_some_and(|docs| {
+                        Some(url.as_str()) == docs.get("url").and_then(Value::as_str)
+                            && Some(documentation_date.as_str())
+                                == docs.get("documentation_date").and_then(Value::as_str)
+                            && Some(fact_sha256.as_str())
+                                == docs.get("fact_sha256").and_then(Value::as_str)
+                    }),
+                _ => false,
+            };
+            let test = matches!(&item.provenance, EvidenceProvenance::HermeticTest { test_id, .. } if test_id.as_str() == contract["implementation"]["test_id"].as_str().unwrap_or(""));
+            let applicable = match dimension {
+                "route" => authoritative,
+                "behavior" | "policy" => authoritative || test,
+                "verification" => test,
+                "discovery" => match &item.provenance {
+                    EvidenceProvenance::GeneratedArtifact {
+                        artifact,
+                        capability: bound,
+                        contract_sha256,
+                        ..
+                    } => {
+                        artifact == "capabilities/cloudflare-operation-contracts.json"
+                            && bound.as_deref() == Some(capability)
+                            && contract_sha256.as_deref() == contract["contract_sha256"].as_str()
+                    }
+                    EvidenceProvenance::HermeticTest { test_id, .. } => {
+                        blog && test_id
+                            == "tests/integration.rs::capability_blog_discovery_examples_are_exact"
+                    }
+                    _ => false,
+                },
+                _ => false,
+            };
+            if !applicable {
+                return Err(invalid(
+                    "completed operation evidence does not reverse-join contract",
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn parse_catalog(raw: &str) -> Result<Catalog, serde_json::Error> {
     if legacy_metadata_checksum(raw)? != LEGACY_METADATA_FNV1A {
         return Err(invalid("per-capability legacy metadata checksum mismatch"));
@@ -724,7 +1181,11 @@ fn parse_catalog(raw: &str) -> Result<Catalog, serde_json::Error> {
 }
 
 pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
-    if c.schema_version != 2
+    if legacy_metadata_checksum_from_catalog(c)? != LEGACY_METADATA_FNV1A {
+        return Err(invalid("per-capability legacy metadata checksum mismatch"));
+    }
+
+    if c.schema_version != 3
         || c.catalog_id != "cloudflare-mcp-parity"
         || c.denominator != DENOMINATOR
         || c.legacy_metadata_sha256 != LEGACY_METADATA_SHA256
@@ -745,23 +1206,110 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
     let evidence: BTreeMap<_, _> = c.evidence.iter().map(|x| (x.id.as_str(), x)).collect();
     if evidence.len() != c.evidence.len()
         || c.evidence.iter().any(|item| {
-            item.id.is_empty()
-                || item.fact.is_empty()
-                || item.source_repo != "https://github.com/cloudflare/mcp-server-cloudflare"
-                || item.source_commit != SOURCE_COMMIT
-                || item.source_ref.is_empty()
+            item.id.is_empty() || item.fact.is_empty() || validate_provenance(item).is_err()
         })
     {
         return Err(invalid("invalid or duplicate evidence"));
+    }
+
+    let operations: Value = serde_json::from_str(OPERATIONS)?;
+    let mut operation_root = operations.clone();
+    operation_root["bundle_sha256"] = Value::Null;
+    let contracts = operations["contracts"]
+        .as_array()
+        .ok_or_else(|| invalid("operation contracts array required"))?;
+    if operations["version"] != "phase3-operation-contracts-v1"
+        || operations["source_commit"] != SOURCE_COMMIT
+        || json_sha256(&operation_root)? != OPERATION_BUNDLE_SHA256
+        || contracts
+            .iter()
+            .map(|c| c["capability"].as_str().unwrap_or(""))
+            .collect::<Vec<_>>()
+            != OPERATION_NAMES
+        || operations["bundle_sha256"] != OPERATION_BUNDLE_SHA256
+    {
+        return Err(invalid("operation envelope pin mismatch"));
+    }
+    for (index, contract) in contracts.iter().enumerate() {
+        validate_operation_contract(contract)?;
+        let mut unhashed = contract.clone();
+        unhashed["contract_sha256"] = Value::Null;
+        if contract["contract_sha256"] != OPERATION_HASHES[index]
+            || json_sha256(&unhashed)? != OPERATION_HASHES[index]
+        {
+            return Err(invalid("operation contract hash mismatch"));
+        }
+    }
+    let _artifact_bindings = contracts
+        .iter()
+        .map(|contract| {
+            Ok((
+                contract["capability"]
+                    .as_str()
+                    .ok_or_else(|| invalid("operation capability required"))?,
+                contract["contract_sha256"]
+                    .as_str()
+                    .ok_or_else(|| invalid("operation contract hash required"))?,
+            ))
+        })
+        .collect::<Result<Vec<_>, serde_json::Error>>()?;
+    let catalog_bindings = c
+        .operation_artifacts
+        .contracts
+        .iter()
+        .map(|binding| {
+            (
+                binding.capability.as_str(),
+                binding.contract_sha256.as_str(),
+            )
+        })
+        .collect::<Vec<_>>();
+    if c.operation_artifacts.path != "capabilities/cloudflare-operation-contracts.json"
+        || c.operation_artifacts.bundle_sha256 != OPERATION_BUNDLE_SHA256
+        || catalog_bindings != _artifact_bindings
+    {
+        return Err(invalid("operation artifact binding mismatch"));
+    }
+    let schema_bundle: Value = serde_json::from_str(SCHEMAS)?;
+    for item in &c.evidence {
+        if let EvidenceProvenance::GeneratedArtifact {
+            artifact,
+            sha256,
+            capability,
+            contract_sha256,
+            ..
+        } = &item.provenance
+        {
+            let (actual, artifact_contracts) = match artifact.as_str() {
+                "capabilities/cloudflare-input-schemas.json" => (
+                    json_sha256(&schema_bundle)?,
+                    schema_bundle["contracts"].as_array(),
+                ),
+                "capabilities/cloudflare-operation-contracts.json" => {
+                    (json_sha256(&operations)?, Some(contracts))
+                }
+                _ => return Err(invalid("unknown generated artifact")),
+            };
+            let binding_valid = match (capability.as_deref(), contract_sha256.as_deref()) {
+                (None, None) => true,
+                (Some(name), Some(hash)) => artifact_contracts.is_some_and(|rows| {
+                    rows.iter().any(|row| {
+                        row["capability"].as_str() == Some(name)
+                            && row["contract_sha256"].as_str() == Some(hash)
+                    })
+                }),
+                _ => false,
+            };
+            if sha256 != &actual || !binding_valid {
+                return Err(invalid("generated artifact provenance mismatch"));
+            }
+        }
     }
     let schema_evidence = evidence
         .get(SCHEMA_EVIDENCE_ID)
         .ok_or_else(|| invalid("Phase 1 schema evidence required"))?;
     if schema_evidence.dimension != EvidenceDimension::Schema
-        || schema_evidence.kind != EvidenceKind::SourceVerified
-        || schema_evidence.source_repo != "https://github.com/cloudflare/mcp-server-cloudflare"
-        || schema_evidence.source_commit != SOURCE_COMMIT
-        || schema_evidence.source_ref != SCHEMA_SOURCE_REF
+        || !matches!(&schema_evidence.provenance, EvidenceProvenance::PinnedGit { source_ref, blob: None, span: None, source_sha256: None, .. } if source_ref == SCHEMA_SOURCE_REF)
         || schema_evidence.fact != SCHEMA_EVIDENCE_FACT
     {
         return Err(invalid("Phase 1 schema evidence provenance mismatch"));
@@ -799,7 +1347,6 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
         if row.cli_access == "blocked" && row.blocker.as_deref().is_none_or(str::is_empty) {
             return Err(invalid("blocked capability lacks blocker"));
         }
-
         if row.parity.inventory.status != InventoryStatus::Complete
             || row.parity.inventory.evidence_ids.len() != 1
         {
@@ -849,35 +1396,44 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
         for (dimension, ids) in evidence_groups {
             validate_evidence_ids(ids, dimension, &evidence, &mut used)?;
         }
+        let operation_complete = row.parity.route.status == RouteStatus::Complete
+            || matches!(
+                row.parity.behavior.status,
+                BehaviorStatus::Specified | BehaviorStatus::Verified
+            )
+            || matches!(
+                row.parity.policy.status,
+                PolicyStatus::Classified | PolicyStatus::Verified
+            )
+            || row.parity.verification.status == VerificationStatus::HermeticVerified
+            || matches!(
+                row.parity.discovery.status,
+                DiscoveryStatus::Generated | DiscoveryStatus::Verified
+            );
+        let contract = contracts
+            .iter()
+            .find(|contract| contract["capability"] == row.name);
+        if operation_complete && contract.is_none() {
+            return Err(invalid("completed operation dimension lacks contract"));
+        }
+        if let Some(contract) = contract {
+            validate_operation_evidence(row, contract, &evidence)?;
+        }
         let inventory_evidence = evidence
             .get(row.parity.inventory.evidence_ids[0].as_str())
             .ok_or_else(|| invalid("missing inventory evidence"))?;
-        if inventory_evidence.kind != EvidenceKind::SourceVerified
-            || inventory_evidence.source_ref != row.source
+        if !matches!(&inventory_evidence.provenance, EvidenceProvenance::PinnedGit { source_ref, .. } if source_ref == &row.source)
         {
             return Err(invalid("inventory evidence mismatch"));
         }
-
-        let needs_evidence = (matches!(
-            row.parity.schema.status,
-            SchemaStatus::Complete | SchemaStatus::ZeroInputEvidenced
-        ) && row.parity.schema.evidence_ids.is_empty())
-            || (matches!(
-                row.parity.route.status,
-                RouteStatus::Complete | RouteStatus::ExternalBlocked
-            ) && row.parity.route.evidence_ids.is_empty())
-            || (matches!(
-                row.parity.policy.status,
-                PolicyStatus::Classified | PolicyStatus::Verified
-            ) && row.parity.policy.evidence_ids.is_empty())
-            || (row.parity.verification.status == VerificationStatus::HermeticVerified
-                && row.parity.verification.evidence_ids.is_empty())
-            || (matches!(
-                row.parity.discovery.status,
-                DiscoveryStatus::Generated | DiscoveryStatus::Verified
-            ) && row.parity.discovery.evidence_ids.is_empty());
-        if needs_evidence {
-            return Err(invalid("advanced parity status requires evidence"));
+        if row.parity.route.status == RouteStatus::Complete {
+            let contract = contracts
+                .iter()
+                .find(|contract| contract["capability"] == row.name)
+                .ok_or_else(|| invalid("completed route lacks operation contract"))?;
+            if !completed_route_matches(row, contract) {
+                return Err(invalid("completed route does not match operation contract"));
+            }
         }
         let schema_complete = matches!(
             row.parity.schema.status,
@@ -887,54 +1443,40 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             row.parity.route.status,
             RouteStatus::Complete | RouteStatus::ExternalBlocked
         );
-        let behavior_verified = row.parity.behavior.status == BehaviorStatus::Verified;
-        let policy_verified = row.parity.policy.status == PolicyStatus::Verified;
-        let missing_kind =
-            |ids: &[String]| has_evidence_kind(ids, &evidence, EvidenceKind::Missing);
+        let missing = |ids: &[String]| has_provenance(ids, &evidence, "missing");
+        let hermetic = |ids: &[String]| has_provenance(ids, &evidence, "hermetic_test");
+        let generated = |ids: &[String]| has_provenance(ids, &evidence, "generated_artifact");
         if (schema_complete
             && (!has_authoritative_evidence(&row.parity.schema.evidence_ids, &evidence)
-                || missing_kind(&row.parity.schema.evidence_ids)))
+                || missing(&row.parity.schema.evidence_ids)))
             || (route_complete
                 && (!has_authoritative_evidence(&row.parity.route.evidence_ids, &evidence)
-                    || missing_kind(&row.parity.route.evidence_ids)))
+                    || missing(&row.parity.route.evidence_ids)))
             || (row.parity.behavior.status == BehaviorStatus::Specified
                 && !has_authoritative_evidence(&row.parity.behavior.evidence_ids, &evidence))
-            || (behavior_verified
-                && (!has_authoritative_evidence(&row.parity.behavior.evidence_ids, &evidence)
-                    || !has_evidence_kind(
-                        &row.parity.behavior.evidence_ids,
-                        &evidence,
-                        EvidenceKind::HermeticVerified,
-                    )
-                    || missing_kind(&row.parity.behavior.evidence_ids)))
+            || (row.parity.behavior.status == BehaviorStatus::Verified
+                && (missing(&row.parity.behavior.evidence_ids)
+                    || !has_authoritative_evidence(&row.parity.behavior.evidence_ids, &evidence)
+                    || !hermetic(&row.parity.behavior.evidence_ids)))
             || (row.parity.policy.status == PolicyStatus::Classified
                 && !has_authoritative_evidence(&row.parity.policy.evidence_ids, &evidence))
-            || (policy_verified
-                && (!has_authoritative_evidence(&row.parity.policy.evidence_ids, &evidence)
-                    || !has_evidence_kind(
-                        &row.parity.policy.evidence_ids,
-                        &evidence,
-                        EvidenceKind::HermeticVerified,
-                    )
-                    || missing_kind(&row.parity.policy.evidence_ids)))
+            || (row.parity.policy.status == PolicyStatus::Verified
+                && (missing(&row.parity.policy.evidence_ids)
+                    || !has_authoritative_evidence(&row.parity.policy.evidence_ids, &evidence)
+                    || !hermetic(&row.parity.policy.evidence_ids)))
             || (row.parity.verification.status == VerificationStatus::HermeticVerified
-                && (!has_evidence_kind(
-                    &row.parity.verification.evidence_ids,
-                    &evidence,
-                    EvidenceKind::HermeticVerified,
-                ) || missing_kind(&row.parity.verification.evidence_ids)))
-            || (matches!(
-                row.parity.discovery.status,
-                DiscoveryStatus::Generated | DiscoveryStatus::Verified
-            ) && (!has_evidence_kind(
-                &row.parity.discovery.evidence_ids,
-                &evidence,
-                EvidenceKind::HermeticVerified,
-            ) || missing_kind(&row.parity.discovery.evidence_ids)))
+                && (!hermetic(&row.parity.verification.evidence_ids)
+                    || missing(&row.parity.verification.evidence_ids)))
+            || (row.parity.discovery.status == DiscoveryStatus::Generated
+                && (!generated(&row.parity.discovery.evidence_ids)
+                    || missing(&row.parity.discovery.evidence_ids)))
+            || (row.parity.discovery.status == DiscoveryStatus::Verified
+                && (!generated(&row.parity.discovery.evidence_ids)
+                    || !hermetic(&row.parity.discovery.evidence_ids)
+                    || missing(&row.parity.discovery.evidence_ids)))
         {
             return Err(invalid("parity status lacks applicable evidence kind"));
         }
-
         let external = &row.parity.external_blocker;
         if external.status == ExternalBlockerStatus::None
             && (external.blocker_id.is_some() || !external.evidence_ids.is_empty())
@@ -951,7 +1493,7 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             return Err(invalid("blocker status requires ledger ID and evidence"));
         }
         if external.status == ExternalBlockerStatus::Resolved
-            && has_evidence_kind(&external.evidence_ids, &evidence, EvidenceKind::Missing)
+            && has_provenance(&external.evidence_ids, &evidence, "missing")
         {
             return Err(invalid("resolved blocker requires non-missing evidence"));
         }
@@ -1026,9 +1568,10 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             != BTreeMap::from([
                 ("custom_container", 7),
                 ("graphql", 6),
-                ("internal_binding", 2),
-                ("public_http", 86),
-                ("rest", 71),
+                ("internal_binding", 1),
+                ("mcp", 1),
+                ("public_http", 85),
+                ("rest", 72),
             ])
         || access
             != BTreeMap::from([
@@ -1053,7 +1596,7 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             .iter()
             .filter(|row| row.blocker.is_some())
             .count()
-            != 41
+            != 40
     {
         return Err(invalid("legacy baseline metadata drift"));
     }
@@ -1098,19 +1641,73 @@ pub fn list(
         *accesses.entry(e.cli_access.clone()).or_insert(0usize) += 1;
     }
     let rows = if full {
-        serde_json::to_value(entries)?
+        serde_json::to_value(&entries)?
     } else {
         Value::Array(entries.iter().map(|e|json!({"name":e.name,"family":e.family,"operation":e.operation,"catalog_access":e.cli_access})).collect())
     };
     Ok(
-        json!({"count":rows.as_array().map_or(0,Vec::len),"families":families,"access":accesses,"parity_status":"inventory and registration-input schemas complete; routes, behavior, policy, verification, and discovery remain unresolved","global_parity":parity_vector(&catalog()?),"entries":rows}),
+        json!({"count":rows.as_array().map_or(0,Vec::len),"families":families,"access":accesses,"parity_status":format!("inventory and registration-input schemas complete; {} routes complete; behavior {}, policy {}, verification {}, discovery {}", entries.iter().filter(|e|e.parity.route.status == RouteStatus::Complete).count(), entries.iter().filter(|e|e.parity.behavior.status == BehaviorStatus::Verified).count(), entries.iter().filter(|e|e.parity.policy.status == PolicyStatus::Verified).count(), entries.iter().filter(|e|e.parity.verification.status == VerificationStatus::HermeticVerified).count(), entries.iter().filter(|e|e.parity.discovery.status == DiscoveryStatus::Verified).count()),"global_parity":parity_vector(&catalog()?),"entries":rows}),
     )
 }
 pub fn get(name: &str) -> Result<Option<Capability>, serde_json::Error> {
     Ok(all()?.into_iter().find(|e| e.name == name))
 }
 pub fn access_recipe(e: &Capability) -> Value {
-    json!({"name":e.name,"family":e.family,"operation":e.operation,"scope":e.scope,"catalog_access":e.cli_access,"status":"registration_schema_complete_route_unresolved","source":e.source,"source_commit":e.source_commit,"description":e.description,"catalog_input_fields":e.input_fields,"schema_contract_sha256":e.schema_contract_sha256,"method":e.method,"path_template":e.path_template,"blocker":e.blocker,"next_command":format!("magi-cloudflare-axi tool schema {} --server <server>",e.name),"warning":"pinned registration-input schema is complete; live schema may vary by request context, and route/behavior/policy evidence remains incomplete"})
+    let route_complete = e.parity.route.status == RouteStatus::Complete;
+    let verified = route_complete
+        && e.parity.behavior.status == BehaviorStatus::Verified
+        && e.parity.policy.status == PolicyStatus::Verified
+        && e.parity.verification.status == VerificationStatus::HermeticVerified;
+    json!({
+        "name": e.name,
+        "family": e.family,
+        "operation": e.operation,
+        "scope": e.scope,
+        "catalog_access": e.cli_access,
+        "status": if verified { "operation_verified" } else if route_complete { "registration_schema_and_route_complete" } else { "registration_schema_complete_route_unresolved" },
+        "parity": e.parity,
+        "source": e.source,
+        "source_commit": e.source_commit,
+        "description": e.description,
+        "catalog_input_fields": e.input_fields,
+        "schema_contract_sha256": e.schema_contract_sha256,
+        "method": e.method,
+        "path_template": e.path_template,
+        "blocker": e.blocker,
+        "next_command": if verified { match e.name.as_str() { "get_post" => "magi-cloudflare-axi capability invoke get_post --input '{\"slug\":\"<slug>\"}'".to_string(), "list_posts" | "list_tags" => format!("magi-cloudflare-axi capability invoke {} --input '{{}}'", e.name), "search_posts" => "magi-cloudflare-axi capability invoke search_posts --input '{\"query\":\"<query>\"}'".to_string(), _ => format!("magi-cloudflare-axi capability invoke {} --input '<json>'", e.name) } } else { format!("magi-cloudflare-axi tool schema {} --server <server>", e.name) },
+        "warning": if verified { "route, behavior, policy, and hermetic verification are complete; discovery remains separately gated" } else { "pinned registration-input schema is complete; live schema may vary by request context, and route/behavior/policy evidence remains incomplete" }
+    })
+}
+pub fn schema_contract(name: &str) -> Result<Option<Value>, serde_json::Error> {
+    let bundle: Value = serde_json::from_str(SCHEMAS)?;
+    Ok(bundle["contracts"]
+        .as_array()
+        .and_then(|contracts| {
+            contracts
+                .iter()
+                .find(|contract| contract["capability"] == name)
+        })
+        .cloned())
+}
+
+pub fn schema(name: &str) -> Result<Value, crate::error::AppError> {
+    let entry = get(name)
+        .map_err(|_| crate::error::AppError::api("embedded capability inventory is invalid"))?
+        .ok_or_else(|| crate::error::AppError::usage(format!("unknown capability '{name}'")))?;
+    let contract = schema_contract(name)
+        .map_err(|_| crate::error::AppError::api("embedded schema bundle is invalid"))?
+        .ok_or_else(|| {
+            crate::error::AppError::api(format!("schema unavailable for capability '{name}'"))
+        })?;
+    Ok(json!({
+        "name": name,
+        "dialect": DIALECT,
+        "raw_input_schema": contract["raw_input_schema"],
+        "raw_input_schema_sha256": contract["raw_input_schema_sha256"],
+        "schema_contract_sha256": entry.schema_contract_sha256,
+        "source": {"kind":"exact_pinned_git_blob","commit":SOURCE_COMMIT,"file":contract["source_file"],"blob_oid":contract["source_blob_oid"],"schema_span":contract["schema_span"]},
+        "semantics": {"unknown_key_behavior":contract["unknown_key_behavior"],"unknown_key_policies":contract["unknown_key_policies"],"context_overlays":contract["context_overlays"],"defaults":contract["defaults"],"normalizations":contract["normalizations"],"refinements":contract["refinements"],"transforms":contract["transforms"]}
+    }))
 }
 
 #[cfg(test)]
@@ -1127,7 +1724,7 @@ mod tests {
                 .count(),
             172
         );
-        assert_eq!(x_count(&c), 41);
+        assert_eq!(x_count(&c), 40);
     }
     #[test]
     fn capability_output_reports_schema_completion_without_route_overclaim() {
@@ -1154,6 +1751,21 @@ mod tests {
     }
 
     #[test]
+    fn d1_capability_output_reports_verified_operation() {
+        let capability = get("d1_database_get").unwrap().unwrap();
+        let recipe = access_recipe(&capability);
+        assert_eq!(recipe["status"], "operation_verified");
+        assert_eq!(recipe["parity"]["route"]["status"], "complete");
+        assert_eq!(recipe["parity"]["behavior"]["status"], "verified");
+        assert!(
+            recipe["next_command"]
+                .as_str()
+                .unwrap()
+                .contains("capability invoke d1_database_get")
+        );
+    }
+
+    #[test]
     fn typed_status_rejects_cross_dimension() {
         let mut v: Value = serde_json::from_str(CATALOG).unwrap();
         v["capabilities"][0]["parity"]["inventory"]["status"] = json!("verified");
@@ -1173,98 +1785,71 @@ mod tests {
     }
 
     #[test]
-    fn semantic_validation_rejects_missing_completion_evidence_kind() {
-        let mut c: Catalog = serde_json::from_str(CATALOG).unwrap();
-        let source_ref = c.capabilities[0].source.clone();
-        c.evidence.push(Evidence {
-            id: "test-schema-missing".into(),
-            dimension: EvidenceDimension::Schema,
-            source_repo: "https://github.com/cloudflare/mcp-server-cloudflare".into(),
-            source_commit: SOURCE_COMMIT.into(),
-            source_ref,
-            kind: EvidenceKind::Missing,
-            fact: "test missing evidence".into(),
-        });
-        c.capabilities[0].parity.schema.status = SchemaStatus::Complete;
-        c.capabilities[0].parity.schema.evidence_ids = vec!["test-schema-missing".into()];
-        assert!(validate(&c).is_err());
-    }
-    #[test]
-    fn route_external_blocked_rejects_missing_evidence() {
-        let mut c: Catalog = serde_json::from_str(CATALOG).unwrap();
-        let source_ref = c.capabilities[0].source.clone();
-        c.evidence.push(Evidence {
-            id: "test-route-missing".into(),
-            dimension: EvidenceDimension::Route,
-            source_repo: "https://github.com/cloudflare/mcp-server-cloudflare".into(),
-            source_commit: SOURCE_COMMIT.into(),
-            source_ref,
-            kind: EvidenceKind::Missing,
-            fact: "test missing evidence".into(),
-        });
-        c.capabilities[0].parity.route.status = RouteStatus::ExternalBlocked;
-        c.capabilities[0].parity.route.evidence_ids = vec!["test-route-missing".into()];
-        assert!(validate(&c).is_err());
+    fn completed_statuses_reject_missing_provenance() {
+        for (dimension, status) in [
+            ("route", "complete"),
+            ("verification", "hermetic_verified"),
+            ("discovery", "verified"),
+        ] {
+            let mut value: Value = serde_json::from_str(CATALOG).unwrap();
+            value["evidence"].as_array_mut().unwrap().push(json!({
+                "id":format!("test-{dimension}"),
+                "dimension":dimension,
+                "provenance":{"kind":"missing","context_ref":"tests/fixture","fact":"missing proof"},
+                "fact":"missing proof"
+            }));
+            value["capabilities"][0]["parity"][dimension] =
+                json!({"status":status,"evidence_ids":[format!("test-{dimension}")]});
+            let catalog: Catalog = serde_json::from_value(value).unwrap();
+            assert!(validate(&catalog).is_err(), "accepted {dimension}");
+        }
     }
 
     #[test]
-    fn verification_hermetic_rejects_missing_evidence() {
-        let mut c: Catalog = serde_json::from_str(CATALOG).unwrap();
-        let source_ref = c.capabilities[0].source.clone();
-        c.evidence.push(Evidence {
-            id: "test-verification-hermetic".into(),
-            dimension: EvidenceDimension::Verification,
-            source_repo: "https://github.com/cloudflare/mcp-server-cloudflare".into(),
-            source_commit: SOURCE_COMMIT.into(),
-            source_ref: source_ref.clone(),
-            kind: EvidenceKind::HermeticVerified,
-            fact: "test hermetic evidence".into(),
-        });
-        c.evidence.push(Evidence {
-            id: "test-verification-missing".into(),
-            dimension: EvidenceDimension::Verification,
-            source_repo: "https://github.com/cloudflare/mcp-server-cloudflare".into(),
-            source_commit: SOURCE_COMMIT.into(),
-            source_ref,
-            kind: EvidenceKind::Missing,
-            fact: "test missing evidence".into(),
-        });
-        c.capabilities[0].parity.verification.status = VerificationStatus::HermeticVerified;
-        c.capabilities[0].parity.verification.evidence_ids = vec![
-            "test-verification-hermetic".into(),
-            "test-verification-missing".into(),
-        ];
-        assert!(validate(&c).is_err());
+    fn provenance_variants_reject_malformed_values_and_legacy_fields() {
+        let mut legacy: Value = serde_json::from_str(CATALOG).unwrap();
+        legacy["evidence"][0]["source_repo"] = json!("https://example.com");
+        assert!(serde_json::from_value::<Catalog>(legacy).is_err());
+        for (id, provenance) in [
+            (
+                "git",
+                json!({"kind":"pinned_git","repo":"https://example.com","commit":SOURCE_COMMIT,"source_ref":"x.ts:1","blob":null,"span":null,"source_sha256":null}),
+            ),
+            (
+                "blob",
+                json!({"kind":"pinned_git","repo":"https://github.com/cloudflare/mcp-server-cloudflare","commit":SOURCE_COMMIT,"source_ref":"x.ts:1","blob":"bad","span":"1-1","source_sha256":"bad"}),
+            ),
+            (
+                "docs",
+                json!({"kind":"official_docs","url":"http://example.com","documentation_date":"2026-02-30","fact_sha256":"bad"}),
+            ),
+            (
+                "artifact",
+                json!({"kind":"generated_artifact","artifact":"../bad","sha256":"bad","fact":"proof"}),
+            ),
+            (
+                "test",
+                json!({"kind":"hermetic_test","test_id":"bad","fact":"proof"}),
+            ),
+        ] {
+            let evidence = Evidence {
+                id: id.into(),
+                dimension: EvidenceDimension::Route,
+                provenance: serde_json::from_value(provenance).unwrap(),
+                fact: "proof".into(),
+            };
+            assert!(validate_provenance(&evidence).is_err(), "accepted {id}");
+        }
     }
 
     #[test]
-    fn discovery_verified_rejects_missing_evidence() {
-        let mut c: Catalog = serde_json::from_str(CATALOG).unwrap();
-        let source_ref = c.capabilities[0].source.clone();
-        c.evidence.push(Evidence {
-            id: "test-discovery-hermetic".into(),
-            dimension: EvidenceDimension::Discovery,
-            source_repo: "https://github.com/cloudflare/mcp-server-cloudflare".into(),
-            source_commit: SOURCE_COMMIT.into(),
-            source_ref: source_ref.clone(),
-            kind: EvidenceKind::HermeticVerified,
-            fact: "test hermetic evidence".into(),
-        });
-        c.evidence.push(Evidence {
-            id: "test-discovery-missing".into(),
-            dimension: EvidenceDimension::Discovery,
-            source_repo: "https://github.com/cloudflare/mcp-server-cloudflare".into(),
-            source_commit: SOURCE_COMMIT.into(),
-            source_ref,
-            kind: EvidenceKind::Missing,
-            fact: "test missing evidence".into(),
-        });
-        c.capabilities[0].parity.discovery.status = DiscoveryStatus::Verified;
-        c.capabilities[0].parity.discovery.evidence_ids = vec![
-            "test-discovery-hermetic".into(),
-            "test-discovery-missing".into(),
-        ];
-        assert!(validate(&c).is_err());
+    fn operation_artifact_bindings_reject_drift() {
+        let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+        catalog.operation_artifacts.bundle_sha256 = "0".repeat(64);
+        assert!(validate(&catalog).is_err());
+        let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+        catalog.operation_artifacts.contracts[0].contract_sha256 = "0".repeat(64);
+        assert!(validate(&catalog).is_err());
     }
 
     #[test]
@@ -1315,7 +1900,9 @@ mod tests {
             .iter_mut()
             .find(|item| item.id == SCHEMA_EVIDENCE_ID)
             .unwrap();
-        evidence.source_ref = "capabilities/cloudflare-input-schemas.json".into();
+        if let EvidenceProvenance::PinnedGit { source_ref, .. } = &mut evidence.provenance {
+            *source_ref = "capabilities/cloudflare-input-schemas.json".to_owned();
+        }
         assert!(validate(&catalog).is_err());
     }
 
@@ -1477,5 +2064,145 @@ mod tests {
         bundle["dialect"] = Value::String("https://example.com/schema".into());
         rebind_schema_artifacts(&mut catalog, &bundle, &mut fixtures);
         assert!(validate_schema_artifact_values(&catalog, &bundle, &fixtures).is_err());
+    }
+}
+
+#[cfg(test)]
+mod operation_reverse_join_tests {
+    use super::*;
+
+    #[test]
+    fn completed_route_matcher_rejects_transport_and_scope_mismatch() {
+        let catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+        let row = catalog
+            .capabilities
+            .iter()
+            .find(|row| row.name == "d1_database_get")
+            .unwrap();
+        let operations: Value = serde_json::from_str(OPERATIONS).unwrap();
+        let contract = operations["contracts"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|contract| contract["capability"] == "d1_database_get")
+            .unwrap();
+        assert!(completed_route_matches(row, contract));
+        let mut wrong = row.clone();
+        wrong.transport = "graphql".into();
+        assert!(!completed_route_matches(&wrong, contract));
+        wrong.transport = row.transport.clone();
+        wrong.scope = "zone".into();
+        assert!(!completed_route_matches(&wrong, contract));
+    }
+
+    #[test]
+    fn d1_operation_evidence_reverse_join_rejects_cross_capability_swaps() {
+        for dimension in ["route", "behavior", "policy", "verification", "discovery"] {
+            let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+            let get = catalog
+                .capabilities
+                .iter()
+                .position(|row| row.name == "d1_database_get")
+                .unwrap();
+            let delete = catalog
+                .capabilities
+                .iter()
+                .position(|row| row.name == "d1_database_delete")
+                .unwrap();
+            let operations: Value = serde_json::from_str(OPERATIONS).unwrap();
+            let contract = operations["contracts"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|contract| contract["capability"] == "d1_database_get")
+                .unwrap();
+            let (left, right) = if get < delete {
+                let (low, high) = catalog.capabilities.split_at_mut(delete);
+                (&mut low[get], &mut high[0])
+            } else {
+                let (low, high) = catalog.capabilities.split_at_mut(get);
+                (&mut high[0], &mut low[delete])
+            };
+            match dimension {
+                "route" => std::mem::swap(
+                    &mut left.parity.route.evidence_ids,
+                    &mut right.parity.route.evidence_ids,
+                ),
+                "behavior" => std::mem::swap(
+                    &mut left.parity.behavior.evidence_ids,
+                    &mut right.parity.behavior.evidence_ids,
+                ),
+                "policy" => std::mem::swap(
+                    &mut left.parity.policy.evidence_ids,
+                    &mut right.parity.policy.evidence_ids,
+                ),
+                "verification" => std::mem::swap(
+                    &mut left.parity.verification.evidence_ids,
+                    &mut right.parity.verification.evidence_ids,
+                ),
+                _ => std::mem::swap(
+                    &mut left.parity.discovery.evidence_ids,
+                    &mut right.parity.discovery.evidence_ids,
+                ),
+            }
+            let evidence: BTreeMap<_, _> = catalog
+                .evidence
+                .iter()
+                .map(|item| (item.id.as_str(), item))
+                .collect();
+            let error =
+                validate_operation_evidence(&catalog.capabilities[get], contract, &evidence)
+                    .unwrap_err()
+                    .to_string();
+            assert!(error.contains("reverse-join"), "{dimension}: {error}");
+        }
+    }
+
+    #[test]
+    fn operation_reverse_join_uses_provenance_not_evidence_id_names() {
+        let mut catalog: Catalog = serde_json::from_str(CATALOG).unwrap();
+        let row = catalog
+            .capabilities
+            .iter_mut()
+            .find(|row| row.name == "d1_database_get")
+            .unwrap();
+        let old = row.parity.route.evidence_ids[0].clone();
+        let renamed = "renamed-valid-route-evidence".to_owned();
+        row.parity.route.evidence_ids[0] = renamed.clone();
+        catalog
+            .evidence
+            .iter_mut()
+            .find(|item| item.id == old)
+            .unwrap()
+            .id = renamed;
+        assert!(validate(&catalog).is_ok());
+    }
+
+    #[test]
+    fn uncontracted_capability_cannot_borrow_completed_operation_evidence() {
+        let baseline: Catalog = serde_json::from_str(CATALOG).unwrap();
+        let source = baseline
+            .capabilities
+            .iter()
+            .find(|row| row.name == "d1_database_get")
+            .unwrap()
+            .clone();
+        for dimension in ["route", "behavior", "policy", "verification", "discovery"] {
+            let mut catalog = baseline.clone();
+            let target = catalog
+                .capabilities
+                .iter_mut()
+                .find(|row| row.name == "ai_search")
+                .unwrap();
+            match dimension {
+                "route" => target.parity.route = source.parity.route.clone(),
+                "behavior" => target.parity.behavior = source.parity.behavior.clone(),
+                "policy" => target.parity.policy = source.parity.policy.clone(),
+                "verification" => target.parity.verification = source.parity.verification.clone(),
+                _ => target.parity.discovery = source.parity.discovery.clone(),
+            }
+            let error = validate(&catalog).unwrap_err().to_string();
+            assert!(error.contains("lacks contract"), "{dimension}: {error}");
+        }
     }
 }

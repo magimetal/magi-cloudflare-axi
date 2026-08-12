@@ -810,6 +810,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "clap",
+ "jsonschema",
  "serde",
  "serde_json",
  "sha2",
