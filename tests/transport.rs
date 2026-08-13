@@ -1448,6 +1448,51 @@ fn capability_input_account_conflict_precedes_auth_and_network() {
 }
 
 #[test]
+fn browser_input_account_conflict_precedes_auth_and_network() {
+    for name in ["get_url_markdown", "get_url_links", "scrape_url_elements"] {
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(
+            directory.path().join(".cloudflare-axi.toml"),
+            "account_id = 'configured'\n",
+        )
+        .unwrap();
+        let input = if name == "scrape_url_elements" {
+            r#"{"url":"https://example.com","elements":[{"selector":"h1"}],"account_id":"provided"}"#
+        } else {
+            r#"{"url":"https://example.com","account_id":"provided"}"#
+        };
+        let mut command = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"));
+        command
+            .args([
+                "--format",
+                "json",
+                "--endpoint",
+                "http://127.0.0.1:1",
+                "capability",
+                "invoke",
+                name,
+                "--input",
+                input,
+                "--allow-metered",
+                "--allow-egress",
+                "--allow-long-running",
+            ])
+            .current_dir(directory.path())
+            .env("HOME", directory.path())
+            .env("XDG_CONFIG_HOME", directory.path())
+            .env_remove("CLOUDFLARE_API_TOKEN");
+        let output = command.output().unwrap();
+        assert_eq!(output.status.code(), Some(2), "{name}");
+        assert!(
+            String::from_utf8_lossy(&output.stdout)
+                .contains("conflicts with resolved account scope"),
+            "{name}: {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+    }
+}
+
+#[test]
 fn invalid_capability_account_and_path_precede_malformed_config() {
     for input in [
         r#"{"database_id":"00000000-0000-0000-0000-000000000000","account_id":"../bad"}"#,
@@ -1724,6 +1769,211 @@ fn capability_d1_database_delete_exact_request() {
         assert!(out.stderr.is_empty());
         assert_eq!(server.finish().len(), 1);
     }
+}
+
+#[test]
+fn capability_get_url_markdown_exact_request() {
+    assert_browser_guards("get_url_markdown", r#"{"url":"https://example.com"}"#);
+    assert_browser_invalid_urls("get_url_markdown", r#"{"url":"https://example.com"}"#);
+
+    let server = Server::start(vec![(
+        200,
+        r##"{"success":true,"errors":[],"result":"# hi"}"##,
+    )]);
+    let args = browser_args(
+        "get_url_markdown",
+        r#"{"url":"  https://example.com/path  "}"#,
+    );
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(json_stdout(&out), "# hi");
+    assert_browser_request(
+        &server.finish(),
+        "markdown",
+        serde_json::json!({"url":"https://example.com/path"}),
+    );
+
+    for response in [
+        "not-json",
+        r#"{"success":true}"#,
+        r#"{"success":true,"errors":{},"result":"x"}"#,
+        r#"{"success":true,"errors":[],"result":7}"#,
+    ] {
+        let server = Server::start(vec![(200, response)]);
+        let (out, _) = run(
+            &browser_args("get_url_markdown", r#"{"url":"https://example.com"}"#),
+            Some(&server.endpoint),
+            Some("token"),
+        );
+        assert!(!out.status.success(), "accepted {response}");
+        assert_eq!(server.finish().len(), 1);
+    }
+    let server = Server::start(vec![(500, "{}")]);
+    let (out, _) = run(
+        &browser_args("get_url_markdown", r#"{"url":"https://example.com"}"#),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_get_url_links_exact_request() {
+    assert_browser_guards("get_url_links", r#"{"url":"https://example.com"}"#);
+    assert_browser_invalid_urls("get_url_links", r#"{"url":"https://example.com"}"#);
+
+    for (input, expected_body) in [
+        (
+            r#"{"url":"https://example.com"}"#,
+            serde_json::json!({"url":"https://example.com"}),
+        ),
+        (
+            r#"{"url":"https://example.com","visibleLinksOnly":true}"#,
+            serde_json::json!({"url":"https://example.com","visibleLinksOnly":true}),
+        ),
+    ] {
+        let server = Server::start(vec![(
+            200,
+            r#"{"success":true,"errors":[],"result":["https://example.com/a"]}"#,
+        )]);
+        let (out, _) = run(
+            &browser_args("get_url_links", input),
+            Some(&server.endpoint),
+            Some("token"),
+        );
+        assert!(out.status.success(), "{out:?}");
+        assert_eq!(
+            json_stdout(&out),
+            serde_json::json!(["https://example.com/a"])
+        );
+        assert_browser_request(&server.finish(), "links", expected_body);
+    }
+
+    for response in [
+        "not-json",
+        r#"{"success":true,"errors":{},"result":[]}"#,
+        r#"{"success":true,"errors":[],"result":"not-links"}"#,
+    ] {
+        let server = Server::start(vec![(200, response)]);
+        let (out, _) = run(
+            &browser_args("get_url_links", r#"{"url":"https://example.com"}"#),
+            Some(&server.endpoint),
+            Some("token"),
+        );
+        assert!(!out.status.success(), "accepted {response}");
+        assert_eq!(server.finish().len(), 1);
+    }
+    let server = Server::start(vec![(500, "{}")]);
+    let (out, _) = run(
+        &browser_args("get_url_links", r#"{"url":"https://example.com"}"#),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_scrape_url_elements_exact_request() {
+    assert_browser_guards(
+        "scrape_url_elements",
+        r#"{"url":"https://example.com","elements":[{"selector":"h1"}]}"#,
+    );
+    assert_browser_invalid_urls(
+        "scrape_url_elements",
+        r#"{"url":"https://example.com","elements":[{"selector":"h1"}]}"#,
+    );
+
+    let response = r#"{"success":true,"errors":[],"result":[{"selector":"h1","results":[{"attributes":[],"height":39,"html":"Example Domain","left":100,"text":"Example Domain","top":133.4375,"width":600}]}]}"#;
+    let server = Server::start(vec![(200, response)]);
+    let input = r#"{"url":"  https://example.com/path  ","elements":[{"selector":"h1"}]}"#;
+    let (out, _) = run(
+        &browser_args("scrape_url_elements", input),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(json_stdout(&out)[0]["selector"], "h1");
+    assert_browser_request(
+        &server.finish(),
+        "scrape",
+        serde_json::json!({"url":"https://example.com/path","elements":[{"selector":"h1"}]}),
+    );
+
+    for response in [
+        r#"{"success":true,"errors":[],"result":{}}"#,
+        r#"{"success":true,"errors":[],"result":[{"selector":"h1","results":[],"unknown":true}]}"#,
+        r#"{"success":true,"errors":[],"result":[{"selector":"h1","results":[{"attributes":[],"height":"39","html":"x","left":1,"text":"x","top":1,"width":1}]}]}"#,
+        r#"{"success":true,"errors":[],"result":[{"selector":"h1","results":[{"attributes":[{"name":"class"}],"height":1,"html":"x","left":1,"text":"x","top":1,"width":1}]}]}"#,
+    ] {
+        let server = Server::start(vec![(200, response)]);
+        let (out, _) = run(
+            &browser_args(
+                "scrape_url_elements",
+                r#"{"url":"https://example.com","elements":[{"selector":"h1"}]}"#,
+            ),
+            Some(&server.endpoint),
+            Some("token"),
+        );
+        assert!(!out.status.success(), "accepted {response}");
+        assert_eq!(server.finish().len(), 1);
+    }
+    let server = Server::start(vec![(500, "{}")]);
+    let (out, _) = run(
+        &browser_args(
+            "scrape_url_elements",
+            r#"{"url":"https://example.com","elements":[{"selector":"h1"}]}"#,
+        ),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 1);
+}
+
+fn browser_args<'a>(name: &'a str, input: &'a str) -> Vec<&'a str> {
+    let mut args = capability_args(name, input);
+    args.extend(["--allow-metered", "--allow-egress", "--allow-long-running"]);
+    args
+}
+
+fn assert_browser_guards(name: &str, input: &str) {
+    for omitted in ["--allow-metered", "--allow-egress", "--allow-long-running"] {
+        let mut args = browser_args(name, input);
+        args.retain(|arg| *arg != omitted);
+        assert_usage_before_network(&args, omitted);
+    }
+}
+
+fn assert_browser_invalid_urls(name: &str, input: &str) {
+    for url in ["relative/path", "://malformed"] {
+        let input = input.replace("https://example.com", url);
+        let (out, _) = run(
+            &browser_args(name, &input),
+            Some("http://example.com"),
+            None,
+        );
+        assert_eq!(out.status.code(), Some(2), "{name}: {url}");
+        let text = String::from_utf8_lossy(&out.stdout);
+        assert!(text.contains("url must be valid"), "{text}");
+        assert!(!text.contains("authentication"), "{text}");
+        assert!(!text.contains("HTTPS"), "{text}");
+    }
+}
+
+fn assert_browser_request(requests: &[Request], suffix: &str, body: Value) {
+    assert_eq!(requests.len(), 1);
+    let request = &requests[0];
+    assert_eq!(request.method, "POST");
+    assert_eq!(
+        request.target,
+        format!("/client/v4/accounts/{TEST_ACCOUNT}/browser-run/{suffix}")
+    );
+    let headers = request.headers.to_ascii_lowercase();
+    assert!(headers.contains("authorization: bearer token"));
+    assert!(headers.contains("content-type: application/json"));
+    assert_eq!(serde_json::from_str::<Value>(&request.body).unwrap(), body);
 }
 
 #[test]

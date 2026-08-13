@@ -7,9 +7,9 @@ Use `magi-cloudflare-axi --help` first. `-v`, `-V`, and `--version` are config/a
 
 Use `--format json` for parsing and `--full` only when truncation guidance appears. Exit 0 success/empty, 1 auth/config/network/API/output, 2 usage. Errors are structured stdout. Raw non-GET requires `--allow-write`; DELETE exact `--confirm-delete PATH`. MCP writes require `--allow-write --confirm TOOL`; metered tools require `--allow-metered`.
 
-Treat catalog schema v3 as pinned 172-name and 172-schema authority. Phase 3 vector: `I=172; S=172; R=B=P=V=9; D=4; X=40`; four Blog public direct operations are discovery-verified, five earlier operation slices are discovery-generated, and 163 routes remain unresolved. `capability get get_post` returns `magi-cloudflare-axi capability invoke get_post --input '{"slug":"<slug>"}'`; list operations return full `capability invoke ... --input '{}'` commands; search returns `magi-cloudflare-axi capability invoke search_posts --input '{"query":"<query>"}'`. `search_posts` is POST; other Blog routes GET. Research pool: 80 legacy `public_http` reads = Browser 9 + Radar 65 + Blog 4 + demo 1 + stack 1. Browser/Radar require authoritative reclassification during Phase 4 research; demo/stack require route research during Phase 5.
-`capability schema d1_database_get` is offline and authoritative for registration-input schema.
-Safety flags: `--allow-write --allow-metered --confirm`.
+Treat catalog schema v3 as pinned 172-name and 172-schema authority. Phase 4 is in progress. Phase 4A completes three authenticated Browser reads: `get_url_markdown`, `get_url_links`, and `scrape_url_elements`; vector `I=172; S=172; R=B=P=V=12; D=7; X=40`; 160 routes remain unresolved. Pinned source `/browser-run` is route authority; official `/browser-rendering` docs corroborate semantics but do not prove identical route/transport, so mismatch remains explicit. Shared discovery provenance uses exact hermetic test `tests/integration.rs::capability_browser_discovery_examples_are_exact`. Blog Phase 3 history remains separate.
+registration-input schema is authoritative; use `capability schema d1_database_get` offline.
+MCP writes require `--allow-write --allow-metered --confirm TOOL`.
 
 Examples:
 

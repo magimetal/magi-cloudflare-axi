@@ -1,10 +1,10 @@
 ---
 title: Cloudflare full capability parity roadmap
-status: phase-3-complete-for-proven-cohort
+status: phase-4-in-progress
 owner: magimetal
 created: 2026-08-10
 last_reviewed: 2026-08-11
-current_phase: phase-3-complete-for-proven-cohort
+current_phase: phase-4-in-progress
 baseline_source_commit: 70ff690553722f731849ede6ba9ce98958395a23
 baseline_capabilities: 172
 canonical_tracker: capabilities/cloudflare-mcp-parity.json
@@ -38,9 +38,11 @@ Registered-name presence alone remains **inventory parity**, not full parity.
 | Registered names | 172/172 | 172/172 |
 | Canonical input schemas | 172/172 | 172/172 |
 | Method metadata | 147/172 | Route-dependent |
-| Path metadata | 6/172 | Every direct route complete |
-| Capability-specific complete routes | 9/172 | 172/172, or maximal attainable parity with explicit blockers |
-| Capability contract tests | 9/172 | 172/172 hermetically verified |
+| Path metadata | 9/172 | Every direct route complete |
+| Capability-specific complete routes | 12/172 | 172/172, or maximal attainable parity with explicit blockers |
+| Capability contract tests | 12/172 | 172/172 hermetically verified |
+
+Phase 4A is in progress. Three authenticated Browser reads are complete and discovery-verified: `get_url_markdown`, `get_url_links`, `scrape_url_elements`. Vector: `I=172; S=172; R=B=P=V=12; D=7; X=40`; 160 routes unresolved. `/browser-run` is route authority; official `/browser-rendering` docs corroborate semantics only, with route/transport mismatch stated precisely.
 
 Phase 3 exit gate for proven direct unauthenticated Blog cohort:
 
@@ -57,7 +59,7 @@ Phase 3 completed `2026-08-11` for four Blog operations only. Research pool corr
 
 | Scope | Current | Target |
 |---|---:|---:|
-| Verified reads | 8/150 | 150/150 |
+| Verified reads | 11/150 | 150/150 |
 | Hermetically verified writes | 1/22 | 22/22 |
 | Open blocker entries | 40 | 0 |
 | Fully verified families | 1/18 | 18/18 |
@@ -66,7 +68,8 @@ Current access classifications:
 
 | Classification | Count |
 |---|---:|
-| `raw_rest` | 133 |
+| `raw_rest` | 130 |
+| `modeled` | 3 |
 | `mcp_remote` | 26 |
 | `public_direct` | 6 |
 | `raw_graphql` | 6 |
@@ -76,14 +79,14 @@ Current transport inventory:
 
 | Transport | Count |
 |---|---:|
-| `public_http` | 85 |
-| `rest` | 72 |
+| `public_http` | 82 |
+| `rest` | 75 |
 | `custom_container` | 7 |
 | `graphql` | 6 |
 | `internal_binding` | 1 |
 | `mcp` | 1 |
 
-The six legacy catalog records carrying both `method` and `path_template` identify `POST /graphql`; operation-contract artifacts separately contain nine complete routes.
+Nine catalog records carry both `method` and `path_template`; operation-contract artifact contains twelve complete routes.
 
 
 ## Completion formula
@@ -322,7 +325,7 @@ The remaining 76 legacy `public_http` reads are not Phase 3 completions. Browser
 
 ### Phase 4 — Authenticated direct API read parity
 
-**Status:** `not_started`
+**Status:** `in_progress`
 
 **Objective:** Complete authenticated direct API reads and correct legacy Browser/Radar transport, scope, and authentication metadata from authoritative evidence.
 
@@ -549,7 +552,7 @@ Update this table only when gate evidence exists.
 | 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | complete | 2026-08-10 |
 | 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; 167 capability routes deferred | — | complete | 2026-08-11 |
 | 3 — Proven Blog reads | Phase 2 complete | Four Blog reads verified and discovery-verified; 163 total routes unresolved | — | complete-for-proven-cohort | 2026-08-11 |
-| 4 — Authenticated direct API reads | Phase 3 cohort complete | Direct API reads verified | — | not_started | — |
+| 4 — Authenticated direct API reads | Phase 3 cohort complete | Three Browser reads verified and discovery-verified; 160 total routes unresolved | — | in_progress | — |
 | 5 — GraphQL/MCP reads | Phase 2 complete | GraphQL reads 5/5 and exposed MCP reads verified | — | not_started | — |
 | 6 — Writes | Phase 2 complete | Writes 22/22 hermetically verified | — | not_started | — |
 | 7 — Blockers | Route research available | Blockers 0 | — | not_started | — |

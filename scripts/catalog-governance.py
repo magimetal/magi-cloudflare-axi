@@ -18,7 +18,7 @@ METRICS = ROOT / "docs/cloudflare-capability-parity-metrics.json"
 REPORT = ROOT / "docs/cloudflare-capability-parity.md"
 COMMIT = "70ff690553722f731849ede6ba9ce98958395a23"
 REPO = "https://github.com/cloudflare/mcp-server-cloudflare"
-LEGACY_METADATA_SHA256 = "fd27d3dbd35b4fb0c098aa3160bf563482f01bab7e37870c4e178761f39d40d1"
+LEGACY_METADATA_SHA256 = "dca2b73e95ed4ad011c5817ede8c37b882b68a5ab6534581a5e1bc8fdb671de7"
 SCHEMA_VERSION = 3
 SCHEMA_EVIDENCE_ID = "ev-phase1-canonical-schemas"
 SCHEMA_SOURCE_REF = f"https://github.com/cloudflare/mcp-server-cloudflare/commit/{COMMIT}"
@@ -31,24 +31,28 @@ SCHEMA_EVIDENCE_FACT = (
 DEPENDENCY_PROVENANCE_COUNT = 803
 DEPENDENCY_PROVENANCE_SHA256 = "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04"
 
-OPERATION_BUNDLE_SHA256 = "9c083c24d8fb3a88196534ed74fc391d5336f545be20fc8c7e1c6b9cf4fffc68"
+OPERATION_BUNDLE_SHA256 = "4c8d6b6fce80e45a332d7175f245a28552ec775a9549e68ca50e0e56c6283eba"
 OPERATION_CONTRACT_HASHES = {
     "d1_database_delete": "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "d1_database_get": "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
     "get_post": "c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1",
     "get_url_html_content": "5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909",
+    "get_url_links": "5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83",
+    "get_url_markdown": "853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed",
     "graphql_schema_overview": "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc",
     "list_posts": "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c",
     "list_tags": "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd",
+    "scrape_url_elements": "a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415",
     "search_cloudflare_documentation": "9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41",
     "search_posts": "50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91",
 }
 
-
-
 OFFICIAL_DOCS = {
     "d1_database_delete": ("https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/delete/", "2026-08-11", "de0453348a3c58fb2510b64d6300831647c628eb3988acca56f7a9106edb7c5e"),
     "d1_database_get": ("https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/get/", "2026-08-11", "a1ea6b9e967b6c193355fbaedefbeb047bc49540c2ace13ef3fa827ac0addc3b"),
+    "get_url_links": ("https://developers.cloudflare.com/browser-run/quick-actions/links-endpoint/", "2026-08-11", "f93231d6c8b6595e800caedf84fd192b4fca87cdac08f98398b2a4d7b3951af8"),
+    "get_url_markdown": ("https://developers.cloudflare.com/browser-run/quick-actions/markdown-endpoint/", "2026-08-11", "2b0747bfcfc7f4204edf6ae04f452b5c9717263fc86a991e4826ab68d1aa204c"),
+    "scrape_url_elements": ("https://developers.cloudflare.com/browser-run/quick-actions/scrape-endpoint/", "2026-08-11", "7f28c72cfe039655921ac6cd70ab38c76b563a70d84deb938a14631b64b38778"),
     "get_url_html_content": ("https://developers.cloudflare.com/browser-run/quick-actions/content-endpoint/", "2026-08-11", "2669a9587a5f409e7a21886f5635a0891a82331c6482ac64a3dca68bee00f607"),
     "graphql_schema_overview": ("https://developers.cloudflare.com/analytics/graphql-api/", "2026-08-11", "acc7f28b024fe8f70fb78877c2d801855994b2232e7d3d8a518afbe3055e75a6"),
     "search_cloudflare_documentation": ("https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/", "2026-08-11", "b46c2fac1b78f9a7a5476c41185277085c5da89180cf70dced0f3b0cf67792e8"),
@@ -96,8 +100,8 @@ COMPLETE_STATUSES = {
 }
 LEGACY_ENUMS = {"scope": {"public", "account", "zone", "custom"}, "operation": {"read", "write"}, "transport": {"rest", "graphql", "mcp", "public_http", "internal_binding", "custom_container"}, "cli_access": {"modeled", "raw_rest", "raw_graphql", "public_direct", "blocked", "mcp_remote"}}
 FAMILIES = {"ai-gateway": 5, "auditlogs": 1, "autorag": 3, "browser-rendering": 13, "cloudflare-blog": 4, "cloudflare-one-casb": 11, "demo-day": 1, "dex-analysis": 18, "dns-analytics": 3, "graphql": 6, "logpush": 1, "radar": 66, "sandbox-container": 7, "shared": 7, "stack-mcp": 2, "workers-bindings": 18, "workers-builds": 3, "workers-observability": 3}
-TRANSPORTS = {"public_http": 85, "rest": 72, "custom_container": 7, "graphql": 6, "internal_binding": 1, "mcp": 1}
-ACCESS = {"raw_rest": 133, "mcp_remote": 26, "public_direct": 6, "raw_graphql": 6, "blocked": 1}
+TRANSPORTS = {"public_http": 82, "rest": 75, "custom_container": 7, "graphql": 6, "internal_binding": 1, "mcp": 1}
+ACCESS = {"raw_rest": 130, "modeled": 3, "mcp_remote": 26, "public_direct": 6, "raw_graphql": 6, "blocked": 1}
 OPERATIONS = {"read": 150, "write": 22}
 BLOCKER_FAMILY = {"dex-analysis": "B-DEX", "cloudflare-one-casb": "B-CASB", "sandbox-container": "B-CONTAINER", "workers-observability": "B-OBS", "shared": "B-SHARED", "stack-mcp": "B-STACK"}
 RECORD_KEYS = {
@@ -566,7 +570,7 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             for dimension, statuses in active_statuses.items():
                 if row["parity"][dimension]["status"] in statuses:
                     fail(row["name"], f"completed {dimension} lacks operation contract")
-    if operations["version"] != "phase3-operation-contracts-v1" or operations["source_commit"] != COMMIT:
+    if operations["version"] != "phase4a-operation-contracts-v1" or operations["source_commit"] != COMMIT:
         fail("$.operation_artifacts", "operation source mismatch")
     if operations["canonicalization"] != "lexicographic compact JSON SHA-256; bundle hash sets bundle_sha256=null; each contract hash sets contract_sha256=null":
         fail("$.operation_artifacts", "operation canonicalization mismatch")
@@ -690,11 +694,16 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
 
         def exact_discovery(item):
             provenance = item["provenance"]
+            browser_discovery = {"get_url_links", "get_url_markdown", "scrape_url_elements"}
             return (
                 provenance["kind"] == "generated_artifact"
                 and provenance.get("artifact") == "capabilities/cloudflare-operation-contracts.json"
                 and provenance.get("capability") == capability
                 and provenance.get("contract_sha256") == contract["contract_sha256"]
+            ) or (
+                capability in browser_discovery
+                and provenance["kind"] == "hermetic_test"
+                and provenance.get("test_id") == "tests/integration.rs::capability_browser_discovery_examples_are_exact"
             ) or (
                 blog
                 and provenance["kind"] == "hermetic_test"
@@ -732,7 +741,7 @@ def validate(catalog):
         fail("$", "unsupported catalog envelope or pinned source")
     operations = json.loads(OPERATION_FILE.read_text())
     contracts = operations.get("contracts", [])
-    if operations.get("version") != "phase3-operation-contracts-v1" or json_sha256({**operations, "bundle_sha256": None}) != OPERATION_BUNDLE_SHA256 or operations.get("bundle_sha256") != OPERATION_BUNDLE_SHA256 or operations.get("contract_count") != len(contracts) or contracts != sorted(contracts, key=lambda item: item.get("capability", "")) or len(contracts) != 9:
+    if operations.get("version") != "phase4a-operation-contracts-v1" or json_sha256({**operations, "bundle_sha256": None}) != OPERATION_BUNDLE_SHA256 or operations.get("bundle_sha256") != OPERATION_BUNDLE_SHA256 or operations.get("contract_count") != len(contracts) or contracts != sorted(contracts, key=lambda item: item.get("capability", "")) or len(contracts) != 12:
         fail("$.operation_artifacts", "operation bundle parsing or hash mismatch")
     for contract in contracts:
         capability = contract.get("capability")
@@ -921,7 +930,7 @@ def validate(catalog):
             fail("$.capabilities", f"{field} baseline mismatch")
     if sum("method" in row for row in rows) != 147:
         fail("$.capabilities", "method baseline mismatch")
-    if sum("path_template" in row for row in rows) != 6:
+    if sum("path_template" in row for row in rows) != 9:
         fail("$.capabilities", "path baseline mismatch")
     if sum("blocker" in row for row in rows) != 40:
         fail("$.capabilities", "legacy blocker baseline mismatch")

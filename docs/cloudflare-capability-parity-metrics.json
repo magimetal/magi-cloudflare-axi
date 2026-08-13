@@ -5,11 +5,11 @@
   "parity": {
     "I": 172,
     "S": 172,
-    "R": 9,
-    "B": 9,
-    "P": 9,
-    "V": 9,
-    "D": 4,
+    "R": 12,
+    "B": 12,
+    "P": 12,
+    "V": 12,
+    "D": 7,
     "X": 40
   },
   "dimensions": {
@@ -30,42 +30,42 @@
     },
     "route": {
       "counts": {
-        "complete": 9,
+        "complete": 12,
         "external_blocked": 0,
-        "unresolved": 163
+        "unresolved": 160
       },
-      "complete": 9
+      "complete": 12
     },
     "behavior": {
       "counts": {
         "specified": 0,
-        "unresolved": 163,
-        "verified": 9
+        "unresolved": 160,
+        "verified": 12
       },
-      "complete": 9
+      "complete": 12
     },
     "policy": {
       "counts": {
         "classified": 0,
-        "unresolved": 163,
-        "verified": 9
+        "unresolved": 160,
+        "verified": 12
       },
-      "complete": 9
+      "complete": 12
     },
     "verification": {
       "counts": {
-        "hermetic_verified": 9,
-        "unverified": 163
+        "hermetic_verified": 12,
+        "unverified": 160
       },
-      "complete": 9
+      "complete": 12
     },
     "discovery": {
       "counts": {
         "generated": 5,
-        "missing": 163,
-        "verified": 4
+        "missing": 160,
+        "verified": 7
       },
-      "complete": 4
+      "complete": 7
     },
     "external_blocker": {
       "counts": {
@@ -122,11 +122,11 @@
         "parity": {
           "I": 13,
           "S": 13,
-          "R": 1,
-          "B": 1,
-          "P": 1,
-          "V": 1,
-          "D": 0,
+          "R": 4,
+          "B": 4,
+          "P": 4,
+          "V": 4,
+          "D": 3,
           "X": 0
         }
       },
@@ -367,10 +367,10 @@
         }
       },
       "public_http": {
-        "count": 85,
+        "count": 82,
         "parity": {
-          "I": 85,
-          "S": 85,
+          "I": 82,
+          "S": 82,
           "R": 4,
           "B": 4,
           "P": 4,
@@ -380,15 +380,15 @@
         }
       },
       "rest": {
-        "count": 72,
+        "count": 75,
         "parity": {
-          "I": 72,
-          "S": 72,
-          "R": 3,
-          "B": 3,
-          "P": 3,
-          "V": 3,
-          "D": 0,
+          "I": 75,
+          "S": 75,
+          "R": 6,
+          "B": 6,
+          "P": 6,
+          "V": 6,
+          "D": 3,
           "X": 32
         }
       }
@@ -420,6 +420,19 @@
           "X": 25
         }
       },
+      "modeled": {
+        "count": 3,
+        "parity": {
+          "I": 3,
+          "S": 3,
+          "R": 3,
+          "B": 3,
+          "P": 3,
+          "V": 3,
+          "D": 3,
+          "X": 0
+        }
+      },
       "public_direct": {
         "count": 6,
         "parity": {
@@ -447,10 +460,10 @@
         }
       },
       "raw_rest": {
-        "count": 133,
+        "count": 130,
         "parity": {
-          "I": 133,
-          "S": 133,
+          "I": 130,
+          "S": 130,
           "R": 3,
           "B": 3,
           "P": 3,
@@ -466,11 +479,11 @@
         "parity": {
           "I": 150,
           "S": 150,
-          "R": 8,
-          "B": 8,
-          "P": 8,
-          "V": 8,
-          "D": 4,
+          "R": 11,
+          "B": 11,
+          "P": 11,
+          "V": 11,
+          "D": 7,
           "X": 34
         }
       },

@@ -10,8 +10,9 @@ Precedence: CLI > environment > project `.cloudflare-axi.toml` > platform global
 
 Safety: endpoints are validated before auth and redirects are disabled. GET/HEAD and explicitly classified read POST may retry; mutations and MCP calls never retry. Raw non-GET requires `--allow-write`; DELETE requires exact path confirmation. Unified `search` is read-safe; docs search requires metered opt-in; every other remote tool requires write, metered, and exact-name confirmation because local inventory is not authoritative safety metadata.
 
-Capability contract: catalog schema v3 proves 172 registered names and 172 canonical registration-input contracts. Phase 3 vector: `I=172; S=172; R=B=P=V=9; D=4; X=40`. Four Blog public direct operations are route, behavior, policy, hermetically verified, and discovery verified; `search_posts` uses corrected `POST /search`, other Blog routes use GET. Five earlier representative operations remain discovery-generated. Remaining 163 routes unresolved; no live calls required.
-
-`capability invoke d1_database_get` is representative operation entry point.
+Phase 3 blog direct reads remains complete.
+Capability contract: catalog schema v3 proves 172 registered names and 172 canonical registration-input contracts. Phase 4A vector: `I=172; S=172; R=B=P=V=12; D=7; X=40`. Three authenticated Browser reads are complete and discovery-verified through exact operation contracts plus shared hermetic discovery integration test. Remaining 160 routes unresolved. Pinned source `/browser-run` is route authority; official `/browser-rendering` docs corroborate semantics only, and route/transport mismatch remains explicit.
 
 Session contract: setup is explicit, preserving, prevalidated across targets, atomically replacing each file, idempotent, and path-repairing for Claude, Codex, and OpenCode. New managed Unix files are `0600`; updates preserve permissions. Status requires exactly one valid owned handler and reports Codex enablement separately from non-interactively unverifiable trust. Session-end capture is N/A: CLI owns no durable Cloudflare workflow state, so writing transcript/session identifiers would add sensitive state without useful continuity.
+
+Example: `magi-cloudflare-axi capability invoke d1_database_get --input '{"database_id":"<uuid>"}'`.

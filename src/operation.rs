@@ -6,26 +6,32 @@ use std::collections::BTreeSet;
 
 const CONTRACTS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
-const BUNDLE_SHA256: &str = "9c083c24d8fb3a88196534ed74fc391d5336f545be20fc8c7e1c6b9cf4fffc68";
-const CONTRACT_NAMES: [&str; 9] = [
+const BUNDLE_SHA256: &str = "4c8d6b6fce80e45a332d7175f245a28552ec775a9549e68ca50e0e56c6283eba";
+const CONTRACT_NAMES: [&str; 12] = [
     "d1_database_delete",
     "d1_database_get",
     "get_post",
     "get_url_html_content",
+    "get_url_links",
+    "get_url_markdown",
     "graphql_schema_overview",
     "list_posts",
     "list_tags",
+    "scrape_url_elements",
     "search_cloudflare_documentation",
     "search_posts",
 ];
-const CONTRACT_HASHES: [&str; 9] = [
+const CONTRACT_HASHES: [&str; 12] = [
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
     "c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1",
     "5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909",
+    "5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83",
+    "853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed",
     "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc",
     "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c",
     "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd",
+    "a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415",
     "9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41",
     "50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91",
 ];
@@ -89,10 +95,10 @@ fn digest(v: &Value) -> String {
 fn contracts() -> Result<Bundle, AppError> {
     let bundle: Bundle = serde_json::from_str(CONTRACTS)
         .map_err(|e| AppError::api(format!("embedded operation contracts are invalid: {e}")))?;
-    if bundle.version != "phase3-operation-contracts-v1"
+    if bundle.version != "phase4a-operation-contracts-v1"
         || bundle.source_commit != SOURCE_COMMIT
-        || bundle.contract_count != 9
-        || bundle.contracts.len() != 9
+        || bundle.contract_count != 12
+        || bundle.contracts.len() != 12
         || bundle
             .contracts
             .iter()
@@ -164,10 +170,24 @@ fn validate_contract(c: &Contract) -> Result<(), AppError> {
     {
         return Err(AppError::api("MCP operation route mismatch"));
     }
-    if c.capability == "d1_database_get"
-        && c.route.get("method") != Some(&Value::String("GET".into()))
+    if ["get_url_links", "get_url_markdown", "scrape_url_elements"].contains(&c.capability.as_str())
+        && (c.route.get("scope") != Some(&Value::String("account".into()))
+            || c.route.get("method") != Some(&Value::String("POST".into()))
+            || c.route.get("auth") != Some(&Value::String("account".into()))
+            || c.route.get("transport") != Some(&Value::String("rest".into())))
     {
-        return Err(AppError::api("d1 get route mismatch"));
+        return Err(AppError::api("browser quick action route mismatch"));
+    }
+    if [
+        "get_url_html_content",
+        "get_url_links",
+        "get_url_markdown",
+        "scrape_url_elements",
+    ]
+    .contains(&c.capability.as_str())
+        && (!c.safety.metered || !c.safety.data_egress || !c.safety.long_running)
+    {
+        return Err(AppError::api("browser content safety mismatch"));
     }
     if ["get_post", "list_posts", "list_tags", "search_posts"].contains(&c.capability.as_str()) {
         let expected_method = if c.capability == "search_posts" {
@@ -284,11 +304,6 @@ fn validate_contract(c: &Contract) -> Result<(), AppError> {
     {
         return Err(AppError::api("D1 delete safety mismatch"));
     }
-    if c.capability == "get_url_html_content"
-        && (!c.safety.metered || !c.safety.data_egress || !c.safety.long_running)
-    {
-        return Err(AppError::api("browser content safety mismatch"));
-    }
     Ok(())
 }
 fn guard(name: &str, s: &Safety, f: GuardFlags<'_>) -> Result<(), AppError> {
@@ -400,15 +415,22 @@ fn effective(name: &str, input: Value) -> Result<Map<String, Value>, AppError> {
             o.insert(k.into(), v);
         }
     }
-    if name == "get_url_html_content" {
-        let u = o
+    if [
+        "get_url_html_content",
+        "get_url_links",
+        "get_url_markdown",
+        "scrape_url_elements",
+    ]
+    .contains(&name)
+    {
+        let url = o
             .get("url")
             .and_then(Value::as_str)
             .map(str::trim)
             .ok_or_else(|| AppError::usage("url is required"))?
             .to_owned();
-        url::Url::parse(&u).map_err(|_| AppError::usage("url must be valid"))?;
-        o.insert("url".into(), Value::String(u));
+        url::Url::parse(&url).map_err(|_| AppError::usage("url must be valid"))?;
+        o.insert("url".into(), Value::String(url));
     }
     Ok(o)
 }
@@ -710,6 +732,144 @@ fn truncate_js_slice_300(value: &str) -> String {
     }
     value[..end].to_owned()
 }
+
+fn browser_request(
+    name: &str,
+    input: &Map<String, Value>,
+    endpoint: Option<&str>,
+    cli_account: Option<String>,
+) -> Result<Value, AppError> {
+    let mut cfg = config::load(endpoint.map(str::to_owned), cli_account, None)?;
+    if let (Some(configured), Some(provided)) = (
+        cfg.account.as_deref(),
+        input.get("account_id").and_then(Value::as_str),
+    ) {
+        if configured != provided {
+            return Err(AppError::usage(
+                "input account_id conflicts with resolved account scope",
+            ));
+        }
+    }
+    if cfg.account.is_none() {
+        cfg.account = input
+            .get("account_id")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+    }
+    let account = path_segment(
+        cfg.account.as_deref().ok_or_else(|| {
+            AppError::usage("account scope required; use --account or input account_id")
+        })?,
+        "account_id",
+        Some(32),
+    )?;
+    let suffix = match name {
+        "get_url_markdown" => "markdown",
+        "get_url_links" => "links",
+        "scrape_url_elements" => "scrape",
+        _ => return Err(AppError::usage("unsupported browser capability")),
+    };
+    let body = match name {
+        "scrape_url_elements" => json!({"url":input["url"],"elements":input["elements"]}),
+        "get_url_links" => {
+            let mut body = json!({"url": input["url"]});
+            if let Some(value) = input.get("visibleLinksOnly") {
+                body["visibleLinksOnly"] = value.clone();
+            }
+            body
+        }
+        _ => json!({"url":input["url"]}),
+    };
+    let r = client::CloudflareClient::new(cfg.clone(), config::auth_for(&cfg)?)?.request(
+        client::RequestOptions {
+            method: client::Method::Post,
+            path: format!("/accounts/{account}/browser-run/{suffix}"),
+            query: vec![],
+            body: Some(body),
+            allow_write: false,
+            confirm_delete: None,
+            retry_policy: client::RetryPolicy::Never,
+            allow_classified_read_post: true,
+        },
+    )?;
+    if r.envelope.get("success") != Some(&Value::Bool(true))
+        || !r
+            .envelope
+            .get("errors")
+            .and_then(Value::as_array)
+            .is_some_and(Vec::is_empty)
+    {
+        return Err(AppError::api("capability response envelope is malformed"));
+    }
+    let result = r
+        .result
+        .ok_or_else(|| AppError::api("browser result is missing"))?;
+    match name {
+        "get_url_markdown" => result
+            .as_str()
+            .map(|x| Value::String(x.into()))
+            .ok_or_else(|| AppError::api("browser markdown result must be a string")),
+        "get_url_links" => {
+            if result
+                .as_array()
+                .is_some_and(|a| a.iter().all(Value::is_string))
+            {
+                Ok(result)
+            } else {
+                Err(AppError::api(
+                    "browser links result must be an array of strings",
+                ))
+            }
+        }
+        _ => {
+            let records = result
+                .as_array()
+                .ok_or_else(|| AppError::api("browser scrape result must be an array"))?;
+            for record in records {
+                let object = record.as_object().ok_or_else(|| {
+                    AppError::api("browser scrape selector record must be an object")
+                })?;
+                if object.len() != 2
+                    || object
+                        .get("selector")
+                        .and_then(Value::as_str)
+                        .is_none_or(str::is_empty)
+                    || !object.get("results").is_some_and(Value::is_array)
+                {
+                    return Err(AppError::api("browser scrape selector record is malformed"));
+                }
+                for result in object["results"].as_array().unwrap_or(&Vec::new()) {
+                    let item = result.as_object().ok_or_else(|| {
+                        AppError::api("browser scrape result item must be an object")
+                    })?;
+                    if item.len() != 7
+                        || !item.get("attributes").is_some_and(|v| {
+                            v.as_array().is_some_and(|a| {
+                                a.iter().all(|x| {
+                                    x.as_object().is_some_and(|o| {
+                                        o.len() == 2
+                                            && o.get("name").is_some_and(Value::is_string)
+                                            && o.get("value").is_some_and(Value::is_string)
+                                    })
+                                })
+                            })
+                        })
+                        || !item.get("height").is_some_and(Value::is_number)
+                        || !item.get("width").is_some_and(Value::is_number)
+                        || !item.get("top").is_some_and(Value::is_number)
+                        || !item.get("left").is_some_and(Value::is_number)
+                        || !item.get("html").is_some_and(Value::is_string)
+                        || !item.get("text").is_some_and(Value::is_string)
+                    {
+                        return Err(AppError::api("browser scrape result item is malformed"));
+                    }
+                }
+            }
+            Ok(Value::Array(records.to_vec()))
+        }
+    }
+}
+
 pub fn invoke(
     name: &str,
     input: Value,
@@ -738,14 +898,10 @@ pub fn invoke(
             mcp::verified_call(name, Value::Object(input), mcp_endpoint.as_deref())
         }
         "graphql_schema_overview" => {
-            let page = input["page"]
-                .as_f64()
-                .ok_or_else(|| AppError::usage("page must be a number"))?;
-            let size = input["pageSize"]
-                .as_f64()
-                .ok_or_else(|| AppError::usage("pageSize must be a number"))?;
             let page_value = input["page"].clone();
             let size_value = input["pageSize"].clone();
+            let page = input["page"].as_f64().unwrap_or(1.0);
+            let size = input["pageSize"].as_f64().unwrap_or(100.0);
             let cfg = config::load(endpoint, cli_account, None)?;
             let auth = config::auth_for(&cfg)?;
             let api = client::CloudflareClient::new(cfg, auth)?;
@@ -909,6 +1065,9 @@ pub fn invoke(
                     .filter(|x| x.is_object())
                     .ok_or_else(|| AppError::api("capability response result must be an object"))
             }
+        }
+        "get_url_markdown" | "get_url_links" | "scrape_url_elements" => {
+            browser_request(name, &input, endpoint.as_deref(), cli_account)
         }
         _ => Err(AppError::usage(format!(
             "capability '{name}' has no complete route contract"

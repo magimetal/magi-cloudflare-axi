@@ -577,3 +577,32 @@ fn capability_blog_discovery_examples_are_exact() {
         );
     }
 }
+
+#[test]
+fn capability_browser_discovery_examples_are_exact() {
+    for (name, example) in [
+        (
+            "get_url_markdown",
+            "get_url_markdown --input '{\"url\":\"<url>\"}'",
+        ),
+        (
+            "get_url_links",
+            "get_url_links --input '{\"url\":\"<url>\"}'",
+        ),
+        (
+            "scrape_url_elements",
+            "scrape_url_elements --input '{\"url\":\"<url>\",\"elements\":[{\"selector\":\"h1\"}]}'",
+        ),
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+            .args(["--format", "json", "capability", "get", name])
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(
+            value["next_command"],
+            format!("magi-cloudflare-axi capability invoke {example}")
+        );
+    }
+}
