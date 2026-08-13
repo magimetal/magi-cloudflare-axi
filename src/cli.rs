@@ -260,6 +260,9 @@ pub enum CapabilityCommand {
         file: Option<PathBuf>,
         #[arg(long, conflicts_with_all = ["input", "file"])]
         stdin: bool,
+        /// Save binary screenshot/PDF bytes to new path; required for binary capabilities.
+        #[arg(long)]
+        output: Option<PathBuf>,
         #[arg(long)]
         allow_write: bool,
         #[arg(long)]

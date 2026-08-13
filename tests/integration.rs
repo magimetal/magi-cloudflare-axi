@@ -606,6 +606,14 @@ fn capability_browser_discovery_examples_are_exact() {
             "list_browser_sessions",
             "list_browser_sessions --input '{}'",
         ),
+        (
+            "get_url_pdf",
+            "get_url_pdf --input '{\"url\":\"<url>\"}' --output <path>",
+        ),
+        (
+            "get_url_screenshot",
+            "get_url_screenshot --input '{\"url\":\"<url>\"}' --output <path>",
+        ),
     ] {
         let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
             .args(["--format", "json", "capability", "get", name])

@@ -6,8 +6,8 @@ use std::collections::BTreeSet;
 
 const CONTRACTS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
-const BUNDLE_SHA256: &str = "0283e0990d9116cc382624223a89a6e6442125a3357f03c77468f25c13c147d6";
-const CONTRACT_NAMES: [&str; 16] = [
+const BUNDLE_SHA256: &str = "d9b9528bd9f53de5b1c621c00e6d9938051c7bb6208205bd6333a6dda208469a";
+const CONTRACT_NAMES: [&str; 18] = [
     "d1_database_delete",
     "d1_database_get",
     "get_crawl_result",
@@ -16,6 +16,8 @@ const CONTRACT_NAMES: [&str; 16] = [
     "get_url_json",
     "get_url_links",
     "get_url_markdown",
+    "get_url_pdf",
+    "get_url_screenshot",
     "get_url_snapshot",
     "graphql_schema_overview",
     "list_browser_sessions",
@@ -25,7 +27,7 @@ const CONTRACT_NAMES: [&str; 16] = [
     "search_cloudflare_documentation",
     "search_posts",
 ];
-const CONTRACT_HASHES: [&str; 16] = [
+const CONTRACT_HASHES: [&str; 18] = [
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
     "e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52",
@@ -34,6 +36,8 @@ const CONTRACT_HASHES: [&str; 16] = [
     "930b1ee212733b0fcd7e600bd346001ddb6e0154f99bbeebe27bc079e42cdb6d",
     "5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83",
     "853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed",
+    "c544d991b6a98bace228cd7eb1bb124bd4934a6fa1cf318523579769e9e9780d",
+    "97ac366335b2110918db9244d13dfb4bafc35492032810778fd52200497fdbdc",
     "3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588",
     "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc",
     "e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1",
@@ -103,16 +107,16 @@ fn digest(v: &Value) -> String {
 fn contracts() -> Result<Bundle, AppError> {
     let bundle: Bundle = serde_json::from_str(CONTRACTS)
         .map_err(|e| AppError::api(format!("embedded operation contracts are invalid: {e}")))?;
-    if bundle.version != "phase4c-operation-contracts-v1"
-        || bundle.source_commit != SOURCE_COMMIT
-        || bundle.contract_count != 16
-        || bundle.contracts.len() != 16
+    if bundle.source_commit != SOURCE_COMMIT
+        || bundle.contract_count != 18
+        || bundle.contracts.len() != 18
         || bundle
             .contracts
             .iter()
             .map(|c| c.capability.as_str())
             .collect::<Vec<_>>()
             != CONTRACT_NAMES
+        || bundle.version != "phase4d-operation-contracts-v1"
     {
         return Err(AppError::api(
             "embedded operation contract envelope is invalid",
@@ -183,6 +187,8 @@ fn validate_contract(c: &Contract) -> Result<(), AppError> {
         "get_url_json",
         "get_url_links",
         "get_url_markdown",
+        "get_url_pdf",
+        "get_url_screenshot",
         "get_url_snapshot",
         "scrape_url_elements",
     ]
@@ -190,6 +196,82 @@ fn validate_contract(c: &Contract) -> Result<(), AppError> {
         && (!c.safety.metered || !c.safety.data_egress || !c.safety.long_running)
     {
         return Err(AppError::api("browser content safety mismatch"));
+    }
+    if ["get_url_pdf", "get_url_screenshot"].contains(&c.capability.as_str()) {
+        let (
+            expected_route,
+            expected_behavior,
+            expected_handler_lines,
+            expected_handler_sha,
+            expected_projection,
+            expected_test,
+        ) = if c.capability == "get_url_pdf" {
+            (
+                ("POST", "/accounts/{account_id}/browser-run/pdf", "{url}"),
+                (
+                    "filesystem_new_file",
+                    "new_file",
+                    "binary_media_and_signature",
+                ),
+                "146-194",
+                "772c45de366c6caca12226ee605c9c055f3790bf836abac98b069c9e655f30eb",
+                "binary_pdf",
+                "tests/transport.rs::capability_get_url_pdf_exact_request",
+            )
+        } else {
+            (
+                (
+                    "POST",
+                    "/accounts/{account_id}/browser-run/screenshot",
+                    "{url,viewport}",
+                ),
+                (
+                    "filesystem_new_file",
+                    "new_file",
+                    "binary_media_and_signature",
+                ),
+                "92-144",
+                "19aa8f9fc558723f9e1a7ca6e0ea16d75cb99af15ff871ca485289e74b9f4354",
+                "binary_png",
+                "tests/transport.rs::capability_get_url_screenshot_exact_request",
+            )
+        };
+        let handler = &c.evidence["pinned_handler"];
+        if c.route["transport"] != "rest"
+            || c.route["method"] != expected_route.0
+            || c.route["path_template"] != expected_route.1
+            || c.route["path_parameters"]
+                != json!([{"name": "account_id", "source": "resolved_account", "format": "single_path_segment", "max_length": 32}])
+            || c.route["query_parameters"] != json!([])
+            || c.route["body"] != expected_route.2
+            || c.route["scope"] != "account"
+            || c.route["content_type"] != "application/json"
+            || c.route["auth"] != "account"
+            || c.behavior["output_projection"] != expected_projection
+            || c.behavior["empty_state"] != expected_behavior.1
+            || c.behavior["pagination"] != "none"
+            || c.behavior["artifact"] != expected_behavior.0
+            || c.behavior["error"] != expected_behavior.2
+            || c.safety.operation != "read"
+            || c.safety.destructive
+            || !c.safety.metered
+            || !c.safety.data_egress
+            || !c.safety.long_running
+            || c.safety.retry_policy != "never"
+            || c.implementation["status"] != "verified"
+            || c.implementation["adapter"] != "rest"
+            || c.implementation["test_id"] != expected_test
+            || c.implementation["documentation_id"]
+                != format!("cloudflare-browser-{}", c.capability)
+            || c.implementation["reviewed_at"] != "2026-08-11"
+            || handler["commit"] != SOURCE_COMMIT
+            || handler["file"] != "apps/browser-rendering/src/tools/browser.tools.ts"
+            || handler["blob_oid"] != "ae998f642ba8548b715e1573bc0049c96c9e1f28"
+            || handler["lines"] != expected_handler_lines
+            || handler["source_sha256"] != expected_handler_sha
+        {
+            return Err(AppError::api("browser binary operation semantic mismatch"));
+        }
     }
     if ["get_crawl_result", "get_url_json", "get_url_snapshot"].contains(&c.capability.as_str())
         && (c.route.get("scope") != Some(&Value::String("account".into()))
@@ -472,6 +554,8 @@ fn effective(name: &str, input: Value) -> Result<Map<String, Value>, AppError> {
         "get_url_json",
         "get_url_links",
         "get_url_markdown",
+        "get_url_pdf",
+        "get_url_screenshot",
         "get_url_snapshot",
         "scrape_url_elements",
     ]
@@ -485,6 +569,23 @@ fn effective(name: &str, input: Value) -> Result<Map<String, Value>, AppError> {
             .to_owned();
         url::Url::parse(&url).map_err(|_| AppError::usage("url must be valid"))?;
         o.insert("url".into(), Value::String(url));
+    }
+    if name == "get_url_screenshot" {
+        if let Some(viewport) = o.get("viewport").and_then(Value::as_object) {
+            let mut normalized = Map::new();
+            normalized.insert(
+                "width".into(),
+                viewport.get("width").cloned().unwrap_or_else(|| json!(800)),
+            );
+            normalized.insert(
+                "height".into(),
+                viewport
+                    .get("height")
+                    .cloned()
+                    .unwrap_or_else(|| json!(600)),
+            );
+            o.insert("viewport".into(), Value::Object(normalized));
+        }
     }
     Ok(o)
 }
@@ -1002,6 +1103,181 @@ fn browser_request(
             Ok(Value::Array(records.to_vec()))
         }
     }
+}
+
+struct TemporaryArtifact(std::path::PathBuf);
+
+impl Drop for TemporaryArtifact {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
+fn prepare_artifact(output: &std::path::Path) -> Result<TemporaryArtifact, AppError> {
+    if output.as_os_str().is_empty() || output == std::path::Path::new("-") {
+        return Err(AppError::usage(
+            "--output must be a filesystem path, not stdout",
+        ));
+    }
+    if output.to_str().is_none() {
+        return Err(AppError::usage("--output path must be valid UTF-8"));
+    }
+    if output.file_name().is_none() {
+        return Err(AppError::usage("--output must name a file"));
+    }
+    let parent = output
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| std::path::Path::new("."));
+    if !parent.is_dir() {
+        return Err(AppError::usage("--output parent directory must exist"));
+    }
+    if output.exists() {
+        return Err(AppError::usage("--output destination already exists"));
+    }
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT_TEMP: AtomicU64 = AtomicU64::new(0);
+    let file_name = output.file_name().unwrap().to_string_lossy();
+    (0..16)
+        .find_map(|_| {
+            let path = parent.join(format!(
+                ".{file_name}.tmp-{}-{}",
+                std::process::id(),
+                NEXT_TEMP.fetch_add(1, Ordering::Relaxed)
+            ));
+            let mut options = std::fs::OpenOptions::new();
+            options.write(true).create_new(true);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                options.mode(0o600);
+            }
+            match options.open(&path) {
+                Ok(file) => {
+                    drop(file);
+                    Some(Ok(TemporaryArtifact(path)))
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => None,
+                Err(e) => Some(Err(AppError::output(format!(
+                    "cannot create temporary artifact: {e}"
+                )))),
+            }
+        })
+        .transpose()?
+        .ok_or_else(|| AppError::output("cannot allocate temporary artifact path"))
+}
+fn finish_artifact(
+    temporary: &TemporaryArtifact,
+    output: &std::path::Path,
+    bytes: &[u8],
+) -> Result<(), AppError> {
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .open(&temporary.0)
+        .map_err(|error| AppError::output(format!("cannot open temporary artifact: {error}")))?;
+    file.write_all(bytes)
+        .and_then(|_| file.sync_all())
+        .map_err(|error| AppError::output(format!("cannot write artifact: {error}")))?;
+    drop(file);
+    std::fs::hard_link(&temporary.0, output)
+        .map_err(|error| AppError::output(format!("cannot install artifact: {error}")))
+}
+pub fn binary_request(
+    name: &str,
+    input: Value,
+    endpoint: Option<String>,
+    cli_account: Option<String>,
+    output: &std::path::Path,
+    flags: GuardFlags<'_>,
+) -> Result<Value, AppError> {
+    let temporary = prepare_artifact(output)?;
+    let bundle = contracts()?;
+    let input = effective(name, input)?;
+    let contract = bundle
+        .contracts
+        .iter()
+        .find(|c| c.capability == name)
+        .ok_or_else(|| {
+            AppError::usage(format!(
+                "capability '{name}' has no complete route contract"
+            ))
+        })?;
+    guard(name, &contract.safety, flags)?;
+    let mut cfg = config::load(endpoint, cli_account, None)?;
+    if let (Some(a), Some(b)) = (
+        cfg.account.as_deref(),
+        input.get("account_id").and_then(Value::as_str),
+    ) {
+        if a != b {
+            return Err(AppError::usage(
+                "input account_id conflicts with resolved account scope",
+            ));
+        }
+    }
+    if cfg.account.is_none() {
+        cfg.account = input
+            .get("account_id")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+    }
+    let account = path_segment(
+        cfg.account.as_deref().ok_or_else(|| {
+            AppError::usage("account scope required; use --account or input account_id")
+        })?,
+        "account_id",
+        Some(32),
+    )?;
+    let (suffix, body, media_type, magic) = match name {
+        "get_url_screenshot" => {
+            let mut body = json!({"url": input["url"]});
+            if let Some(viewport) = input.get("viewport") {
+                body["viewport"] = viewport.clone();
+            }
+            (
+                "screenshot",
+                body,
+                "image/png",
+                b"\x89PNG\r\n\x1a\n".as_slice(),
+            )
+        }
+        "get_url_pdf" => (
+            "pdf",
+            json!({"url": input["url"]}),
+            "application/pdf",
+            b"%PDF-".as_slice(),
+        ),
+        _ => return Err(AppError::usage("unsupported binary capability")),
+    };
+    let response = client::CloudflareClient::new(cfg.clone(), config::auth_for(&cfg)?)?
+        .request_binary(client::RequestOptions {
+            method: client::Method::Post,
+            path: format!("/accounts/{account}/browser-run/{suffix}"),
+            query: vec![],
+            body: Some(body),
+            allow_write: false,
+            confirm_delete: None,
+            retry_policy: client::RetryPolicy::Never,
+            allow_classified_read_post: true,
+        })?;
+    if !response
+        .content_type
+        .split(';')
+        .next()
+        .is_some_and(|v| v.trim().eq_ignore_ascii_case(media_type))
+        || !response.bytes.starts_with(magic)
+    {
+        return Err(AppError::api(
+            "binary response media type or signature is invalid",
+        ));
+    }
+    let output_path = output
+        .to_str()
+        .ok_or_else(|| AppError::usage("--output path must be valid UTF-8"))?
+        .to_owned();
+    let metadata = json!({"artifact":{"path":output_path,"media_type":media_type,"bytes":response.bytes.len(),"sha256":format!("{:x}", Sha256::digest(&response.bytes))}});
+    finish_artifact(&temporary, output, &response.bytes)?;
+    Ok(metadata)
 }
 
 pub fn invoke(

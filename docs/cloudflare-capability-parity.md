@@ -9,18 +9,18 @@ Denominator: **172**. Full parity is not claimed.
 |---|---|---|
 | inventory | {"complete": 172, "unresolved": 0} | 172 |
 | schema | {"complete": 168, "unresolved": 0, "zero_input_evidenced": 4} | 172 |
-| route | {"complete": 16, "external_blocked": 0, "unresolved": 156} | 16 |
-| behavior | {"specified": 0, "unresolved": 156, "verified": 16} | 16 |
-| policy | {"classified": 0, "unresolved": 156, "verified": 16} | 16 |
-| verification | {"hermetic_verified": 16, "unverified": 156} | 16 |
-| discovery | {"generated": 5, "missing": 156, "verified": 11} | 11 |
+| route | {"complete": 18, "external_blocked": 0, "unresolved": 154} | 18 |
+| behavior | {"specified": 0, "unresolved": 154, "verified": 18} | 18 |
+| policy | {"classified": 0, "unresolved": 154, "verified": 18} | 18 |
+| verification | {"hermetic_verified": 18, "unverified": 154} | 18 |
+| discovery | {"generated": 5, "missing": 154, "verified": 13} | 13 |
 | external_blocker | {"none": 132, "open": 40, "resolved": 0} | 132 |
 
 ## Global parity
 
 | I | S | R | B | P | V | D | X |
 |---:|---:|---:|---:|---:|---:|---:|---:|
-| 172 | 172 | 16 | 16 | 16 | 16 | 11 | 40 |
+| 172 | 172 | 18 | 18 | 18 | 18 | 13 | 40 |
 
 ## Family summary
 
@@ -29,7 +29,7 @@ Denominator: **172**. Full parity is not claimed.
 | ai-gateway | 5 | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | auditlogs | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | autorag | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
-| browser-rendering | 13 | 13 | 13 | 8 | 8 | 8 | 8 | 7 | 0 |
+| browser-rendering | 13 | 13 | 13 | 10 | 10 | 10 | 10 | 9 | 0 |
 | cloudflare-blog | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 0 |
 | cloudflare-one-casb | 11 | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 11 |
 | demo-day | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -53,8 +53,8 @@ Denominator: **172**. Full parity is not claimed.
 | graphql | 6 | 6 | 6 | 1 | 1 | 1 | 1 | 0 | 0 |
 | internal_binding | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | mcp | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 0 | 0 |
-| public_http | 78 | 78 | 78 | 4 | 4 | 4 | 4 | 4 | 0 |
-| rest | 79 | 79 | 79 | 10 | 10 | 10 | 10 | 7 | 32 |
+| public_http | 76 | 76 | 76 | 4 | 4 | 4 | 4 | 4 | 0 |
+| rest | 81 | 81 | 81 | 12 | 12 | 12 | 12 | 9 | 32 |
 
 ## Access classification summary
 
@@ -62,16 +62,16 @@ Denominator: **172**. Full parity is not claimed.
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | blocked | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | mcp_remote | 26 | 26 | 26 | 1 | 1 | 1 | 1 | 0 | 25 |
-| modeled | 7 | 7 | 7 | 7 | 7 | 7 | 7 | 7 | 0 |
+| modeled | 9 | 9 | 9 | 9 | 9 | 9 | 9 | 9 | 0 |
 | public_direct | 6 | 6 | 6 | 4 | 4 | 4 | 4 | 4 | 0 |
 | raw_graphql | 6 | 6 | 6 | 1 | 1 | 1 | 1 | 0 | 0 |
-| raw_rest | 126 | 126 | 126 | 3 | 3 | 3 | 3 | 0 | 14 |
+| raw_rest | 124 | 124 | 124 | 3 | 3 | 3 | 3 | 0 | 14 |
 
 ## Read/write operation summary
 
 | Group | Count | I | S | R | B | P | V | D | X |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| read | 150 | 150 | 150 | 15 | 15 | 15 | 15 | 11 | 34 |
+| read | 150 | 150 | 150 | 17 | 17 | 17 | 17 | 13 | 34 |
 | write | 22 | 22 | 22 | 1 | 1 | 1 | 1 | 0 | 6 |
 
 ## Blocker ledger
@@ -195,11 +195,11 @@ Denominator: **172**. Full parity is not claimed.
 | get_url_json | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | get_url_links | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | get_url_markdown | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
-| get_url_pdf | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
+| get_url_pdf | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | get_url_scan | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_url_scan_har | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_url_scan_screenshot | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
-| get_url_screenshot | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
+| get_url_screenshot | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | get_url_snapshot | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | graphql_api_explorer | graphql | graphql | raw_graphql | read | Y | Y | N | N | N | N | N | N |  |
 | graphql_complete_schema | graphql | graphql | raw_graphql | read | Y | Y | N | N | N | N | N | N |  |

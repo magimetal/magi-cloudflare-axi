@@ -493,3 +493,90 @@ pub fn request(
     let response = request_response(method, path, payload, endpoint, allow_write, guard, query)?;
     Ok(response.result.unwrap_or(response.envelope))
 }
+
+pub struct BinaryResponse {
+    pub bytes: Vec<u8>,
+    pub content_type: String,
+}
+
+impl CloudflareClient {
+    pub fn request_binary(&self, options: RequestOptions) -> Result<BinaryResponse, AppError> {
+        if options.method != Method::Post
+            || !options.allow_classified_read_post
+            || options.retry_policy != RetryPolicy::Never
+        {
+            return Err(AppError::usage(
+                "binary capability request must be a non-retried classified read POST",
+            ));
+        }
+        let mut url = target(&self.base, &options.path)?;
+        for (key, value) in &options.query {
+            url.query_pairs_mut().append_pair(key, value);
+        }
+        let body = options
+            .body
+            .as_ref()
+            .map(serde_json::to_vec)
+            .transpose()
+            .map_err(|_| AppError::usage("request body cannot be serialized"))?;
+        if body.as_ref().is_some_and(|bytes| bytes.len() > MAX_REQUEST) {
+            return Err(AppError::usage("request body exceeds 1 MiB"));
+        }
+        let secrets = match &self.auth {
+            Auth::None => Vec::new(),
+            Auth::Bearer(token) | Auth::KeyBearer(token) => vec![token.as_str()],
+            Auth::KeyEmail { key, email } => vec![key.as_str(), email.as_str()],
+        };
+        let mut builder = ureq::http::Request::builder()
+            .method("POST")
+            .uri(url.as_str());
+        builder = match &self.auth {
+            Auth::None => builder,
+            Auth::Bearer(token) | Auth::KeyBearer(token) => {
+                builder.header("Authorization", format!("Bearer {token}"))
+            }
+            Auth::KeyEmail { key, email } => builder
+                .header("X-Auth-Key", key)
+                .header("X-Auth-Email", email),
+        };
+        if body.is_some() {
+            builder = builder.header("Content-Type", "application/json");
+        }
+        let request = builder
+            .body(body.unwrap_or_default())
+            .map_err(|error| AppError::network(red(&error.to_string(), &secrets)))?;
+        let response = self
+            .agent
+            .run(request)
+            .map_err(|error| AppError::network(red(&error.to_string(), &secrets)))?;
+        let status = response.status().as_u16();
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or("")
+            .to_owned();
+        let mut bytes = Vec::new();
+        response
+            .into_body()
+            .into_reader()
+            .take((MAX_RESPONSE + 1) as u64)
+            .read_to_end(&mut bytes)
+            .map_err(|error| AppError::network(red(&error.to_string(), &secrets)))?;
+        if !(200..300).contains(&status) {
+            let envelope = if bytes.len() > MAX_RESPONSE {
+                Value::Null
+            } else {
+                serde_json::from_slice(&bytes).unwrap_or(Value::Null)
+            };
+            return Err(provider_failure(status, &envelope, &secrets));
+        }
+        if bytes.len() > MAX_RESPONSE {
+            return Err(AppError::network("response exceeds 8 MiB"));
+        }
+        Ok(BinaryResponse {
+            bytes,
+            content_type,
+        })
+    }
+}

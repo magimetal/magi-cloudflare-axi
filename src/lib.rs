@@ -523,6 +523,7 @@ fn run(c: Cli) -> Result<(), AppError> {
                     input,
                     file,
                     stdin,
+                    output,
                     allow_write,
                     allow_metered,
                     allow_egress,
@@ -537,6 +538,17 @@ fn run(c: Cli) -> Result<(), AppError> {
                 allow_long_running,
                 confirm: confirm.as_deref(),
             };
+            let binary = matches!(name.as_str(), "get_url_screenshot" | "get_url_pdf");
+            if binary && output.is_none() {
+                return Err(AppError::usage(
+                    "binary capabilities require explicit --output PATH",
+                ));
+            }
+            if !binary && output.is_some() {
+                return Err(AppError::usage(
+                    "--output is supported only for binary capabilities",
+                ));
+            }
             operation::preflight(
                 &name,
                 None,
@@ -553,7 +565,11 @@ fn run(c: Cli) -> Result<(), AppError> {
                 c.account.as_deref(),
                 flags,
             )?;
-            operation::invoke(&name, body, c.endpoint, c.account, c.mcp_endpoint, flags)?
+            if let Some(path) = output {
+                operation::binary_request(&name, body, c.endpoint, c.account, &path, flags)?
+            } else {
+                operation::invoke(&name, body, c.endpoint, c.account, c.mcp_endpoint, flags)?
+            }
         }
         Some(Command::Tool { command }) => {
             let resolved = config::load(c.endpoint.clone(), c.account.clone(), c.zone.clone())?;
@@ -649,9 +665,9 @@ mod tests {
         let skill = include_str!("../skills/magi-cloudflare-axi/SKILL.md");
         for phrase in [
             "schema v3",
-            "I=172; S=172; R=B=P=V=16; D=11; X=40",
+            "I=172; S=172; R=B=P=V=18; D=13; X=40",
             "capability invoke d1_database_get",
-            "Phase 4C adds authenticated `list_browser_sessions`",
+            "Phase 4D adds authenticated `get_url_pdf` and `get_url_screenshot`",
         ] {
             assert!(readme.contains(phrase), "README missing {phrase}");
             assert!(contract.contains(phrase), "contract missing {phrase}");
@@ -662,7 +678,7 @@ mod tests {
         }
         assert!(roadmap.contains("current_phase: phase-4-in-progress"));
         assert!(roadmap.contains("Blog direct reads = 4/4 complete and discovery-verified"));
-        assert!(roadmap.contains("156 routes unresolved"));
+        assert!(roadmap.contains("154 routes unresolved"));
         for phrase in [
             "registration-input schema",
             "--allow-write --allow-metered --confirm",

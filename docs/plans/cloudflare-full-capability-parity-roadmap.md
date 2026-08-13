@@ -38,11 +38,11 @@ Registered-name presence alone remains **inventory parity**, not full parity.
 | Registered names | 172/172 | 172/172 |
 | Canonical input schemas | 172/172 | 172/172 |
 | Method metadata | 147/172 | Route-dependent |
-| Path metadata | 13/172 | Every direct route complete |
-| Capability-specific complete routes | 16/172 | 172/172, or maximal attainable parity with explicit blockers |
-| Capability contract tests | 16/172 | 172/172 hermetically verified |
+| Path metadata | 15/172 | Every direct route complete |
+| Capability-specific complete routes | 18/172 | 172/172, or maximal attainable parity with explicit blockers |
+| Capability contract tests | 18/172 | 172/172 hermetically verified |
 
-Phase 4C is in progress. Seven authenticated Browser reads are complete, verified, and discovery-verified: `get_url_markdown`, `get_url_links`, `scrape_url_elements`, `get_url_json`, `get_url_snapshot`, `get_crawl_result`, and `list_browser_sessions`. Exact contract vector: `I=172; S=172; R=B=P=V=16; D=11; X=40`; discovery is 11 verified and five generated, with 156 routes unresolved. For `list_browser_sessions`, pinned `GET /accounts/{account_id}/browser-run/devtools/session` is authority; official docs instead show `/browser-rendering/devtools/session` with optional `limit`/`offset`, while pinned zero-input handler exposes neither query. Binary PNG/PDF Browser reads remain.
+Phase 4D is complete within ongoing Phase 4. It adds authenticated binary reads `get_url_pdf` and `get_url_screenshot`. Phase 4 cohort now has nine complete, verified, discovery-verified authenticated Browser reads: `get_url_links`, `scrape_url_elements`, `get_url_json`, `get_url_snapshot`, `get_crawl_result`, `list_browser_sessions`, `get_url_html_content`, `get_url_pdf`, and `get_url_screenshot`. With Phase 2's generated `get_url_markdown`, Browser family has ten exact contracts. Exact contract vector: `I=172; S=172; R=B=P=V=18; D=13; X=40`; discovery is 13 verified and five generated, with 154 routes unresolved. PDF posts `{url}` to `/accounts/{account_id}/browser-run/pdf` and verifies `application/pdf` plus `%PDF-`. Screenshot posts `{url,viewport}` to `/accounts/{account_id}/browser-run/screenshot` and verifies `image/png` plus PNG signature; absent viewport is omitted because JSON cannot represent JavaScript `undefined`, while supplied viewport defaults nested width/height to 800×600 and strips unknown nested keys. Both require explicit new filesystem `--output`, refuse overwrite, prepare a private sibling temporary file before auth/network, cap responses at 8 MiB, never retry or redirect, and return path/MIME/bytes/SHA-256 metadata. `list_browser_sessions` mismatch remains explicit: pinned authority is `GET /accounts/{account_id}/browser-run/devtools/session`; official docs show `/browser-rendering/devtools/session` with optional `limit`/`offset`, but pinned zero-input handler exposes neither query.
 
 Phase 3 exit gate for proven direct unauthenticated Blog cohort:
 
@@ -59,7 +59,7 @@ Phase 3 completed `2026-08-11` for four Blog operations only. Research pool corr
 
 | Scope | Current | Target |
 |---|---:|---:|
-| Verified reads | 15/150 | 150/150 |
+| Verified reads | 17/150 | 150/150 |
 | Hermetically verified writes | 1/22 | 22/22 |
 | Open blocker entries | 40 | 0 |
 | Fully verified families | 1/18 | 18/18 |
@@ -79,14 +79,14 @@ Current transport inventory:
 
 | Transport | Count |
 |---|---:|
-| `public_http` | 78 |
-| `rest` | 79 |
+| `public_http` | 76 |
+| `rest` | 81 |
 | `custom_container` | 7 |
 | `graphql` | 6 |
 | `internal_binding` | 1 |
 | `mcp` | 1 |
 
-Thirteen catalog records carry both `method` and `path_template`; operation-contract artifact contains sixteen complete routes.
+Fifteen catalog records carry both `method` and `path_template`; operation-contract artifact contains eighteen complete routes.
 
 
 ## Completion formula
@@ -339,7 +339,15 @@ Tasks:
 - [ ] Cover least-privilege auth failures without exposing provider bodies.
 - [ ] Enforce metering, data-egress, and long-running guards before config/auth/network for reads that require them.
 
-Phase 4C evidence: `list_browser_sessions` binds pinned handler lines 522–560 (blob `ae998f642ba8548b715e1573bc0049c96c9e1f28`, SHA-256 `c6b05861d44395a6e2bc84ac37320cd04d9a7edded73cf14d410fce32e31a361`) to account-authenticated `GET /accounts/{account_id}/browser-run/devtools/session`. Output accepts a bare array or object `result` array; only egress opt-in applies; transient-read retries are allowed. Official route/query mismatch remains explicit. Seven Browser reads are discovery-verified; binary PNG/PDF reads remain.
+#### Phase 4D — Browser binary artifacts
+
+**Status:** `complete within Phase 4`
+
+- [x] Bind exact authenticated PDF and screenshot routes, bodies, MIME types, and signatures.
+- [x] Require new-file `--output`; prove overwrite refusal, private sibling temp preparation before auth/network, 8 MiB limit, no retry, no redirect, and artifact metadata.
+- [x] Verify absent/supplied screenshot viewport semantics and synchronize discovery guidance.
+
+Evidence: `get_url_pdf` and `get_url_screenshot` add account-authenticated binary `POST` reads at `/accounts/{account_id}/browser-run/pdf` and `/accounts/{account_id}/browser-run/screenshot`. PDF body is `{url}`; screenshot body is `{url,viewport}`. PDF requires `application/pdf` plus `%PDF-`; screenshot requires `image/png` plus PNG signature. Screenshot omits absent viewport because JSON cannot represent JavaScript `undefined`; supplied viewport defaults nested width/height to 800×600 and strips unknown nested keys. Both require explicit new filesystem `--output`, reject existing destinations, create a private sibling temporary file before auth/network, enforce an 8 MiB maximum, never retry or follow redirects, and emit artifact path, MIME type, byte count, and SHA-256. Phase 4 cohort now has nine discovery-verified authenticated Browser reads; Browser family has ten exact contracts including Phase 2's generated `get_url_markdown`. Vector is `I=172; S=172; R=B=P=V=18; D=13; X=40`; 154 routes remain unresolved. For `list_browser_sessions`, pinned handler lines 522–560 (blob `ae998f642ba8548b715e1573bc0049c96c9e1f28`, SHA-256 `c6b05861d44395a6e2bc84ac37320cd04d9a7edded73cf14d410fce32e31a361`) remains authority for `GET /accounts/{account_id}/browser-run/devtools/session`; official route/query mismatch remains explicit. Phase 4 remains in progress.
 
 Exit gate:
 
@@ -554,7 +562,7 @@ Update this table only when gate evidence exists.
 | 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | complete | 2026-08-10 |
 | 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; 167 capability routes deferred | — | complete | 2026-08-11 |
 | 3 — Proven Blog reads | Phase 2 complete | Four Blog reads verified and discovery-verified; 163 total routes unresolved | — | complete-for-proven-cohort | 2026-08-11 |
-| 4 — Authenticated direct API reads | Phase 3 cohort complete | Seven Browser reads verified and discovery-verified; 156 total routes unresolved | — | in_progress | — |
+| 4 — Authenticated direct API reads | Phase 3 cohort complete | Phase 4D complete: nine authenticated Browser reads discovery-verified; 154 total routes unresolved | — | in_progress | — |
 | 5 — GraphQL/MCP reads | Phase 2 complete | GraphQL reads 5/5 and exposed MCP reads verified | — | not_started | — |
 | 6 — Writes | Phase 2 complete | Writes 22/22 hermetically verified | — | not_started | — |
 | 7 — Blockers | Route research available | Blockers 0 | — | not_started | — |

@@ -25,6 +25,9 @@ impl AppError {
     pub fn api(s: impl Into<String>) -> Self {
         Self::Api(s.into())
     }
+    pub fn output(s: impl Into<String>) -> Self {
+        Self::Output(s.into())
+    }
     pub fn code(&self) -> u8 {
         if matches!(self, Self::Usage(_)) { 2 } else { 1 }
     }

@@ -7,6 +7,7 @@ use std::{
 };
 
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use tempfile::TempDir;
 
 #[derive(Clone, Debug)]
@@ -2698,4 +2699,434 @@ fn capability_cloudflare_blog_response_limit_and_redirect_are_hermetic() {
     let out = run_blog("list_tags", "{}", &server.endpoint, Some("secret"));
     assert!(!out.status.success());
     assert_eq!(server.finish().len(), 1);
+}
+
+#[derive(Clone)]
+struct BinaryResponse {
+    status: u16,
+    content_type: Option<&'static str>,
+    body: Vec<u8>,
+    headers: Vec<(&'static str, &'static str)>,
+}
+
+struct BinaryServer {
+    endpoint: String,
+    requests: Arc<Mutex<Vec<Request>>>,
+    join: Option<thread::JoinHandle<()>>,
+}
+
+impl BinaryServer {
+    fn start(responses: Vec<BinaryResponse>) -> Self {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let endpoint = format!("http://{}/client/v4", listener.local_addr().unwrap());
+        let requests = Arc::new(Mutex::new(Vec::new()));
+        let seen = Arc::clone(&requests);
+        let join = thread::spawn(move || {
+            for response in responses {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut bytes = Vec::new();
+                let mut chunk = [0; 4096];
+                let header_end = loop {
+                    let n = stream.read(&mut chunk).unwrap();
+                    assert!(n > 0);
+                    bytes.extend_from_slice(&chunk[..n]);
+                    if let Some(pos) = bytes.windows(4).position(|w| w == b"\r\n\r\n") {
+                        break pos + 4;
+                    }
+                };
+                let headers = String::from_utf8_lossy(&bytes[..header_end]).into_owned();
+                let first = headers
+                    .lines()
+                    .next()
+                    .unwrap()
+                    .split_whitespace()
+                    .collect::<Vec<_>>();
+                let length = headers
+                    .lines()
+                    .find_map(|line| {
+                        line.to_ascii_lowercase()
+                            .strip_prefix("content-length:")
+                            .and_then(|v| v.trim().parse().ok())
+                    })
+                    .unwrap_or(0);
+                while bytes.len() < header_end + length {
+                    let n = stream.read(&mut chunk).unwrap();
+                    assert!(n > 0);
+                    bytes.extend_from_slice(&chunk[..n]);
+                }
+                seen.lock().unwrap().push(Request {
+                    method: first[0].into(),
+                    target: first[1].into(),
+                    headers,
+                    body: String::from_utf8_lossy(&bytes[header_end..header_end + length])
+                        .into_owned(),
+                });
+                let mut wire = format!(
+                    "HTTP/1.1 {} Test\r\nContent-Length: {}\r\nConnection: close\r\n",
+                    response.status,
+                    response.body.len()
+                );
+                if let Some(content_type) = response.content_type {
+                    wire.push_str(&format!("Content-Type: {content_type}\r\n"));
+                }
+                for (name, value) in response.headers {
+                    wire.push_str(&format!("{name}: {value}\r\n"));
+                }
+                wire.push_str("\r\n");
+                stream.write_all(wire.as_bytes()).unwrap();
+                stream.write_all(&response.body).unwrap();
+            }
+        });
+        Self {
+            endpoint,
+            requests,
+            join: Some(join),
+        }
+    }
+
+    fn finish(mut self) -> Vec<Request> {
+        self.join.take().unwrap().join().unwrap();
+        Arc::try_unwrap(self.requests)
+            .unwrap()
+            .into_inner()
+            .unwrap()
+    }
+}
+
+fn binary_response(status: u16, content_type: &'static str, body: &[u8]) -> BinaryResponse {
+    BinaryResponse {
+        status,
+        content_type: Some(content_type),
+        body: body.to_vec(),
+        headers: vec![],
+    }
+}
+
+fn binary_response_without_content_type(status: u16, body: &[u8]) -> BinaryResponse {
+    BinaryResponse {
+        status,
+        content_type: None,
+        body: body.to_vec(),
+        headers: vec![],
+    }
+}
+
+fn binary_args<'a>(name: &'a str, input: &'a str, output: &'a str) -> Vec<&'a str> {
+    let mut args = browser_args(name, input);
+    args.extend(["--output", output]);
+    args
+}
+
+#[test]
+fn capability_get_url_pdf_exact_request() {
+    let body = b"%PDF-\0binary\xff";
+    let server = BinaryServer::start(vec![binary_response(200, "application/pdf", body)]);
+    let (out, dir) = run(
+        &binary_args(
+            "get_url_pdf",
+            r#"{"url":"  https://example.com/path  "}"#,
+            "result.pdf",
+        ),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(out.status.success(), "{out:?}");
+    assert!(out.stderr.is_empty());
+    assert_eq!(std::fs::read(dir.path().join("result.pdf")).unwrap(), body);
+    let metadata = json_stdout(&out)["artifact"].clone();
+    assert_eq!(metadata["bytes"], body.len());
+    assert_eq!(metadata["media_type"], "application/pdf");
+    assert_eq!(metadata["sha256"], format!("{:x}", Sha256::digest(body)));
+    assert_eq!(metadata["path"], "result.pdf");
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_binary_request(
+        &requests[0],
+        "pdf",
+        serde_json::json!({"url":"https://example.com/path"}),
+    );
+}
+#[test]
+fn capability_get_url_screenshot_exact_request() {
+    let body = b"\x89PNG\r\n\x1a\n\0\xff";
+    for (input, expected) in [
+        (
+            r#"{"url":"https://example.com"}"#,
+            serde_json::json!({"url":"https://example.com"}),
+        ),
+        (
+            r#"{"url":"https://example.com","viewport":{}}"#,
+            serde_json::json!({"url":"https://example.com","viewport":{"width":800,"height":600}}),
+        ),
+        (
+            r#"{"url":"https://example.com","viewport":{"width":800}}"#,
+            serde_json::json!({"url":"https://example.com","viewport":{"width":800,"height":600}}),
+        ),
+        (
+            r#"{"url":"https://example.com","viewport":{"width":800,"height":600}}"#,
+            serde_json::json!({"url":"https://example.com","viewport":{"width":800,"height":600}}),
+        ),
+        (
+            r#"{"url":"https://example.com","viewport":{"width":800,"unknown":true}}"#,
+            serde_json::json!({"url":"https://example.com","viewport":{"width":800,"height":600}}),
+        ),
+    ] {
+        let server = BinaryServer::start(vec![binary_response(200, "image/png", body)]);
+        let (out, dir) = run(
+            &binary_args("get_url_screenshot", input, "shot.png"),
+            Some(&server.endpoint),
+            Some("token"),
+        );
+        assert!(out.status.success(), "{out:?}");
+        assert!(out.stderr.is_empty());
+        assert_eq!(std::fs::read(dir.path().join("shot.png")).unwrap(), body);
+        let artifact = &json_stdout(&out)["artifact"];
+        assert_eq!(artifact["bytes"], body.len());
+        assert_eq!(artifact["media_type"], "image/png");
+        assert_eq!(artifact["sha256"], format!("{:x}", Sha256::digest(body)));
+        assert_eq!(artifact["path"], "shot.png");
+        let requests = server.finish();
+        assert_eq!(requests.len(), 1);
+        assert_binary_request(&requests[0], "screenshot", expected.clone());
+    }
+}
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
+fn assert_binary_request(request: &Request, suffix: &str, body: Value) {
+    assert_eq!(request.method, "POST");
+    assert_eq!(
+        request.target,
+        format!("/client/v4/accounts/{TEST_ACCOUNT}/browser-run/{suffix}")
+    );
+    let headers = request.headers.to_ascii_lowercase();
+    assert!(headers.contains("authorization: bearer token"));
+    assert!(headers.contains("content-type: application/json"));
+    assert_eq!(serde_json::from_str::<Value>(&request.body).unwrap(), body);
+}
+
+fn assert_no_artifact(dir: &TempDir, output: &str) {
+    assert!(!dir.path().join(output).exists(), "destination created");
+    let entries = std::fs::read_dir(dir.path())
+        .unwrap()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+    assert!(entries.iter().all(|entry| {
+        let name = entry.file_name();
+        !name.to_string_lossy().contains(".tmp-")
+    }));
+}
+
+#[test]
+fn binary_success_asserts_transport_metadata_and_permissions() {
+    let pdf = b"%PDF-1.7\nfixture";
+    let server = BinaryServer::start(vec![binary_response(200, "APPLICATION/PDF", pdf)]);
+    let (out, dir) = run(
+        &binary_args(
+            "get_url_pdf",
+            r#"{"url":"https://example.com"}"#,
+            "result.pdf",
+        ),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(out.status.success(), "{out:?}");
+    let path = dir.path().join("result.pdf");
+    assert_eq!(std::fs::read(&path).unwrap(), pdf);
+    let artifact = &json_stdout(&out)["artifact"];
+    assert_eq!(artifact["bytes"], pdf.len());
+    assert_eq!(artifact["media_type"], "application/pdf");
+    assert_eq!(artifact["sha256"], format!("{:x}", Sha256::digest(pdf)));
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_binary_request(
+        &requests[0],
+        "pdf",
+        serde_json::json!({"url":"https://example.com"}),
+    );
+    #[cfg(unix)]
+    assert_eq!(
+        std::fs::metadata(path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+}
+
+#[test]
+fn binary_preflight_with_output_has_no_network_or_artifact() {
+    for omitted in ["--allow-metered", "--allow-egress", "--allow-long-running"] {
+        let mut args = binary_args(
+            "get_url_pdf",
+            r#"{"url":"https://example.com"}"#,
+            "result.pdf",
+        );
+        args.retain(|argument| *argument != omitted);
+        let (out, dir) = run(&args, Some("http://127.0.0.1:1"), None);
+        assert_eq!(out.status.code(), Some(2), "{omitted}: {out:?}");
+        assert!(String::from_utf8_lossy(&out.stdout).contains(omitted));
+        assert_no_artifact(&dir, "result.pdf");
+    }
+    let (out, dir) = run(
+        &browser_args("get_url_pdf", r#"{"url":"https://example.com"}"#),
+        Some("http://127.0.0.1:1"),
+        None,
+    );
+    assert_eq!(out.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&out.stdout).contains("require explicit --output"));
+    assert_no_artifact(&dir, "result.pdf");
+
+    let mut non_binary = browser_args("get_url_markdown", r#"{"url":"https://example.com"}"#);
+    non_binary.extend(["--output", "result.pdf"]);
+    let (out, dir) = run(&non_binary, Some("http://127.0.0.1:1"), None);
+    assert_eq!(out.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&out.stdout).contains("only for binary capabilities"));
+    assert_no_artifact(&dir, "result.pdf");
+
+    for output in ["-", "missing/parent/result.pdf"] {
+        let (out, dir) = run(
+            &binary_args("get_url_pdf", r#"{"url":"https://example.com"}"#, output),
+            Some("http://127.0.0.1:1"),
+            None,
+        );
+        assert_eq!(out.status.code(), Some(2), "{output}: {out:?}");
+        assert_no_artifact(&dir, "result.pdf");
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let destination = dir.path().join("existing.pdf");
+    std::fs::write(&destination, b"keep").unwrap();
+    let mut command = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"));
+    command
+        .args(binary_args(
+            "get_url_pdf",
+            r#"{"url":"https://example.com"}"#,
+            destination.to_str().unwrap(),
+        ))
+        .current_dir(dir.path())
+        .env("HOME", dir.path())
+        .env("XDG_CONFIG_HOME", dir.path())
+        .env_remove("CLOUDFLARE_API_TOKEN");
+    assert!(!command.output().unwrap().status.success());
+    assert_eq!(std::fs::read(&destination).unwrap(), b"keep");
+    for name in ["get_url_pdf", "get_url_screenshot"] {
+        let (out, dir) = run(
+            &binary_args(name, r#"{"url":"relative/path"}"#, "result.bin"),
+            Some("http://127.0.0.1:1"),
+            None,
+        );
+        assert_eq!(out.status.code(), Some(2));
+        assert!(String::from_utf8_lossy(&out.stdout).contains("url must be valid"));
+        assert_no_artifact(&dir, "result.bin");
+        let (out, dir) = run(
+            &binary_args(
+                name,
+                r#"{"url":"https://example.com","account_id":"provided"}"#,
+                "result.bin",
+            ),
+            Some("http://127.0.0.1:1"),
+            None,
+        );
+        assert_eq!(out.status.code(), Some(2));
+        assert!(String::from_utf8_lossy(&out.stdout).contains("conflicts"));
+        assert_no_artifact(&dir, "result.bin");
+    }
+}
+
+#[test]
+fn binary_oversized_response_leaves_no_destination() {
+    let body: &'static [u8] = Box::leak(vec![b'x'; 8 * 1024 * 1024 + 1].into_boxed_slice());
+    let server = BinaryServer::start(vec![binary_response(200, "application/pdf", body)]);
+    let (out, dir) = run(
+        &binary_args(
+            "get_url_pdf",
+            r#"{"url":"https://example.com"}"#,
+            "result.pdf",
+        ),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(!out.status.success());
+    assert_no_artifact(&dir, "result.pdf");
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn oversized_binary_error_responses_preserve_status_classification() {
+    let body: &'static [u8] = Box::leak(vec![b'x'; 8 * 1024 * 1024 + 1].into_boxed_slice());
+    for (status, kind) in [(401, "auth"), (429, "network"), (500, "api")] {
+        let server = BinaryServer::start(vec![binary_response(status, "application/json", body)]);
+        let (out, dir) = run(
+            &binary_args(
+                "get_url_pdf",
+                r#"{"url":"https://example.com"}"#,
+                "result.pdf",
+            ),
+            Some(&server.endpoint),
+            Some("token"),
+        );
+        assert_eq!(out.status.code(), Some(1));
+        assert_eq!(json_stdout(&out)["error"]["type"], kind);
+        assert_no_artifact(&dir, "result.pdf");
+        assert_eq!(server.finish().len(), 1);
+    }
+}
+
+#[test]
+fn binary_failure_paths_are_single_request_and_leave_no_files() {
+    let valid = b"%PDF-1.7\nvalid";
+    let cases = vec![
+        ("get_url_pdf", binary_response(200, "text/plain", valid)),
+        (
+            "get_url_pdf",
+            binary_response_without_content_type(200, valid),
+        ),
+        (
+            "get_url_pdf",
+            binary_response(200, "application/pdf", b"bad"),
+        ),
+        ("get_url_pdf", binary_response(200, "application/pdf", b"")),
+        (
+            "get_url_pdf",
+            binary_response(200, "application/pdf", b"%PDF"),
+        ),
+        (
+            "get_url_screenshot",
+            binary_response(200, "image/png", b"\x89PNG\r\n\x1a"),
+        ),
+        (
+            "get_url_pdf",
+            binary_response(400, "application/pdf", valid),
+        ),
+        (
+            "get_url_pdf",
+            binary_response(500, "application/pdf", valid),
+        ),
+    ];
+    for (name, response) in cases {
+        let server = BinaryServer::start(vec![response]);
+        let (out, dir) = run(
+            &binary_args(name, r#"{"url":"https://example.com"}"#, "result.pdf"),
+            Some(&server.endpoint),
+            Some("token"),
+        );
+        assert!(!out.status.success());
+        assert_no_artifact(&dir, "result.pdf");
+        assert_eq!(server.finish().len(), 1);
+    }
+}
+
+#[test]
+fn binary_redirect_is_rejected_without_forwarding_credentials() {
+    let server = RedirectServer::start();
+    let (out, _) = run(
+        &binary_args(
+            "get_url_pdf",
+            r#"{"url":"https://example.com"}"#,
+            "result.pdf",
+        ),
+        Some(&server.endpoint),
+        Some("secret"),
+    );
+    assert!(!out.status.success());
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert!(requests[0].contains("secret"));
 }
