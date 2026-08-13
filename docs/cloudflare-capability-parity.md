@@ -9,18 +9,18 @@ Denominator: **172**. Full parity is not claimed.
 |---|---|---|
 | inventory | {"complete": 172, "unresolved": 0} | 172 |
 | schema | {"complete": 168, "unresolved": 0, "zero_input_evidenced": 4} | 172 |
-| route | {"complete": 12, "external_blocked": 0, "unresolved": 160} | 12 |
-| behavior | {"specified": 0, "unresolved": 160, "verified": 12} | 12 |
-| policy | {"classified": 0, "unresolved": 160, "verified": 12} | 12 |
-| verification | {"hermetic_verified": 12, "unverified": 160} | 12 |
-| discovery | {"generated": 5, "missing": 160, "verified": 7} | 7 |
+| route | {"complete": 15, "external_blocked": 0, "unresolved": 157} | 15 |
+| behavior | {"specified": 0, "unresolved": 157, "verified": 15} | 15 |
+| policy | {"classified": 0, "unresolved": 157, "verified": 15} | 15 |
+| verification | {"hermetic_verified": 15, "unverified": 157} | 15 |
+| discovery | {"generated": 5, "missing": 157, "verified": 10} | 10 |
 | external_blocker | {"none": 132, "open": 40, "resolved": 0} | 132 |
 
 ## Global parity
 
 | I | S | R | B | P | V | D | X |
 |---:|---:|---:|---:|---:|---:|---:|---:|
-| 172 | 172 | 12 | 12 | 12 | 12 | 7 | 40 |
+| 172 | 172 | 15 | 15 | 15 | 15 | 10 | 40 |
 
 ## Family summary
 
@@ -29,7 +29,7 @@ Denominator: **172**. Full parity is not claimed.
 | ai-gateway | 5 | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | auditlogs | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | autorag | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
-| browser-rendering | 13 | 13 | 13 | 4 | 4 | 4 | 4 | 3 | 0 |
+| browser-rendering | 13 | 13 | 13 | 7 | 7 | 7 | 7 | 6 | 0 |
 | cloudflare-blog | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 0 |
 | cloudflare-one-casb | 11 | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 11 |
 | demo-day | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -53,8 +53,8 @@ Denominator: **172**. Full parity is not claimed.
 | graphql | 6 | 6 | 6 | 1 | 1 | 1 | 1 | 0 | 0 |
 | internal_binding | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | mcp | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 0 | 0 |
-| public_http | 82 | 82 | 82 | 4 | 4 | 4 | 4 | 4 | 0 |
-| rest | 75 | 75 | 75 | 6 | 6 | 6 | 6 | 3 | 32 |
+| public_http | 79 | 79 | 79 | 4 | 4 | 4 | 4 | 4 | 0 |
+| rest | 78 | 78 | 78 | 9 | 9 | 9 | 9 | 6 | 32 |
 
 ## Access classification summary
 
@@ -62,16 +62,16 @@ Denominator: **172**. Full parity is not claimed.
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | blocked | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | mcp_remote | 26 | 26 | 26 | 1 | 1 | 1 | 1 | 0 | 25 |
-| modeled | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 0 |
+| modeled | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 0 |
 | public_direct | 6 | 6 | 6 | 4 | 4 | 4 | 4 | 4 | 0 |
 | raw_graphql | 6 | 6 | 6 | 1 | 1 | 1 | 1 | 0 | 0 |
-| raw_rest | 130 | 130 | 130 | 3 | 3 | 3 | 3 | 0 | 14 |
+| raw_rest | 127 | 127 | 127 | 3 | 3 | 3 | 3 | 0 | 14 |
 
 ## Read/write operation summary
 
 | Group | Count | I | S | R | B | P | V | D | X |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| read | 150 | 150 | 150 | 11 | 11 | 11 | 11 | 7 | 34 |
+| read | 150 | 150 | 150 | 14 | 14 | 14 | 14 | 10 | 34 |
 | write | 22 | 22 | 22 | 1 | 1 | 1 | 1 | 0 | 6 |
 
 ## Blocker ledger
@@ -157,7 +157,7 @@ Denominator: **172**. Full parity is not claimed.
 | get_bots_crawlers_data | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_bots_data | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_certificate_transparency_data | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
-| get_crawl_result | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
+| get_crawl_result | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | get_ct_authority_details | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_ct_log_details | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_dns_queries_data | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
@@ -192,7 +192,7 @@ Denominator: **172**. Full parity is not claimed.
 | get_traffic_anomalies | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_traffic_anomalies_by_location | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_url_html_content | browser-rendering | rest | raw_rest | read | Y | Y | Y | Y | Y | Y | N | N |  |
-| get_url_json | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
+| get_url_json | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | get_url_links | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | get_url_markdown | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | get_url_pdf | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
@@ -200,7 +200,7 @@ Denominator: **172**. Full parity is not claimed.
 | get_url_scan_har | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_url_scan_screenshot | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | get_url_screenshot | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
-| get_url_snapshot | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
+| get_url_snapshot | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | graphql_api_explorer | graphql | graphql | raw_graphql | read | Y | Y | N | N | N | N | N | N |  |
 | graphql_complete_schema | graphql | graphql | raw_graphql | read | Y | Y | N | N | N | N | N | N |  |
 | graphql_query | graphql | graphql | raw_graphql | write | Y | Y | N | N | N | N | N | N |  |

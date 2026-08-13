@@ -649,8 +649,9 @@ mod tests {
         let skill = include_str!("../skills/magi-cloudflare-axi/SKILL.md");
         for phrase in [
             "schema v3",
-            "I=172; S=172; R=B=P=V=12; D=7; X=40",
+            "I=172; S=172; R=B=P=V=15; D=10; X=40",
             "capability invoke d1_database_get",
+            "Phase 4B adds three authenticated Browser reads",
         ] {
             assert!(readme.contains(phrase), "README missing {phrase}");
             assert!(contract.contains(phrase), "contract missing {phrase}");
@@ -661,7 +662,7 @@ mod tests {
         }
         assert!(roadmap.contains("current_phase: phase-4-in-progress"));
         assert!(roadmap.contains("Blog direct reads = 4/4 complete and discovery-verified"));
-        assert!(roadmap.contains("160 routes unresolved"));
+        assert!(roadmap.contains("157 routes unresolved"));
         for phrase in [
             "registration-input schema",
             "--allow-write --allow-metered --confirm",

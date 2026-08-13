@@ -6,14 +6,17 @@ use std::collections::BTreeSet;
 
 const CONTRACTS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
-const BUNDLE_SHA256: &str = "4c8d6b6fce80e45a332d7175f245a28552ec775a9549e68ca50e0e56c6283eba";
-const CONTRACT_NAMES: [&str; 12] = [
+const BUNDLE_SHA256: &str = "e8067e74af60bde3861dd714d24a2819745b49698231485e7c13e506b86ef1de";
+const CONTRACT_NAMES: [&str; 15] = [
     "d1_database_delete",
     "d1_database_get",
+    "get_crawl_result",
     "get_post",
     "get_url_html_content",
+    "get_url_json",
     "get_url_links",
     "get_url_markdown",
+    "get_url_snapshot",
     "graphql_schema_overview",
     "list_posts",
     "list_tags",
@@ -21,13 +24,16 @@ const CONTRACT_NAMES: [&str; 12] = [
     "search_cloudflare_documentation",
     "search_posts",
 ];
-const CONTRACT_HASHES: [&str; 12] = [
+const CONTRACT_HASHES: [&str; 15] = [
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
+    "e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52",
     "c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1",
     "5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909",
+    "930b1ee212733b0fcd7e600bd346001ddb6e0154f99bbeebe27bc079e42cdb6d",
     "5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83",
     "853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed",
+    "3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588",
     "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc",
     "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c",
     "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd",
@@ -95,10 +101,10 @@ fn digest(v: &Value) -> String {
 fn contracts() -> Result<Bundle, AppError> {
     let bundle: Bundle = serde_json::from_str(CONTRACTS)
         .map_err(|e| AppError::api(format!("embedded operation contracts are invalid: {e}")))?;
-    if bundle.version != "phase4a-operation-contracts-v1"
+    if bundle.version != "phase4b-operation-contracts-v1"
         || bundle.source_commit != SOURCE_COMMIT
-        || bundle.contract_count != 12
-        || bundle.contracts.len() != 12
+        || bundle.contract_count != 15
+        || bundle.contracts.len() != 15
         || bundle
             .contracts
             .iter()
@@ -170,24 +176,34 @@ fn validate_contract(c: &Contract) -> Result<(), AppError> {
     {
         return Err(AppError::api("MCP operation route mismatch"));
     }
-    if ["get_url_links", "get_url_markdown", "scrape_url_elements"].contains(&c.capability.as_str())
-        && (c.route.get("scope") != Some(&Value::String("account".into()))
-            || c.route.get("method") != Some(&Value::String("POST".into()))
-            || c.route.get("auth") != Some(&Value::String("account".into()))
-            || c.route.get("transport") != Some(&Value::String("rest".into())))
-    {
-        return Err(AppError::api("browser quick action route mismatch"));
-    }
     if [
         "get_url_html_content",
+        "get_url_json",
         "get_url_links",
         "get_url_markdown",
+        "get_url_snapshot",
         "scrape_url_elements",
     ]
     .contains(&c.capability.as_str())
         && (!c.safety.metered || !c.safety.data_egress || !c.safety.long_running)
     {
         return Err(AppError::api("browser content safety mismatch"));
+    }
+    if ["get_crawl_result", "get_url_json", "get_url_snapshot"].contains(&c.capability.as_str())
+        && (c.route.get("scope") != Some(&Value::String("account".into()))
+            || c.route.get("method")
+                != Some(&Value::String(
+                    if c.capability == "get_crawl_result" {
+                        "GET"
+                    } else {
+                        "POST"
+                    }
+                    .into(),
+                ))
+            || c.route.get("auth") != Some(&Value::String("account".into()))
+            || c.route.get("transport") != Some(&Value::String("rest".into())))
+    {
+        return Err(AppError::api("browser JSON/snapshot/crawl route mismatch"));
     }
     if ["get_post", "list_posts", "list_tags", "search_posts"].contains(&c.capability.as_str()) {
         let expected_method = if c.capability == "search_posts" {
@@ -417,8 +433,10 @@ fn effective(name: &str, input: Value) -> Result<Map<String, Value>, AppError> {
     }
     if [
         "get_url_html_content",
+        "get_url_json",
         "get_url_links",
         "get_url_markdown",
+        "get_url_snapshot",
         "scrape_url_elements",
     ]
     .contains(&name)
@@ -763,32 +781,65 @@ fn browser_request(
         "account_id",
         Some(32),
     )?;
-    let suffix = match name {
-        "get_url_markdown" => "markdown",
-        "get_url_links" => "links",
-        "scrape_url_elements" => "scrape",
-        _ => return Err(AppError::usage("unsupported browser capability")),
-    };
     let body = match name {
         "scrape_url_elements" => json!({"url":input["url"],"elements":input["elements"]}),
         "get_url_links" => {
-            let mut body = json!({"url": input["url"]});
+            let mut body = json!({"url":input["url"]});
             if let Some(value) = input.get("visibleLinksOnly") {
                 body["visibleLinksOnly"] = value.clone();
             }
             body
         }
+        "get_url_json" => {
+            let mut body = json!({"url":input["url"]});
+            if input
+                .get("prompt")
+                .and_then(Value::as_str)
+                .is_some_and(|v| !v.is_empty())
+            {
+                body["prompt"] = input["prompt"].clone();
+            }
+            if let Some(value) = input.get("response_format") {
+                body["response_format"] = value.clone();
+            }
+            body
+        }
+        "get_crawl_result" => Value::Null,
         _ => json!({"url":input["url"]}),
+    };
+    let (method, path, retry_policy) = if name == "get_crawl_result" {
+        (
+            client::Method::Get,
+            format!(
+                "/accounts/{account}/browser-run/crawl/{}",
+                path_segment(input["job_id"].as_str().unwrap_or(""), "job_id", Some(256))?
+            ),
+            client::RetryPolicy::TransientRead,
+        )
+    } else {
+        let suffix = match name {
+            "get_url_json" => "json",
+            "get_url_snapshot" => "snapshot",
+            "get_url_markdown" => "markdown",
+            "get_url_links" => "links",
+            "scrape_url_elements" => "scrape",
+            _ => return Err(AppError::usage("unsupported browser capability")),
+        };
+        (
+            client::Method::Post,
+            format!("/accounts/{account}/browser-run/{suffix}"),
+            client::RetryPolicy::Never,
+        )
     };
     let r = client::CloudflareClient::new(cfg.clone(), config::auth_for(&cfg)?)?.request(
         client::RequestOptions {
-            method: client::Method::Post,
-            path: format!("/accounts/{account}/browser-run/{suffix}"),
+            method,
+            path,
             query: vec![],
-            body: Some(body),
+            body: (method != client::Method::Get).then_some(body),
             allow_write: false,
             confirm_delete: None,
-            retry_policy: client::RetryPolicy::Never,
+            retry_policy,
             allow_classified_read_post: true,
         },
     )?;
@@ -805,6 +856,25 @@ fn browser_request(
         .result
         .ok_or_else(|| AppError::api("browser result is missing"))?;
     match name {
+        "get_url_json" | "get_crawl_result" => Ok(result),
+        "get_url_snapshot" => {
+            let object = result
+                .as_object()
+                .ok_or_else(|| AppError::api("browser snapshot result must be an object"))?;
+            if object
+                .keys()
+                .any(|key| key != "content" && key != "screenshot")
+                || object
+                    .get("content")
+                    .is_some_and(|v| !v.is_string() && !v.is_null())
+                || object
+                    .get("screenshot")
+                    .is_some_and(|v| !v.is_null() && v.as_str().is_none_or(|s| s.is_empty()))
+            {
+                return Err(AppError::api("browser snapshot result is malformed"));
+            }
+            Ok(result)
+        }
         "get_url_markdown" => result
             .as_str()
             .map(|x| Value::String(x.into()))
@@ -834,35 +904,38 @@ fn browser_request(
                         .get("selector")
                         .and_then(Value::as_str)
                         .is_none_or(str::is_empty)
-                    || !object.get("results").is_some_and(Value::is_array)
-                {
-                    return Err(AppError::api("browser scrape selector record is malformed"));
-                }
-                for result in object["results"].as_array().unwrap_or(&Vec::new()) {
-                    let item = result.as_object().ok_or_else(|| {
-                        AppError::api("browser scrape result item must be an object")
-                    })?;
-                    if item.len() != 7
-                        || !item.get("attributes").is_some_and(|v| {
-                            v.as_array().is_some_and(|a| {
-                                a.iter().all(|x| {
-                                    x.as_object().is_some_and(|o| {
-                                        o.len() == 2
-                                            && o.get("name").is_some_and(Value::is_string)
-                                            && o.get("value").is_some_and(Value::is_string)
+                    || !object.get("results").is_some_and(|value| {
+                        value.as_array().is_some_and(|results| {
+                            results.iter().all(|item| {
+                                let Some(item) = item.as_object() else {
+                                    return false;
+                                };
+                                item.get("attributes").is_some_and(|value| {
+                                    value.as_array().is_some_and(|attributes| {
+                                        attributes.iter().all(|attribute| {
+                                            let Some(attribute) = attribute.as_object() else {
+                                                return false;
+                                            };
+                                            attribute.len() == 2
+                                                && attribute
+                                                    .get("name")
+                                                    .is_some_and(Value::is_string)
+                                                && attribute
+                                                    .get("value")
+                                                    .is_some_and(Value::is_string)
+                                        })
                                     })
-                                })
+                                }) && item.get("height").is_some_and(Value::is_number)
+                                    && item.get("html").is_some_and(Value::is_string)
+                                    && item.get("left").is_some_and(Value::is_number)
+                                    && item.get("text").is_some_and(Value::is_string)
+                                    && item.get("top").is_some_and(Value::is_number)
+                                    && item.get("width").is_some_and(Value::is_number)
                             })
                         })
-                        || !item.get("height").is_some_and(Value::is_number)
-                        || !item.get("width").is_some_and(Value::is_number)
-                        || !item.get("top").is_some_and(Value::is_number)
-                        || !item.get("left").is_some_and(Value::is_number)
-                        || !item.get("html").is_some_and(Value::is_string)
-                        || !item.get("text").is_some_and(Value::is_string)
-                    {
-                        return Err(AppError::api("browser scrape result item is malformed"));
-                    }
+                    })
+                {
+                    return Err(AppError::api("browser scrape selector record is malformed"));
                 }
             }
             Ok(Value::Array(records.to_vec()))
@@ -1066,9 +1139,12 @@ pub fn invoke(
                     .ok_or_else(|| AppError::api("capability response result must be an object"))
             }
         }
-        "get_url_markdown" | "get_url_links" | "scrape_url_elements" => {
-            browser_request(name, &input, endpoint.as_deref(), cli_account)
-        }
+        "get_url_json"
+        | "get_url_snapshot"
+        | "get_crawl_result"
+        | "get_url_markdown"
+        | "get_url_links"
+        | "scrape_url_elements" => browser_request(name, &input, endpoint.as_deref(), cli_account),
         _ => Err(AppError::usage(format!(
             "capability '{name}' has no complete route contract"
         ))),

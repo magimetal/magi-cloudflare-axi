@@ -593,6 +593,15 @@ fn capability_browser_discovery_examples_are_exact() {
             "scrape_url_elements",
             "scrape_url_elements --input '{\"url\":\"<url>\",\"elements\":[{\"selector\":\"h1\"}]}'",
         ),
+        ("get_url_json", "get_url_json --input '{\"url\":\"<url>\"}'"),
+        (
+            "get_url_snapshot",
+            "get_url_snapshot --input '{\"url\":\"<url>\"}'",
+        ),
+        (
+            "get_crawl_result",
+            "get_crawl_result --input '{\"job_id\":\"<job_id>\"}'",
+        ),
     ] {
         let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
             .args(["--format", "json", "capability", "get", name])

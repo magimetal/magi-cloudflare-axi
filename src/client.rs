@@ -367,6 +367,7 @@ impl CloudflareClient {
             match self.agent.run(request) {
                 Ok(response) => {
                     let status = response.status().as_u16();
+                    let retryable_status = status == 429 || (500..=599).contains(&status);
                     let mut bytes = Vec::new();
                     let read_result = response
                         .into_body()
@@ -409,6 +410,9 @@ impl CloudflareClient {
                         return Ok(response);
                     }
                     last = Some(provider_failure(status, &response.envelope, &secrets));
+                    if !retryable_status {
+                        break;
+                    }
                 }
                 Err(error) => last = Some(AppError::network(red(&error.to_string(), &secrets))),
             }

@@ -1449,17 +1449,26 @@ fn capability_input_account_conflict_precedes_auth_and_network() {
 
 #[test]
 fn browser_input_account_conflict_precedes_auth_and_network() {
-    for name in ["get_url_markdown", "get_url_links", "scrape_url_elements"] {
+    for name in [
+        "get_url_markdown",
+        "get_url_links",
+        "scrape_url_elements",
+        "get_url_json",
+        "get_url_snapshot",
+        "get_crawl_result",
+    ] {
         let directory = tempfile::tempdir().unwrap();
         std::fs::write(
             directory.path().join(".cloudflare-axi.toml"),
             "account_id = 'configured'\n",
         )
         .unwrap();
-        let input = if name == "scrape_url_elements" {
-            r#"{"url":"https://example.com","elements":[{"selector":"h1"}],"account_id":"provided"}"#
-        } else {
-            r#"{"url":"https://example.com","account_id":"provided"}"#
+        let input = match name {
+            "scrape_url_elements" => {
+                r#"{"url":"https://example.com","elements":[{"selector":"h1"}],"account_id":"provided"}"#
+            }
+            "get_crawl_result" => r#"{"job_id":"job-123","account_id":"provided"}"#,
+            _ => r#"{"url":"https://example.com","account_id":"provided"}"#,
         };
         let mut command = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"));
         command
@@ -1974,6 +1983,144 @@ fn assert_browser_request(requests: &[Request], suffix: &str, body: Value) {
     assert!(headers.contains("authorization: bearer token"));
     assert!(headers.contains("content-type: application/json"));
     assert_eq!(serde_json::from_str::<Value>(&request.body).unwrap(), body);
+}
+
+#[test]
+fn capability_get_url_json_exact_request() {
+    assert_browser_guards("get_url_json", r#"{"url":"https://example.com"}"#);
+    assert_browser_invalid_urls("get_url_json", r#"{"url":"https://example.com"}"#);
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"result":{"answer":42}}"#,
+    )]);
+    let (out, _) = run(
+        &browser_args(
+            "get_url_json",
+            r#"{"url":"  https://example.com/path  ","prompt":"answer","response_format":{"type":"json_object"}}"#,
+        ),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(json_stdout(&out), serde_json::json!({"answer":42}));
+    assert_browser_request(
+        &server.finish(),
+        "json",
+        serde_json::json!({"url":"https://example.com/path","prompt":"answer","response_format":{"type":"json_object"}}),
+    );
+    for response in [
+        r#"{"success":true,"errors":[],"result":null}"#,
+        r#"{"success":true,"errors":[]}"#,
+    ] {
+        let server = Server::start(vec![(200, response)]);
+        let (out, _) = run(
+            &browser_args("get_url_json", r#"{"url":"https://example.com"}"#),
+            Some(&server.endpoint),
+            Some("token"),
+        );
+        assert_eq!(out.status.success(), response.contains("result"));
+        assert_eq!(server.finish().len(), 1);
+    }
+    let server = Server::start(vec![(500, "{}")]);
+    let (out, _) = run(
+        &browser_args("get_url_json", r#"{"url":"https://example.com"}"#),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_get_url_snapshot_exact_request() {
+    assert_browser_guards("get_url_snapshot", r#"{"url":"https://example.com"}"#);
+    assert_browser_invalid_urls("get_url_snapshot", r#"{"url":"https://example.com"}"#);
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"result":{"content":"<html>ok</html>","screenshot":null}}"#,
+    )]);
+    let (out, _) = run(
+        &browser_args("get_url_snapshot", r#"{"url":"https://example.com"}"#),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(
+        json_stdout(&out),
+        serde_json::json!({"content":"<html>ok</html>","screenshot":null})
+    );
+    assert_browser_request(
+        &server.finish(),
+        "snapshot",
+        serde_json::json!({"url":"https://example.com"}),
+    );
+    for result in [r#"{"content":7}"#, r#"{"screenshot":false}"#] {
+        let response = Box::leak(
+            format!(r#"{{"success":true,"errors":[],"result":{result}}}"#).into_boxed_str(),
+        );
+        let server = Server::start(vec![(200, response)]);
+        let (out, _) = run(
+            &browser_args("get_url_snapshot", r#"{"url":"https://example.com"}"#),
+            Some(&server.endpoint),
+            Some("token"),
+        );
+        assert!(!out.status.success());
+        assert_eq!(server.finish().len(), 1);
+    }
+    let server = Server::start(vec![(500, "{}")]);
+    let (out, _) = run(
+        &browser_args("get_url_snapshot", r#"{"url":"https://example.com"}"#),
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_get_crawl_result_exact_request() {
+    let (out, _) = run(
+        &capability_args("get_crawl_result", r#"{"job_id":"job-123"}"#),
+        Some("http://127.0.0.1:1"),
+        Some("token"),
+    );
+    assert_eq!(out.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&out.stdout).contains("--allow-egress"));
+
+    for job_id in ["../bad", "job/bad", "job%2Fbad", &"x".repeat(257)] {
+        let input = format!(r#"{{"job_id":"{job_id}"}}"#);
+        let mut args = capability_args("get_crawl_result", &input);
+        args.push("--allow-egress");
+        let (out, _) = run(&args, Some("http://127.0.0.1:1"), Some("token"));
+        assert_eq!(out.status.code(), Some(2), "{job_id}");
+    }
+
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"result":{"status":"complete"}}"#,
+    )]);
+    let mut args = capability_args("get_crawl_result", r#"{"job_id":"job 123"}"#);
+    args.push("--allow-egress");
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(json_stdout(&out), serde_json::json!({"status":"complete"}));
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "GET");
+    assert_eq!(
+        requests[0].target,
+        format!("/client/v4/accounts/{TEST_ACCOUNT}/browser-run/crawl/job%20123")
+    );
+
+    let server = Server::start(vec![(400, "{}")]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 1);
+
+    let server = Server::start(vec![(500, "{}"), (500, "{}"), (500, "{}")]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 3);
 }
 
 #[test]
