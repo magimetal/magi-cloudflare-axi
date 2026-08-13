@@ -6,8 +6,8 @@ use std::collections::BTreeSet;
 
 const CONTRACTS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
-const BUNDLE_SHA256: &str = "d9b9528bd9f53de5b1c621c00e6d9938051c7bb6208205bd6333a6dda208469a";
-const CONTRACT_NAMES: [&str; 18] = [
+const BUNDLE_SHA256: &str = "f4b9397b7bbae4e88838e9f1991c4c02faef3c759bffd9ac2bf7933c3e801ac2";
+const CONTRACT_NAMES: [&str; 19] = [
     "d1_database_delete",
     "d1_database_get",
     "get_crawl_result",
@@ -23,11 +23,12 @@ const CONTRACT_NAMES: [&str; 18] = [
     "list_browser_sessions",
     "list_posts",
     "list_tags",
+    "logpush_jobs_by_account_id",
     "scrape_url_elements",
     "search_cloudflare_documentation",
     "search_posts",
 ];
-const CONTRACT_HASHES: [&str; 18] = [
+const CONTRACT_HASHES: [&str; 19] = [
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
     "e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52",
@@ -43,6 +44,7 @@ const CONTRACT_HASHES: [&str; 18] = [
     "e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1",
     "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c",
     "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd",
+    "cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef",
     "a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415",
     "9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41",
     "50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91",
@@ -108,15 +110,15 @@ fn contracts() -> Result<Bundle, AppError> {
     let bundle: Bundle = serde_json::from_str(CONTRACTS)
         .map_err(|e| AppError::api(format!("embedded operation contracts are invalid: {e}")))?;
     if bundle.source_commit != SOURCE_COMMIT
-        || bundle.contract_count != 18
-        || bundle.contracts.len() != 18
+        || bundle.contract_count != CONTRACT_NAMES.len()
+        || bundle.contracts.len() != CONTRACT_NAMES.len()
         || bundle
             .contracts
             .iter()
             .map(|c| c.capability.as_str())
             .collect::<Vec<_>>()
             != CONTRACT_NAMES
-        || bundle.version != "phase4d-operation-contracts-v1"
+        || bundle.version != "phase4e-operation-contracts-v1"
     {
         return Err(AppError::api(
             "embedded operation contract envelope is invalid",
@@ -888,6 +890,219 @@ fn truncate_js_slice_300(value: &str) -> String {
     value[..end].to_owned()
 }
 
+fn logpush_datetime(value: &str) -> bool {
+    let (date, time) = match value.split_once('T') {
+        Some(parts) => parts,
+        None => return false,
+    };
+    let mut d = date.split('-');
+    let (year, month, day) = match (d.next(), d.next(), d.next(), d.next()) {
+        (Some(y), Some(m), Some(day), None) if y.len() == 4 && m.len() == 2 && day.len() == 2 => (
+            y.parse::<u32>().ok(),
+            m.parse::<u32>().ok(),
+            day.parse::<u32>().ok(),
+        ),
+        _ => return false,
+    };
+    let (year, month, day) = match (year, month, day) {
+        (Some(y), Some(m), Some(d)) => (y, m, d),
+        _ => return false,
+    };
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let days = [
+        31,
+        if leap { 29 } else { 28 },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
+    if !(1..=12).contains(&month) || day == 0 || day > days[(month - 1) as usize] {
+        return false;
+    }
+    let time = match time.strip_suffix('Z') {
+        Some(time) => time,
+        None => return false,
+    };
+    let (clock, fraction) = match time.split_once('.') {
+        Some((clock, fraction))
+            if !fraction.is_empty() && fraction.bytes().all(|b| b.is_ascii_digit()) =>
+        {
+            (clock, Some(fraction))
+        }
+        Some(_) => return false,
+        None => (time, None),
+    };
+    let parts = clock.split(':').collect::<Vec<_>>();
+    if !matches!(parts.len(), 2 | 3)
+        || parts
+            .iter()
+            .any(|part| part.len() != 2 || !part.bytes().all(|b| b.is_ascii_digit()))
+    {
+        return false;
+    }
+    let hour = parts[0].parse::<u32>().unwrap();
+    let minute = parts[1].parse::<u32>().unwrap();
+    if hour > 23 || minute > 59 {
+        return false;
+    }
+    match parts.get(2) {
+        None => fraction.is_none(),
+        Some(seconds) => seconds.parse::<u32>().unwrap() <= 59,
+    }
+}
+
+fn logpush_job(v: &Value) -> Result<Value, AppError> {
+    if v.is_null() {
+        return Ok(Value::Null);
+    }
+    let object = v
+        .as_object()
+        .ok_or_else(|| AppError::api("logpush job must be an object"))?;
+    let mut out = Map::new();
+    if let Some(id) = object.get("id") {
+        let id = id
+            .as_u64()
+            .or_else(|| {
+                id.as_f64()
+                    .filter(|id| id.is_finite() && id.fract() == 0.0)
+                    .map(|id| id as u64)
+            })
+            .filter(|id| (1..=9_007_199_254_740_991).contains(id))
+            .ok_or_else(|| AppError::api("logpush job id must be a positive safe integer"))?;
+        out.insert("id".into(), json!(id));
+    }
+    if let Some(enabled) = object.get("enabled") {
+        if !enabled.is_boolean() {
+            return Err(AppError::api("logpush job enabled must be boolean"));
+        }
+        out.insert("enabled".into(), enabled.clone());
+    }
+    for (key, max, allowed) in [("name", 512usize, "name"), ("dataset", 256usize, "dataset")] {
+        if let Some(value) = object.get(key) {
+            if !value.is_null() {
+                let text = value.as_str().ok_or_else(|| {
+                    AppError::api(format!("logpush job {key} must be null or string"))
+                })?;
+                if text.len() > max
+                    || !text.bytes().all(|b| {
+                        b.is_ascii_alphanumeric()
+                            || if allowed == "name" {
+                                matches!(b, b'.' | b'-')
+                            } else {
+                                matches!(b, b'_' | b'-')
+                            }
+                    })
+                {
+                    return Err(AppError::api(format!("logpush job {key} is malformed")));
+                }
+            }
+            out.insert(key.into(), value.clone());
+        }
+    }
+    for key in ["last_complete", "last_error"] {
+        if let Some(value) = object.get(key) {
+            if !value.is_null() {
+                let text = value.as_str().ok_or_else(|| {
+                    AppError::api(format!("logpush job {key} must be null or string"))
+                })?;
+                if !logpush_datetime(text) {
+                    return Err(AppError::api(format!(
+                        "logpush job {key} is not valid UTC RFC3339"
+                    )));
+                }
+            }
+            out.insert(key.into(), value.clone());
+        }
+    }
+    if let Some(value) = object.get("error_message") {
+        if !value.is_null() && !value.is_string() {
+            return Err(AppError::api(
+                "logpush job error_message must be null or string",
+            ));
+        }
+        out.insert("error_message".into(), value.clone());
+    }
+    Ok(Value::Object(out))
+}
+
+fn logpush_request(
+    input: &Map<String, Value>,
+    endpoint: Option<&str>,
+    cli_account: Option<String>,
+) -> Result<Value, AppError> {
+    let mut cfg = config::load(endpoint.map(str::to_owned), cli_account, None)?;
+    if let (Some(configured), Some(provided)) = (
+        cfg.account.as_deref(),
+        input.get("account_id").and_then(Value::as_str),
+    ) {
+        if configured != provided {
+            return Err(AppError::usage(
+                "input account_id conflicts with resolved account scope",
+            ));
+        }
+    }
+    if cfg.account.is_none() {
+        cfg.account = input
+            .get("account_id")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+    }
+    let account = path_segment(
+        cfg.account.as_deref().ok_or_else(|| {
+            AppError::usage("account scope required; use --account or input account_id")
+        })?,
+        "account_id",
+        Some(32),
+    )?;
+    let auth = config::auth_for(&cfg)?;
+    let response = client::CloudflareClient::new(cfg, auth)?.request_with_trusted_headers(
+        client::RequestOptions {
+            method: client::Method::Get,
+            path: format!("/accounts/{account}/logpush/jobs"),
+            query: vec![],
+            body: None,
+            allow_write: false,
+            confirm_delete: None,
+            retry_policy: client::RetryPolicy::Never,
+            allow_classified_read_post: false,
+        },
+        &[
+            ("Content-Type", "application/json"),
+            ("portal-version", "2"),
+        ],
+        true,
+    )?;
+    let envelope = response
+        .envelope
+        .as_object()
+        .ok_or_else(|| AppError::api("logpush response envelope is malformed"))?;
+    if envelope.get("success") != Some(&Value::Bool(true)) {
+        return Err(AppError::api("logpush response envelope is malformed"));
+    }
+    if let Some(errors) = envelope.get("errors") {
+        if !errors.as_array().is_some_and(Vec::is_empty) {
+            return Err(AppError::api("logpush response envelope is malformed"));
+        }
+    }
+    let jobs = match envelope.get("result") {
+        None => vec![],
+        Some(Value::Array(jobs)) => jobs.clone(),
+        Some(_) => return Err(AppError::api("logpush result must be an array")),
+    };
+    let projected = jobs
+        .iter()
+        .map(logpush_job)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(json!({"result": projected.into_iter().take(100).collect::<Vec<_>>() }))
+}
+
 fn browser_request(
     name: &str,
     input: &Map<String, Value>,
@@ -1304,6 +1519,7 @@ pub fn invoke(
         "get_post" | "list_posts" | "list_tags" | "search_posts" => {
             blog_request(name, &input, endpoint.as_deref())
         }
+        "logpush_jobs_by_account_id" => logpush_request(&input, endpoint.as_deref(), cli_account),
         "search_cloudflare_documentation" => {
             mcp::verified_call(name, Value::Object(input), mcp_endpoint.as_deref())
         }

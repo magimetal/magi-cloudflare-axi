@@ -1,3 +1,13 @@
+fn forbidden_trusted_header(name: &str) -> bool {
+    [
+        "authorization",
+        "x-auth-key",
+        "x-auth-email",
+        "host",
+        "content-length",
+    ]
+    .contains(&name.to_ascii_lowercase().as_str())
+}
 use crate::{
     config::{self, Auth, Config},
     error::AppError,
@@ -307,6 +317,31 @@ impl CloudflareClient {
     }
 
     pub fn request(&self, options: RequestOptions) -> Result<CloudflareResponse, AppError> {
+        self.request_with_trusted_headers(options, &[], false)
+    }
+
+    pub(crate) fn request_with_trusted_headers(
+        &self,
+        options: RequestOptions,
+        headers: &[(&str, &str)],
+        accept_provider_errors: bool,
+    ) -> Result<CloudflareResponse, AppError> {
+        for (name, _) in headers {
+            if forbidden_trusted_header(name) {
+                return Err(AppError::usage(format!(
+                    "trusted header override forbidden: {name}"
+                )));
+            }
+        }
+        self.request_inner(options, headers, accept_provider_errors)
+    }
+
+    fn request_inner(
+        &self,
+        options: RequestOptions,
+        headers: &[(&str, &str)],
+        accept_provider_errors: bool,
+    ) -> Result<CloudflareResponse, AppError> {
         if options.method != Method::Get
             && options.method != Method::Head
             && !(options.method == Method::Post && options.allow_classified_read_post)
@@ -361,6 +396,9 @@ impl CloudflareClient {
             if body.is_some() {
                 builder = builder.header("Content-Type", "application/json");
             }
+            for (name, value) in headers {
+                builder = builder.header(*name, *value);
+            }
             let request = builder
                 .body(body.clone().unwrap_or_default())
                 .map_err(|error| AppError::network(error.to_string()))?;
@@ -397,11 +435,12 @@ impl CloudflareClient {
                         envelope,
                     };
                     if (200..300).contains(&status) {
-                        if response
-                            .envelope
-                            .get("errors")
-                            .and_then(Value::as_array)
-                            .is_some_and(|errors| !errors.is_empty())
+                        if !accept_provider_errors
+                            && response
+                                .envelope
+                                .get("errors")
+                                .and_then(Value::as_array)
+                                .is_some_and(|errors| !errors.is_empty())
                         {
                             return Err(AppError::api(
                                 "GraphQL query returned 1 provider error(s)",
@@ -578,5 +617,23 @@ impl CloudflareClient {
             bytes,
             content_type,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn trusted_headers_forbid_credential_and_framing_names() {
+        for name in [
+            "authorization",
+            "x-auth-key",
+            "x-auth-email",
+            "host",
+            "content-length",
+        ] {
+            assert!(super::forbidden_trusted_header(name));
+            assert!(super::forbidden_trusted_header(&name.to_ascii_uppercase()));
+        }
+        assert!(!super::forbidden_trusted_header("portal-version"));
     }
 }

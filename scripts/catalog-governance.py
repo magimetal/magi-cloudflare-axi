@@ -18,7 +18,7 @@ METRICS = ROOT / "docs/cloudflare-capability-parity-metrics.json"
 REPORT = ROOT / "docs/cloudflare-capability-parity.md"
 COMMIT = "70ff690553722f731849ede6ba9ce98958395a23"
 REPO = "https://github.com/cloudflare/mcp-server-cloudflare"
-LEGACY_METADATA_SHA256 = "331059a021c239af4d5f8d5e61986090a47aea12af1f1eaf65640039008df2f1"
+LEGACY_METADATA_SHA256 = "32479dc918a846191e809218bf13018ab979c9150208ee66c66631dbf4b36ec4"
 SCHEMA_VERSION = 3
 SCHEMA_EVIDENCE_ID = "ev-phase1-canonical-schemas"
 SCHEMA_SOURCE_REF = f"https://github.com/cloudflare/mcp-server-cloudflare/commit/{COMMIT}"
@@ -30,8 +30,8 @@ SCHEMA_EVIDENCE_FACT = (
 )
 DEPENDENCY_PROVENANCE_COUNT = 803
 DEPENDENCY_PROVENANCE_SHA256 = "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04"
-OPERATION_BUNDLE_SHA256 = "d9b9528bd9f53de5b1c621c00e6d9938051c7bb6208205bd6333a6dda208469a"
-OPERATION_CONTRACT_HASHES = {'d1_database_delete': 'd20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da', 'd1_database_get': '6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7', 'get_crawl_result': 'e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52', 'get_post': 'c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1', 'get_url_html_content': '5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909', 'get_url_json': '930b1ee212733b0fcd7e600bd346001ddb6e0154f99bbeebe27bc079e42cdb6d', 'get_url_links': '5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83', 'get_url_markdown': '853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed', 'get_url_pdf': 'c544d991b6a98bace228cd7eb1bb124bd4934a6fa1cf318523579769e9e9780d', 'get_url_screenshot': '97ac366335b2110918db9244d13dfb4bafc35492032810778fd52200497fdbdc', 'get_url_snapshot': '3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588', 'graphql_schema_overview': '72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc', 'list_browser_sessions': 'e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1', 'list_posts': 'f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c', 'list_tags': '7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd', 'scrape_url_elements': 'a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415', 'search_cloudflare_documentation': '9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41', 'search_posts': '50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91'}
+OPERATION_BUNDLE_SHA256 = "f4b9397b7bbae4e88838e9f1991c4c02faef3c759bffd9ac2bf7933c3e801ac2"
+OPERATION_CONTRACT_HASHES = {'d1_database_delete': 'd20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da', 'd1_database_get': '6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7', 'get_crawl_result': 'e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52', 'get_post': 'c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1', 'get_url_html_content': '5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909', 'get_url_json': '930b1ee212733b0fcd7e600bd346001ddb6e0154f99bbeebe27bc079e42cdb6d', 'get_url_links': '5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83', 'get_url_markdown': '853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed', 'get_url_pdf': 'c544d991b6a98bace228cd7eb1bb124bd4934a6fa1cf318523579769e9e9780d', 'get_url_screenshot': '97ac366335b2110918db9244d13dfb4bafc35492032810778fd52200497fdbdc', 'get_url_snapshot': '3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588', 'graphql_schema_overview': '72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc', 'list_browser_sessions': 'e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1', 'list_posts': 'f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c', 'list_tags': '7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd', 'scrape_url_elements': 'a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415', 'search_cloudflare_documentation': '9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41', 'search_posts': '50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91', 'logpush_jobs_by_account_id': 'cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef'}
 
 OFFICIAL_DOCS = {
     "d1_database_delete": ("https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/delete/", "2026-08-11", "de0453348a3c58fb2510b64d6300831647c628eb3988acca56f7a9106edb7c5e"),
@@ -47,7 +47,8 @@ OFFICIAL_DOCS = {
     "get_crawl_result": ("https://developers.cloudflare.com/browser-run/quick-actions/crawl-endpoint/", "2026-08-11", "cba30f5a58b1ed9e6e55bcc48669e3658b0530e1058f8607abb6b1e6d9ffd9df"),
     "list_browser_sessions": ("https://developers.cloudflare.com/api/resources/browser_rendering/subresources/devtools/subresources/session/methods/list", "2026-08-11", "59ba44d507b73288df01ee02c0afb380b353875cf92b42151535f18e4f61a257"),
     "get_url_pdf": ("https://developers.cloudflare.com/browser-run/quick-actions/pdf-endpoint/", "2026-08-11", "3eaf8175aa4ebee4c2bd04ff702ba3bbdf1470c650b9f89cc3064c6fe1653e5a"),
-    "get_url_screenshot": ("https://developers.cloudflare.com/browser-run/quick-actions/screenshot-endpoint/", "2026-08-11", "f743f6b6bc692170cd0b5832e6f502dbad7c8bc1d27d271923e7d2870df8af41")
+    "get_url_screenshot": ("https://developers.cloudflare.com/browser-run/quick-actions/screenshot-endpoint/", "2026-08-11", "f743f6b6bc692170cd0b5832e6f502dbad7c8bc1d27d271923e7d2870df8af41"),
+    "logpush_jobs_by_account_id": ("https://developers.cloudflare.com/api/resources/logpush/subresources/jobs/methods/list/", "2026-08-11", "ae49c1ea87722041a4a75c14fdf370274734245d1b027ec85d600fb69e391097")
 }
 DIMENSIONS = (
     "inventory",
@@ -92,7 +93,7 @@ COMPLETE_STATUSES = {
 LEGACY_ENUMS = {"scope": {"public", "account", "zone", "custom"}, "operation": {"read", "write"}, "transport": {"rest", "graphql", "mcp", "public_http", "internal_binding", "custom_container"}, "cli_access": {"modeled", "raw_rest", "raw_graphql", "public_direct", "blocked", "mcp_remote"}}
 FAMILIES = {"ai-gateway": 5, "auditlogs": 1, "autorag": 3, "browser-rendering": 13, "cloudflare-blog": 4, "cloudflare-one-casb": 11, "demo-day": 1, "dex-analysis": 18, "dns-analytics": 3, "graphql": 6, "logpush": 1, "radar": 66, "sandbox-container": 7, "shared": 7, "stack-mcp": 2, "workers-bindings": 18, "workers-builds": 3, "workers-observability": 3}
 TRANSPORTS = {"public_http": 76, "rest": 81, "custom_container": 7, "graphql": 6, "internal_binding": 1, "mcp": 1}
-ACCESS = {"raw_rest": 124, "modeled": 9, "mcp_remote": 26, "public_direct": 6, "raw_graphql": 6, "blocked": 1}
+ACCESS = {"raw_rest": 123, "modeled": 10, "mcp_remote": 26, "public_direct": 6, "raw_graphql": 6, "blocked": 1}
 OPERATIONS = {"read": 150, "write": 22}
 BLOCKER_FAMILY = {"dex-analysis": "B-DEX", "cloudflare-one-casb": "B-CASB", "sandbox-container": "B-CONTAINER", "workers-observability": "B-OBS", "shared": "B-SHARED", "stack-mcp": "B-STACK"}
 RECORD_KEYS = {
@@ -242,6 +243,7 @@ def valid_source_ref(value):
         return False
     path, location = value.rsplit(':', 1)
     return safe_relative_path(path) and (location.isdigit() or valid_line_span(location))
+
 def valid_test_id(value):
     if not isinstance(value, str) or '::' not in value:
         return False
@@ -363,8 +365,9 @@ def apply_schema_bundle(catalog):
             {"id": prefix + "-verification", "dimension": "verification", "provenance": {"kind": "hermetic_test", "test_id": test_id, "fact": "Hermetic exact-request transport test."}, "fact": "Hermetic exact-request transport test."},
             {"id": prefix + "-discovery", "dimension": "discovery", "provenance": {"kind": "generated_artifact", "artifact": "capabilities/cloudflare-operation-contracts.json", "sha256": json_sha256(operations), "fact": "Generated operation contract artifact.", "capability": name, "contract_sha256": contract["contract_sha256"]}, "fact": "Generated operation contract artifact."},
         ])
-        if name in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot", "get_post", "list_posts", "list_tags", "search_posts"}:
-            evidence.append({"id": prefix + "-discovery-test", "dimension": "discovery", "provenance": {"kind": "hermetic_test", "test_id": "tests/integration.rs::capability_browser_discovery_examples_are_exact" if name in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot"} else "tests/integration.rs::capability_blog_discovery_examples_are_exact", "fact": "Hermetic exact discovery example test."}, "fact": "Hermetic exact discovery example test."})
+        if name in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot", "get_post", "list_posts", "list_tags", "search_posts"} or name == "logpush_jobs_by_account_id":
+            discovery_test = "tests/integration.rs::capability_browser_discovery_examples_are_exact" if name in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot"} else ("tests/integration.rs::capability_logpush_discovery_example_is_exact" if name == "logpush_jobs_by_account_id" else "tests/integration.rs::capability_blog_discovery_examples_are_exact")
+            evidence.append({"id": prefix + "-discovery-test", "dimension": "discovery", "provenance": {"kind": "hermetic_test", "test_id": discovery_test, "fact": "Hermetic exact discovery example test."}, "fact": "Hermetic exact discovery example test."})
     catalog["evidence"] = sorted(evidence, key=lambda item: item["id"])
     for row in catalog["capabilities"]:
         contract = contracts[row["name"]]
@@ -372,7 +375,7 @@ def apply_schema_bundle(catalog):
         row["input_fields"] = compact_input_fields(contract)
         prefix = f"ev-operation-{row['name']}"
         if row["name"] in operation_by_name:
-            blog = row["name"] in {"get_post", "list_posts", "list_tags", "search_posts"}
+            blog = row["name"] in {"get_post", "list_posts", "list_tags", "search_posts", "logpush_jobs_by_account_id"}
             browser = row["name"] in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot"}
             row["parity"].update({"route": {"status": "complete", "evidence_ids": [prefix + "-route"]}, "behavior": {"status": "verified", "evidence_ids": [prefix + "-behavior", prefix + "-behavior-test"]}, "policy": {"status": "verified", "evidence_ids": [prefix + "-policy", prefix + "-policy-test"]}, "verification": {"status": "hermetic_verified", "evidence_ids": [prefix + "-verification"]}, "discovery": {"status": "verified" if blog or browser else "generated", "evidence_ids": [prefix + "-discovery"] + ([prefix + "-discovery-test"] if blog or browser else [])}, "external_blocker": {"status": "none", "evidence_ids": []}})
     catalog["operation_artifacts"] = {"path": "capabilities/cloudflare-operation-contracts.json", "bundle_sha256": json_sha256({**operations, "bundle_sha256": None}), "contracts": [{"capability": item["capability"], "contract_sha256": item["contract_sha256"]} for item in operations["contracts"]]}
@@ -398,7 +401,7 @@ def validate_schema_artifacts(catalog):
         or bundle.get("unresolved_count") != 0
         or bundle.get("dependency_provenance_count") != DEPENDENCY_PROVENANCE_COUNT
         or bundle.get("dependency_provenance_sha256") != DEPENDENCY_PROVENANCE_SHA256
-        or not isinstance(contracts, list)
+        or len(contracts) != 172
         or len(contracts) != 172
     ):
         fail("schema artifact", "invalid bundle envelope or coverage")
@@ -546,7 +549,7 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
     if (
         not isinstance(contracts, list)
         or operations["contract_count"] != len(contracts)
-        or [item.get("capability") for item in contracts] != list(OPERATION_CONTRACT_HASHES)
+        or [item.get("capability") for item in contracts] != sorted(OPERATION_CONTRACT_HASHES)
     ):
         fail("$.operation_artifacts", "operation contract count or identity mismatch")
     contracted = set(OPERATION_CONTRACT_HASHES)
@@ -562,7 +565,7 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             for dimension, statuses in active_statuses.items():
                 if row["parity"][dimension]["status"] in statuses:
                     fail(row["name"], f"completed {dimension} lacks operation contract")
-    if operations["version"] != "phase4d-operation-contracts-v1" or operations["source_commit"] != COMMIT:
+    if operations["version"] != "phase4e-operation-contracts-v1" or operations["source_commit"] != COMMIT:
         fail("$.operation_artifacts", "operation source mismatch")
     if operations["canonicalization"] != "lexicographic compact JSON SHA-256; bundle hash sets bundle_sha256=null; each contract hash sets contract_sha256=null":
         fail("$.operation_artifacts", "operation canonicalization mismatch")
@@ -585,6 +588,10 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
         }
         if capability in {"get_post", "list_posts", "list_tags", "search_posts"}:
             expected_keys["route"].add("host")
+        if capability == "logpush_jobs_by_account_id":
+            expected_keys["route"].add("fixed_headers")
+            expected_keys["behavior"] |= {"result_limit", "projection_validation"}
+            expected_keys["evidence"].add("query_helper")
         if capability not in {"get_post", "list_posts", "list_tags", "search_posts"}:
             expected_keys["evidence"].add("official_docs")
         else:
@@ -670,6 +677,9 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
                 fail(path, "invalid official operation evidence")
             if tuple(docs[key] for key in ("url", "documentation_date", "fact_sha256")) != OFFICIAL_DOCS[capability]:
                 fail(path, "official operation evidence digest pin mismatch")
+        if capability == "logpush_jobs_by_account_id":
+            expected = {"route": {"transport": "rest", "method": "GET", "path_template": "/accounts/{account_id}/logpush/jobs", "path_parameters": [{"name": "account_id", "source": "resolved_account", "format": "single_path_segment", "max_length": 32}], "query_parameters": [], "body": "none", "scope": "account", "content_type": "application/json", "auth": "account", "fixed_headers": {"Content-Type": "application/json", "portal-version": "2"}}, "behavior": {"output_projection": "strict_logpush_jobs_first_100", "empty_state": "empty_result", "pagination": "none", "artifact": "none", "error": "structured_cloudflare_api", "result_limit": 100, "projection_validation": "strict_optional_nullable_fields_and_unknown_field_stripping"}, "safety": {"operation": "read", "destructive": False, "metered": False, "data_egress": True, "long_running": False, "retry_policy": "never"}}
+            if any(contract[key] != expected[key] for key in ("route", "behavior", "safety")): fail(path, "Logpush operation semantic mismatch")
         if capability == "d1_database_get":
             expected = {
                 "transport": "rest", "method": "GET", "path_template": "/accounts/{account_id}/d1/database/{database_id}", "scope": "account", "body": "none", "content_type": "application/json",
@@ -698,6 +708,8 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             fail(path, "browser legacy metadata join mismatch")
         if capability in {"get_url_pdf", "get_url_screenshot"} and row["cli_access"] != "modeled":
             fail(path, "binary Browser access classification mismatch")
+        if capability == "logpush_jobs_by_account_id" and (row["cli_access"] != "modeled" or row.get("path_template") != contract["route"]["path_template"]):
+            fail(path, "Logpush modeled access/path classification mismatch")
         if capability == "search_cloudflare_documentation" and row["cli_access"] != "mcp_remote":
             fail(path, "MCP legacy metadata join mismatch")
         if capability not in {"get_url_html_content", "search_cloudflare_documentation"} and row.get("method") is not None and row["method"] != contract["route"]["method"]:
@@ -737,6 +749,10 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
                 and provenance["kind"] == "hermetic_test"
                 and provenance.get("test_id") == "tests/integration.rs::capability_browser_discovery_examples_are_exact"
             ) or (
+                capability == "logpush_jobs_by_account_id"
+                and provenance["kind"] == "hermetic_test"
+                and provenance.get("test_id") == "tests/integration.rs::capability_logpush_discovery_example_is_exact"
+            ) or (
                 blog
                 and provenance["kind"] == "hermetic_test"
                 and provenance.get("test_id") == "tests/integration.rs::capability_blog_discovery_examples_are_exact"
@@ -771,7 +787,7 @@ def validate(catalog):
         fail("$", "unsupported catalog envelope or pinned source")
     operations = json.loads(OPERATION_FILE.read_text())
     contracts = operations.get("contracts", [])
-    if operations.get("version") != "phase4d-operation-contracts-v1" or json_sha256({**operations, "bundle_sha256": None}) != OPERATION_BUNDLE_SHA256 or operations.get("bundle_sha256") != OPERATION_BUNDLE_SHA256 or operations.get("contract_count") != len(contracts) or contracts != sorted(contracts, key=lambda item: item.get("capability", "")) or len(contracts) != 18:
+    if operations.get("version") != "phase4e-operation-contracts-v1" or json_sha256({**operations, "bundle_sha256": None}) != OPERATION_BUNDLE_SHA256 or operations.get("bundle_sha256") != OPERATION_BUNDLE_SHA256 or operations.get("contract_count") != len(contracts) or contracts != sorted(contracts, key=lambda item: item.get("capability", "")) or len(contracts) != 19:
         fail("$.operation_artifacts", "operation bundle parsing or hash mismatch")
     for contract in contracts:
         capability = contract.get("capability")
@@ -960,7 +976,7 @@ def validate(catalog):
             fail("$.capabilities", f"{field} baseline mismatch")
     if sum("method" in row for row in rows) != 147:
         fail("$.capabilities", "method baseline mismatch")
-    if sum("path_template" in row for row in rows) != 15:
+    if sum("path_template" in row for row in rows) != 16:
         fail("$.capabilities", "path baseline mismatch")
     if sum("blocker" in row for row in rows) != 40:
         fail("$.capabilities", "legacy blocker baseline mismatch")
@@ -1311,6 +1327,40 @@ def self_test(catalog):
         try:
             validate_operation_contracts(catalog, changed, catalog["capabilities"], evidence)
         except (GovernanceError, KeyError, TypeError):
+            rejected.append(label)
+        else:
+            fail("self-test", f"mutation accepted: {label}")
+
+    logpush_index = next(index for index, contract in enumerate(operations["contracts"]) if contract["capability"] == "logpush_jobs_by_account_id")
+    for label, mutate in (
+        ("Logpush fixed portal header mutation", lambda contract: contract["route"]["fixed_headers"].__setitem__("portal-version", "3")),
+        ("Logpush result limit mutation", lambda contract: contract["behavior"].__setitem__("result_limit", 101)),
+        ("Logpush projection validation mutation", lambda contract: contract["behavior"].__setitem__("projection_validation", "permissive")),
+        ("Logpush retry policy mutation", lambda contract: contract["safety"].__setitem__("retry_policy", "transient_read")),
+        ("Logpush query helper source mutation", lambda contract: contract["evidence"]["query_helper"].__setitem__("file", "fabricated.ts")),
+    ):
+        changed = copy.deepcopy(operations)
+        contract = changed["contracts"][logpush_index]
+        mutate(contract)
+        contract["contract_sha256"] = json_sha256({**contract, "contract_sha256": None})
+        changed["bundle_sha256"] = json_sha256({**changed, "bundle_sha256": None})
+        try:
+            validate_operation_contracts(catalog, changed, catalog["capabilities"], evidence)
+        except (GovernanceError, KeyError, TypeError):
+            rejected.append(label)
+        else:
+            fail("self-test", f"mutation accepted: {label}")
+
+    for label, field, value in (
+        ("Logpush modeled access mutation", "cli_access", "raw_rest"),
+        ("Logpush path metadata mutation", "path_template", "/invented"),
+    ):
+        changed = copy.deepcopy(catalog)
+        row = next(row for row in changed["capabilities"] if row["name"] == "logpush_jobs_by_account_id")
+        row[field] = value
+        try:
+            validate(changed)
+        except (GovernanceError, KeyError, TypeError, json.JSONDecodeError):
             rejected.append(label)
         else:
             fail("self-test", f"mutation accepted: {label}")

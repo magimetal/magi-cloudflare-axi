@@ -627,3 +627,23 @@ fn capability_browser_discovery_examples_are_exact() {
         );
     }
 }
+
+#[test]
+fn capability_logpush_discovery_example_is_exact() {
+    let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+        .args([
+            "--format",
+            "json",
+            "capability",
+            "get",
+            "logpush_jobs_by_account_id",
+        ])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(
+        value["next_command"],
+        "magi-cloudflare-axi capability invoke logpush_jobs_by_account_id --input '{}' --allow-egress"
+    );
+}

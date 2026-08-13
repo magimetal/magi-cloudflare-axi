@@ -3130,3 +3130,352 @@ fn binary_redirect_is_rejected_without_forwarding_credentials() {
     assert_eq!(requests.len(), 1);
     assert!(requests[0].contains("secret"));
 }
+
+#[test]
+fn capability_logpush_jobs_by_account_id_exact_request() {
+    let input = r#"{"account_id":"account-123","ignored":true}"#;
+    let mut args = capability_args("logpush_jobs_by_account_id", input);
+    args.push("--allow-egress");
+
+    let without_egress = capability_args("logpush_jobs_by_account_id", input);
+    let (out, _) = run(&without_egress, Some("http://example.com"), None);
+    assert_eq!(out.status.code(), Some(2));
+    assert_eq!(json_stdout(&out)["error"]["type"], "usage");
+
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(
+        dir.path().join(".cloudflare-axi.toml"),
+        "account_id = 'configured'",
+    )
+    .unwrap();
+    let conflict = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+        .args([
+            "--format",
+            "json",
+            "--endpoint",
+            "http://127.0.0.1:1",
+            "capability",
+            "invoke",
+            "logpush_jobs_by_account_id",
+            "--input",
+            r#"{"account_id":"provided"}"#,
+            "--allow-egress",
+        ])
+        .current_dir(dir.path())
+        .env("HOME", dir.path())
+        .env("XDG_CONFIG_HOME", dir.path())
+        .env_remove("CLOUDFLARE_API_TOKEN")
+        .output()
+        .unwrap();
+    assert_eq!(conflict.status.code(), Some(2));
+    assert_eq!(
+        json_stdout(&conflict)["error"]["message"],
+        "input account_id conflicts with resolved account scope"
+    );
+
+    for account in ["../bad", "bad/account", "bad%2Faccount", &"x".repeat(33)] {
+        let input = format!(r#"{{"account_id":"{account}"}}"#);
+        let mut invalid_args = capability_args("logpush_jobs_by_account_id", &input);
+        invalid_args.push("--allow-egress");
+        let (out, _) = run(&invalid_args, Some("http://127.0.0.1:1"), Some("token"));
+        assert_eq!(out.status.code(), Some(2), "{account}");
+        assert_eq!(json_stdout(&out)["error"]["type"], "usage");
+    }
+
+    let valid_job = r#"{"id":1,"enabled":true,"name":"job-1","dataset":"http_requests","last_complete":"2024-01-02T03:04:05Z","last_error":null,"error_message":null,"credential":"secret"}"#;
+    let success: &'static str = Box::leak(
+        format!(r#"{{"success":true,"errors":[],"result":[{valid_job}]}}"#).into_boxed_str(),
+    );
+    let server = Server::start(vec![(200, success)]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(
+        json_stdout(&out),
+        serde_json::json!({"result":[{"id":1,"enabled":true,"name":"job-1","dataset":"http_requests","last_complete":"2024-01-02T03:04:05Z","last_error":null,"error_message":null}]})
+    );
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "GET");
+    assert_eq!(
+        requests[0].target,
+        "/client/v4/accounts/account-123/logpush/jobs"
+    );
+    assert!(requests[0].body.is_empty());
+    let headers = requests[0].headers.to_ascii_lowercase();
+    assert!(headers.contains("authorization: bearer token"));
+    assert!(headers.contains("content-type: application/json"));
+    assert!(headers.contains("portal-version: 2"));
+    assert!(!requests[0].target.contains('?'));
+
+    for response in [r#"{"success":true,"errors":[]}"#, r#"{"success":true}"#] {
+        let server = Server::start(vec![(200, response)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert!(out.status.success(), "{response}: {out:?}");
+        assert_eq!(json_stdout(&out), serde_json::json!({"result":[]}));
+        assert_eq!(server.finish().len(), 1);
+    }
+
+    let nullable = r#"{"success":true,"result":[null,{"name":null,"dataset":null,"last_complete":null,"last_error":null,"error_message":null,"unknown":true}]}"#;
+    let server = Server::start(vec![(200, nullable)]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(
+        json_stdout(&out),
+        serde_json::json!({"result":[null,{"name":null,"dataset":null,"last_complete":null,"last_error":null,"error_message":null}]})
+    );
+    assert_eq!(server.finish().len(), 1);
+
+    for timestamp in [
+        "2024-01-02T03:04Z",
+        "2024-01-02T03:04:05Z",
+        "2024-01-02T03:04:05.1Z",
+        "2024-02-29T23:59:59.123456Z",
+    ] {
+        let body: &'static str = Box::leak(
+            format!(r#"{{"success":true,"result":[{{"last_complete":"{timestamp}","last_error":"{timestamp}"}}]}}"#)
+                .into_boxed_str(),
+        );
+        let server = Server::start(vec![(200, body)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert!(out.status.success(), "rejected {timestamp}: {out:?}");
+        assert_eq!(server.finish().len(), 1);
+    }
+    for timestamp in [
+        "2023-02-29T03:04Z",
+        "2024-01-02T24:00Z",
+        "2024-01-02T03:60Z",
+        "2024-01-02T03:04:60Z",
+        "2024-01-02T03:04:05:06Z",
+        "2024-01-02T03:04.1Z",
+        "2024-01-02T03:04:05.Z",
+        "2024-01-02T03:04:05+00:00",
+    ] {
+        let body: &'static str = Box::leak(
+            format!(r#"{{"success":true,"result":[{{"last_complete":"{timestamp}"}}]}}"#)
+                .into_boxed_str(),
+        );
+        let server = Server::start(vec![(200, body)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert_eq!(out.status.code(), Some(1), "accepted {timestamp}");
+        let error = json_stdout(&out);
+        assert_eq!(error["error"]["type"], "api");
+        assert_eq!(error["error"]["code"], 1);
+        assert_eq!(
+            error["error"]["message"],
+            "logpush job last_complete is not valid UTC RFC3339"
+        );
+        assert_eq!(server.finish().len(), 1);
+    }
+
+    for id in ["1", "1.0", "1e0", "9007199254740991"] {
+        let body: &'static str =
+            Box::leak(format!(r#"{{"success":true,"result":[{{"id":{id}}}]}}"#).into_boxed_str());
+        let server = Server::start(vec![(200, body)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert!(out.status.success(), "rejected {id}: {out:?}");
+        let expected = if id == "9007199254740991" {
+            9_007_199_254_740_991u64
+        } else {
+            1
+        };
+        assert_eq!(
+            json_stdout(&out),
+            serde_json::json!({"result":[{"id":expected}]})
+        );
+        assert_eq!(server.finish().len(), 1);
+    }
+    for id in ["0", "-1", "1.5", "9007199254740992"] {
+        let body: &'static str =
+            Box::leak(format!(r#"{{"success":true,"result":[{{"id":{id}}}]}}"#).into_boxed_str());
+        let server = Server::start(vec![(200, body)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert_eq!(out.status.code(), Some(1), "accepted {id}");
+        let error = json_stdout(&out);
+        assert_eq!(error["error"]["type"], "api");
+        assert_eq!(error["error"]["code"], 1);
+        assert_eq!(
+            error["error"]["message"],
+            "logpush job id must be a positive safe integer"
+        );
+        assert_eq!(server.finish().len(), 1);
+    }
+
+    for invalid in [
+        r#"{"id":"1"}"#,
+        r#"{"enabled":"yes"}"#,
+        r#"{"name":7}"#,
+        r#"{"name":"bad name"}"#,
+        r#"{"dataset":7}"#,
+        r#"{"dataset":"bad.dataset"}"#,
+        r#"{"last_error":7}"#,
+        r#"{"error_message":7}"#,
+        r#"[]"#,
+    ] {
+        let body: &'static str = Box::leak(
+            format!(r#"{{"success":true,"errors":[],"result":[{invalid}]}}"#).into_boxed_str(),
+        );
+        let server = Server::start(vec![(200, body)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert_eq!(out.status.code(), Some(1), "accepted {invalid}");
+        assert_eq!(json_stdout(&out)["error"]["type"], "api");
+        assert_eq!(server.finish().len(), 1);
+    }
+
+    for (envelope, message) in [
+        (
+            r#"{"success":true,"errors":[],"result":null}"#,
+            "logpush result must be an array",
+        ),
+        (r#"{}"#, "logpush response envelope is malformed"),
+        (
+            r#"{"success":false,"errors":[],"result":[]}"#,
+            "logpush response envelope is malformed",
+        ),
+        (
+            r#"{"success":true,"errors":[{"message":"bad"}],"result":[]}"#,
+            "logpush response envelope is malformed",
+        ),
+        (
+            r#"{"success":true,"errors":{},"result":[]}"#,
+            "logpush response envelope is malformed",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":{}}"#,
+            "logpush result must be an array",
+        ),
+    ] {
+        let server = Server::start(vec![(200, envelope)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert_eq!(out.status.code(), Some(1), "accepted {envelope}");
+        let error = json_stdout(&out);
+        assert_eq!(error["error"]["type"], "api");
+        assert_eq!(error["error"]["code"], 1);
+        assert_eq!(error["error"]["message"], message);
+        assert_eq!(server.finish().len(), 1);
+    }
+
+    let many = (1..=101)
+        .map(|id| format!(r#"{{"id":{id}}}"#))
+        .collect::<Vec<_>>()
+        .join(",");
+    let body: &'static str =
+        Box::leak(format!(r#"{{"success":true,"errors":[],"result":[{many}]}}"#).into_boxed_str());
+    let server = Server::start(vec![(200, body)]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(
+        json_stdout(&out)["result"],
+        Value::Array((1..=100).map(|id| serde_json::json!({"id":id})).collect())
+    );
+    assert_eq!(server.finish().len(), 1);
+
+    let first_hundred = (1..=100)
+        .map(|id| format!(r#"{{"id":{id}}}"#))
+        .collect::<Vec<_>>()
+        .join(",");
+    let body: &'static str = Box::leak(
+        format!(r#"{{"success":true,"result":[{first_hundred},{{"id":"bad"}}]}}"#).into_boxed_str(),
+    );
+    let server = Server::start(vec![(200, body)]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert_eq!(out.status.code(), Some(1));
+    assert_eq!(
+        json_stdout(&out)["error"]["message"],
+        "logpush job id must be a positive safe integer"
+    );
+    assert_eq!(server.finish().len(), 1);
+
+    for (status, body, kind, message) in [
+        (
+            400,
+            r#"{"errors":[{"code":1001,"message":"secret-provider-body"}]}"#,
+            "api",
+            "Cloudflare API request failed (HTTP 400, provider code 1001)",
+        ),
+        (
+            401,
+            r#"{"errors":[{"code":1002,"message":"secret-provider-body"}]}"#,
+            "auth",
+            "Cloudflare API request failed (HTTP 401, provider code 1002)",
+        ),
+        (
+            429,
+            r#"{"errors":[{"code":1003,"message":"secret-provider-body"}]}"#,
+            "network",
+            "Cloudflare API rate limited (HTTP 429)",
+        ),
+        (
+            500,
+            r#"{"errors":[{"code":1004,"message":"secret-provider-body"}]}"#,
+            "api",
+            "Cloudflare API request failed (HTTP 500, provider code 1004)",
+        ),
+    ] {
+        let server = Server::start(vec![(status, body)]);
+        let (out, _) = run(&args, Some(&server.endpoint), Some("secret-token"));
+        assert_eq!(out.status.code(), Some(1));
+        let error = json_stdout(&out);
+        assert_eq!(error["error"]["type"], kind);
+        assert_eq!(error["error"]["code"], 1);
+        assert_eq!(error["error"]["message"], message);
+        let text = String::from_utf8_lossy(&out.stdout);
+        assert!(!text.contains("secret-provider-body"));
+        assert!(!text.contains("secret-token"));
+        assert_eq!(server.finish().len(), 1);
+    }
+
+    let redirect = RedirectServer::start();
+    let (out, _) = run(&args, Some(&redirect.endpoint), Some("secret-token"));
+    assert_eq!(out.status.code(), Some(1));
+    assert_eq!(json_stdout(&out)["error"]["type"], "api");
+    let requests = redirect.finish();
+    assert_eq!(
+        requests.len(),
+        1,
+        "redirect target received request: {requests:?}"
+    );
+    assert!(requests[0].contains("secret-token"));
+
+    let oversized: &'static str = Box::leak("x".repeat(8 * 1024 * 1024 + 1).into_boxed_str());
+    let server = Server::start(vec![(200, oversized)]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert_eq!(out.status.code(), Some(1));
+    let error = json_stdout(&out);
+    assert_eq!(error["error"]["type"], "network");
+    assert_eq!(error["error"]["code"], 1);
+    assert_eq!(error["error"]["message"], "response exceeds 8 MiB");
+    assert_eq!(server.finish().len(), 1);
+
+    let server = Server::start(vec![(200, r#"{"success":true,"errors":[],"result":[]}"#)]);
+    let auth_dir = tempfile::tempdir().unwrap();
+    let out = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+        .args([
+            "--format",
+            "json",
+            "--endpoint",
+            &server.endpoint,
+            "--account",
+            "account-123",
+            "capability",
+            "invoke",
+            "logpush_jobs_by_account_id",
+            "--input",
+            "{}",
+            "--allow-egress",
+        ])
+        .current_dir(auth_dir.path())
+        .env("HOME", auth_dir.path())
+        .env("XDG_CONFIG_HOME", auth_dir.path())
+        .env_remove("CLOUDFLARE_API_TOKEN")
+        .env("CLOUDFLARE_API_KEY", "key-secret")
+        .env("CLOUDFLARE_API_EMAIL", "email-secret@example.com")
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "{out:?}");
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    let headers = requests[0].headers.to_ascii_lowercase();
+    assert!(headers.contains("x-auth-key: key-secret"));
+    assert!(headers.contains("x-auth-email: email-secret@example.com"));
+    assert!(!headers.contains("authorization:"));
+}

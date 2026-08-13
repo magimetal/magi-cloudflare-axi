@@ -7,7 +7,7 @@
     "ref": "pinned-source"
   },
   "denominator": 172,
-  "legacy_metadata_sha256": "331059a021c239af4d5f8d5e61986090a47aea12af1f1eaf65640039008df2f1",
+  "legacy_metadata_sha256": "32479dc918a846191e809218bf13018ab979c9150208ee66c66631dbf4b36ec4",
   "evidence": [
     {
       "id": "ev-ai_search-inventory",
@@ -2519,7 +2519,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "d1_database_delete",
         "contract_sha256": "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da"
@@ -2604,7 +2604,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "d1_database_get",
         "contract_sha256": "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7"
@@ -2689,7 +2689,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "get_crawl_result",
         "contract_sha256": "e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52"
@@ -2784,7 +2784,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "get_post",
         "contract_sha256": "c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1"
@@ -2879,7 +2879,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_html_content",
         "contract_sha256": "5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909"
@@ -2964,7 +2964,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_json",
         "contract_sha256": "930b1ee212733b0fcd7e600bd346001ddb6e0154f99bbeebe27bc079e42cdb6d"
@@ -3059,7 +3059,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_links",
         "contract_sha256": "5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83"
@@ -3154,7 +3154,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_markdown",
         "contract_sha256": "853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed"
@@ -3249,7 +3249,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_pdf",
         "contract_sha256": "c544d991b6a98bace228cd7eb1bb124bd4934a6fa1cf318523579769e9e9780d"
@@ -3344,7 +3344,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_screenshot",
         "contract_sha256": "97ac366335b2110918db9244d13dfb4bafc35492032810778fd52200497fdbdc"
@@ -3439,7 +3439,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_snapshot",
         "contract_sha256": "3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588"
@@ -3534,7 +3534,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "graphql_schema_overview",
         "contract_sha256": "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc"
@@ -3619,7 +3619,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "list_browser_sessions",
         "contract_sha256": "e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1"
@@ -3714,7 +3714,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "list_posts",
         "contract_sha256": "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c"
@@ -3809,7 +3809,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "list_tags",
         "contract_sha256": "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd"
@@ -3875,6 +3875,101 @@
       "fact": "Hermetic exact-request transport test."
     },
     {
+      "id": "ev-operation-logpush_jobs_by_account_id-behavior",
+      "dimension": "behavior",
+      "provenance": {
+        "kind": "pinned_git",
+        "repo": "https://github.com/cloudflare/mcp-server-cloudflare",
+        "commit": "70ff690553722f731849ede6ba9ce98958395a23",
+        "source_ref": "apps/logpush/src/tools/logpush.tools.ts:9-148",
+        "blob": "73d784d4870a7f299ca1fe025701f0c624bfcb28",
+        "span": "9-148",
+        "source_sha256": "16928be29a93d3f390a594507ea51d0de79e45246b72e12669dade26eb55da51"
+      },
+      "fact": "Authoritative operation behavior."
+    },
+    {
+      "id": "ev-operation-logpush_jobs_by_account_id-behavior-test",
+      "dimension": "behavior",
+      "provenance": {
+        "kind": "hermetic_test",
+        "test_id": "tests/transport.rs::capability_logpush_jobs_by_account_id_exact_request",
+        "fact": "Hermetic exact-request transport test."
+      },
+      "fact": "Hermetic exact-request transport test."
+    },
+    {
+      "id": "ev-operation-logpush_jobs_by_account_id-discovery",
+      "dimension": "discovery",
+      "provenance": {
+        "kind": "generated_artifact",
+        "artifact": "capabilities/cloudflare-operation-contracts.json",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
+        "fact": "Generated operation contract artifact.",
+        "capability": "logpush_jobs_by_account_id",
+        "contract_sha256": "cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef"
+      },
+      "fact": "Generated operation contract artifact."
+    },
+    {
+      "id": "ev-operation-logpush_jobs_by_account_id-discovery-test",
+      "dimension": "discovery",
+      "provenance": {
+        "kind": "hermetic_test",
+        "test_id": "tests/integration.rs::capability_logpush_discovery_example_is_exact",
+        "fact": "Hermetic exact discovery example test."
+      },
+      "fact": "Hermetic exact discovery example test."
+    },
+    {
+      "id": "ev-operation-logpush_jobs_by_account_id-policy",
+      "dimension": "policy",
+      "provenance": {
+        "kind": "pinned_git",
+        "repo": "https://github.com/cloudflare/mcp-server-cloudflare",
+        "commit": "70ff690553722f731849ede6ba9ce98958395a23",
+        "source_ref": "apps/logpush/src/tools/logpush.tools.ts:9-148",
+        "blob": "73d784d4870a7f299ca1fe025701f0c624bfcb28",
+        "span": "9-148",
+        "source_sha256": "16928be29a93d3f390a594507ea51d0de79e45246b72e12669dade26eb55da51"
+      },
+      "fact": "Authoritative operation safety policy."
+    },
+    {
+      "id": "ev-operation-logpush_jobs_by_account_id-policy-test",
+      "dimension": "policy",
+      "provenance": {
+        "kind": "hermetic_test",
+        "test_id": "tests/transport.rs::capability_logpush_jobs_by_account_id_exact_request",
+        "fact": "Hermetic exact-request transport test."
+      },
+      "fact": "Hermetic exact-request transport test."
+    },
+    {
+      "id": "ev-operation-logpush_jobs_by_account_id-route",
+      "dimension": "route",
+      "provenance": {
+        "kind": "pinned_git",
+        "repo": "https://github.com/cloudflare/mcp-server-cloudflare",
+        "commit": "70ff690553722f731849ede6ba9ce98958395a23",
+        "source_ref": "apps/logpush/src/tools/logpush.tools.ts:9-148",
+        "blob": "73d784d4870a7f299ca1fe025701f0c624bfcb28",
+        "span": "9-148",
+        "source_sha256": "16928be29a93d3f390a594507ea51d0de79e45246b72e12669dade26eb55da51"
+      },
+      "fact": "Pinned operation route and request construction."
+    },
+    {
+      "id": "ev-operation-logpush_jobs_by_account_id-verification",
+      "dimension": "verification",
+      "provenance": {
+        "kind": "hermetic_test",
+        "test_id": "tests/transport.rs::capability_logpush_jobs_by_account_id_exact_request",
+        "fact": "Hermetic exact-request transport test."
+      },
+      "fact": "Hermetic exact-request transport test."
+    },
+    {
       "id": "ev-operation-scrape_url_elements-behavior",
       "dimension": "behavior",
       "provenance": {
@@ -3904,7 +3999,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "scrape_url_elements",
         "contract_sha256": "a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415"
@@ -3999,7 +4094,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "search_cloudflare_documentation",
         "contract_sha256": "9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41"
@@ -4084,7 +4179,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "9ce76a1fc73c87c2f7b7363d0babbd8abcfa87a5a1e523f4991497e418bea160",
+        "sha256": "da8e8f20979ab38a8b9b58f4c213a17b11e99fefb9cd0136e4b099f7cd387809",
         "fact": "Generated operation contract artifact.",
         "capability": "search_posts",
         "contract_sha256": "50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91"
@@ -16527,8 +16622,9 @@
       "scope": "account",
       "operation": "read",
       "transport": "rest",
-      "cli_access": "raw_rest",
+      "cli_access": "modeled",
       "method": "GET",
+      "path_template": "/accounts/{account_id}/logpush/jobs",
       "sdk_method": "Cloudflare API operation for logpush_jobs_by_account_id",
       "source_commit": "70ff690553722f731849ede6ba9ce98958395a23",
       "source_ref": "apps/logpush/src/tools/logpush.tools.ts:106",
@@ -16546,24 +16642,37 @@
           ]
         },
         "route": {
-          "status": "unresolved",
-          "evidence_ids": []
+          "status": "complete",
+          "evidence_ids": [
+            "ev-operation-logpush_jobs_by_account_id-route"
+          ]
         },
         "behavior": {
-          "status": "unresolved",
-          "evidence_ids": []
+          "status": "verified",
+          "evidence_ids": [
+            "ev-operation-logpush_jobs_by_account_id-behavior",
+            "ev-operation-logpush_jobs_by_account_id-behavior-test"
+          ]
         },
         "policy": {
-          "status": "unresolved",
-          "evidence_ids": []
+          "status": "verified",
+          "evidence_ids": [
+            "ev-operation-logpush_jobs_by_account_id-policy",
+            "ev-operation-logpush_jobs_by_account_id-policy-test"
+          ]
         },
         "verification": {
-          "status": "unverified",
-          "evidence_ids": []
+          "status": "hermetic_verified",
+          "evidence_ids": [
+            "ev-operation-logpush_jobs_by_account_id-verification"
+          ]
         },
         "discovery": {
-          "status": "missing",
-          "evidence_ids": []
+          "status": "verified",
+          "evidence_ids": [
+            "ev-operation-logpush_jobs_by_account_id-discovery",
+            "ev-operation-logpush_jobs_by_account_id-discovery-test"
+          ]
         },
         "external_blocker": {
           "status": "none",
@@ -18478,7 +18587,7 @@
   },
   "operation_artifacts": {
     "path": "capabilities/cloudflare-operation-contracts.json",
-    "bundle_sha256": "d9b9528bd9f53de5b1c621c00e6d9938051c7bb6208205bd6333a6dda208469a",
+    "bundle_sha256": "f4b9397b7bbae4e88838e9f1991c4c02faef3c759bffd9ac2bf7933c3e801ac2",
     "contracts": [
       {
         "capability": "d1_database_delete",
@@ -18539,6 +18648,10 @@
       {
         "capability": "list_tags",
         "contract_sha256": "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd"
+      },
+      {
+        "capability": "logpush_jobs_by_account_id",
+        "contract_sha256": "cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef"
       },
       {
         "capability": "scrape_url_elements",

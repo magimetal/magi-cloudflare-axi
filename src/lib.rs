@@ -665,9 +665,12 @@ mod tests {
         let skill = include_str!("../skills/magi-cloudflare-axi/SKILL.md");
         for phrase in [
             "schema v3",
-            "I=172; S=172; R=B=P=V=18; D=13; X=40",
+            "I=172; S=172; R=B=P=V=19; D=14; X=40",
             "capability invoke d1_database_get",
-            "Phase 4D adds authenticated `get_url_pdf` and `get_url_screenshot`",
+            "logpush_jobs_by_account_id",
+            "GET /accounts/{account_id}/logpush/jobs",
+            "Logs Write permission",
+            "first 100 jobs",
         ] {
             assert!(readme.contains(phrase), "README missing {phrase}");
             assert!(contract.contains(phrase), "contract missing {phrase}");
@@ -677,13 +680,14 @@ mod tests {
             assert!(artifact.contains("Phase 3"));
         }
         assert!(roadmap.contains("current_phase: phase-4-in-progress"));
-        assert!(roadmap.contains("Blog direct reads = 4/4 complete and discovery-verified"));
-        assert!(roadmap.contains("154 routes unresolved"));
+        assert!(roadmap.contains("I=172; S=172; R=B=P=V=19; D=14; X=40"));
+        assert!(roadmap.contains("153 unresolved"));
         for phrase in [
             "registration-input schema",
             "--allow-write --allow-metered --confirm",
             "tool schema search --server cloudflare",
             "capability schema d1_database_get",
+            "magi-cloudflare-axi capability invoke logpush_jobs_by_account_id --input '{}' --allow-egress",
         ] {
             assert!(readme.contains(phrase), "README missing {phrase}");
             assert!(skill.contains(phrase), "skill missing {phrase}");
