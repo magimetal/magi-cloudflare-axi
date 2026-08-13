@@ -9,8 +9,8 @@ const FIXTURES: &str = include_str!("../capabilities/cloudflare-schema-fixtures.
 const OPERATIONS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 pub const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
 const OPERATION_BUNDLE_SHA256: &str =
-    "e8067e74af60bde3861dd714d24a2819745b49698231485e7c13e506b86ef1de";
-const OPERATION_NAMES: [&str; 15] = [
+    "0283e0990d9116cc382624223a89a6e6442125a3357f03c77468f25c13c147d6";
+const OPERATION_NAMES: [&str; 16] = [
     "d1_database_delete",
     "d1_database_get",
     "get_crawl_result",
@@ -21,13 +21,14 @@ const OPERATION_NAMES: [&str; 15] = [
     "get_url_markdown",
     "get_url_snapshot",
     "graphql_schema_overview",
+    "list_browser_sessions",
     "list_posts",
     "list_tags",
     "scrape_url_elements",
     "search_cloudflare_documentation",
     "search_posts",
 ];
-const OPERATION_HASHES: [&str; 15] = [
+const OPERATION_HASHES: [&str; 16] = [
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
     "e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52",
@@ -38,6 +39,7 @@ const OPERATION_HASHES: [&str; 15] = [
     "853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed",
     "3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588",
     "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc",
+    "e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1",
     "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c",
     "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd",
     "a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415",
@@ -53,8 +55,8 @@ const DEPENDENCY_PROVENANCE_COUNT: usize = 803;
 const DEPENDENCY_PROVENANCE_SHA256: &str =
     "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04";
 const LEGACY_METADATA_SHA256: &str =
-    "9670d581062d3d27974eceb9cc4ef0ad78b0879f54dbaf8748f2266c2033dabf";
-const LEGACY_METADATA_FNV1A: u64 = 0x97fc7572b9b5c402;
+    "93093645f4c80a5070a1bba294b7a3171ac006174e552b572346c21c3fd1fea3";
+const LEGACY_METADATA_FNV1A: u64 = 0x2ec41b620cf2ee7d;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -568,6 +570,40 @@ fn validate_operation_contract(contract: &Value) -> Result<(), serde_json::Error
     {
         return Err(invalid("MCP operation route mismatch"));
     }
+    if contract["capability"] == "list_browser_sessions" {
+        let handler = &contract["evidence"]["pinned_handler"];
+        if contract["route"]["transport"] != "rest"
+            || contract["route"]["method"] != "GET"
+            || contract["route"]["path_template"]
+                != "/accounts/{account_id}/browser-run/devtools/session"
+            || contract["route"]["scope"] != "account"
+            || contract["route"]["auth"] != "account"
+            || contract["route"]["body"] != "none"
+            || contract["route"]["query_parameters"] != json!([])
+            || contract["behavior"]["output_projection"] != "session_array"
+            || contract["behavior"]["empty_state"] != "empty_array"
+            || contract["behavior"]["pagination"] != "none"
+            || contract["behavior"]["error"] != "bare_json_or_result_array"
+            || operation != "read"
+            || contract["safety"]["destructive"] != false
+            || contract["safety"]["metered"] != false
+            || contract["safety"]["data_egress"] != true
+            || contract["safety"]["long_running"] != false
+            || retry != "transient_read"
+            || contract["implementation"]["adapter"] != "rest"
+            || contract["implementation"]["test_id"]
+                != "tests/transport.rs::capability_list_browser_sessions_exact_request"
+            || handler["commit"] != SOURCE_COMMIT
+            || handler["file"] != "apps/browser-rendering/src/tools/browser.tools.ts"
+            || handler["blob_oid"] != "ae998f642ba8548b715e1573bc0049c96c9e1f28"
+            || handler["lines"] != "522-560"
+            || handler["source_sha256"]
+                != "c6b05861d44395a6e2bc84ac37320cd04d9a7edded73cf14d410fce32e31a361"
+        {
+            return Err(invalid("Browser sessions operation semantic mismatch"));
+        }
+    }
+
     if ["get_post", "list_posts", "list_tags", "search_posts"]
         .contains(&contract["capability"].as_str().unwrap_or(""))
     {
@@ -1084,6 +1120,7 @@ fn validate_operation_evidence(
         "get_url_json",
         "get_url_snapshot",
         "get_crawl_result",
+        "list_browser_sessions",
     ]
     .contains(&capability);
     let blog = ["get_post", "list_posts", "list_tags", "search_posts"].contains(&capability);
@@ -1243,7 +1280,7 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
     let contracts = operations["contracts"]
         .as_array()
         .ok_or_else(|| invalid("operation contracts array required"))?;
-    if operations["version"] != "phase4b-operation-contracts-v1"
+    if operations["version"] != "phase4c-operation-contracts-v1"
         || operations["source_commit"] != SOURCE_COMMIT
         || json_sha256(&operation_root)? != OPERATION_BUNDLE_SHA256
         || contracts
@@ -1595,17 +1632,17 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
                 ("graphql", 6),
                 ("internal_binding", 1),
                 ("mcp", 1),
-                ("public_http", 79),
-                ("rest", 78),
+                ("public_http", 78),
+                ("rest", 79),
             ])
         || access
             != BTreeMap::from([
                 ("blocked", 1),
                 ("mcp_remote", 26),
-                ("modeled", 6),
+                ("modeled", 7),
                 ("public_direct", 6),
                 ("raw_graphql", 6),
-                ("raw_rest", 127),
+                ("raw_rest", 126),
             ])
         || operation != BTreeMap::from([("read", 150), ("write", 22)])
         || c.capabilities
@@ -1617,7 +1654,7 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             .iter()
             .filter(|row| row.path_template.is_some())
             .count()
-            != 12
+            != 13
         || c.capabilities
             .iter()
             .filter(|row| row.blocker.is_some())
@@ -1700,7 +1737,7 @@ pub fn access_recipe(e: &Capability) -> Value {
         "method": e.method,
         "path_template": e.path_template,
         "blocker": e.blocker,
-        "next_command": if verified { match e.name.as_str() { "get_post" => "magi-cloudflare-axi capability invoke get_post --input '{\"slug\":\"<slug>\"}'".to_string(), "list_posts" | "list_tags" => format!("magi-cloudflare-axi capability invoke {} --input '{{}}'", e.name), "search_posts" => "magi-cloudflare-axi capability invoke search_posts --input '{\"query\":\"<query>\"}'".to_string(), "get_url_markdown" | "get_url_links" | "get_url_json" | "get_url_snapshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}'", e.name), "get_crawl_result" => "magi-cloudflare-axi capability invoke get_crawl_result --input '{\"job_id\":\"<job_id>\"}'".to_string(), "scrape_url_elements" => "magi-cloudflare-axi capability invoke scrape_url_elements --input '{\"url\":\"<url>\",\"elements\":[{\"selector\":\"h1\"}]}'".to_string(), _ => format!("magi-cloudflare-axi capability invoke {} --input '<json>'", e.name) } } else { format!("magi-cloudflare-axi tool schema {} --server <server>", e.name) },
+        "next_command": if verified { match e.name.as_str() { "get_post" => "magi-cloudflare-axi capability invoke get_post --input '{\"slug\":\"<slug>\"}'".to_string(), "list_browser_sessions" | "list_posts" | "list_tags" => format!("magi-cloudflare-axi capability invoke {} --input '{{}}'", e.name), "search_posts" => "magi-cloudflare-axi capability invoke search_posts --input '{\"query\":\"<query>\"}'".to_string(), "get_url_markdown" | "get_url_links" | "get_url_json" | "get_url_snapshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}'", e.name), "get_crawl_result" => "magi-cloudflare-axi capability invoke get_crawl_result --input '{\"job_id\":\"<job_id>\"}'".to_string(), "scrape_url_elements" => "magi-cloudflare-axi capability invoke scrape_url_elements --input '{\"url\":\"<url>\",\"elements\":[{\"selector\":\"h1\"}]}'".to_string(), _ => format!("magi-cloudflare-axi capability invoke {} --input '<json>'", e.name) } } else { format!("magi-cloudflare-axi tool schema {} --server <server>", e.name) },
         "warning": if verified { "route, behavior, policy, and hermetic verification are complete; discovery remains separately gated" } else { "pinned registration-input schema is complete; live schema may vary by request context, and route/behavior/policy evidence remains incomplete" }
     })
 }

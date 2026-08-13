@@ -2124,6 +2124,105 @@ fn capability_get_crawl_result_exact_request() {
 }
 
 #[test]
+fn capability_list_browser_sessions_exact_request() {
+    let (out, _) = run(
+        &capability_args("list_browser_sessions", "{}"),
+        Some("http://127.0.0.1:1"),
+        Some("token"),
+    );
+    assert_eq!(out.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&out.stdout).contains("--allow-egress"));
+
+    let directory = tempfile::tempdir().unwrap();
+    std::fs::write(
+        directory.path().join(".cloudflare-axi.toml"),
+        "account_id = 'configured'\n",
+    )
+    .unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+        .args([
+            "--format",
+            "json",
+            "--endpoint",
+            "http://127.0.0.1:1",
+            "capability",
+            "invoke",
+            "list_browser_sessions",
+            "--input",
+            r#"{"account_id":"provided"}"#,
+            "--allow-egress",
+        ])
+        .current_dir(directory.path())
+        .env("HOME", directory.path())
+        .env("XDG_CONFIG_HOME", directory.path())
+        .env_remove("CLOUDFLARE_API_TOKEN")
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("conflicts with resolved account scope")
+    );
+
+    for (response, expected) in [
+        (
+            r#"[{"id":"session-1","custom":{"state":"ready"}}]"#,
+            serde_json::json!([{"id":"session-1","custom":{"state":"ready"}}]),
+        ),
+        (
+            r#"{"result":[{"id":"session-1","custom":{"state":"ready"}}]}"#,
+            serde_json::json!([{"id":"session-1","custom":{"state":"ready"}}]),
+        ),
+        (r#"[]"#, serde_json::json!([])),
+        (r#"{"result":[]}"#, serde_json::json!([])),
+    ] {
+        let server = Server::start(vec![(200, response)]);
+        let mut args = capability_args("list_browser_sessions", "{}");
+        args.push("--allow-egress");
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert!(out.status.success(), "{out:?}");
+        assert_eq!(json_stdout(&out), expected);
+        let requests = server.finish();
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].method, "GET");
+        assert_eq!(
+            requests[0].target,
+            format!("/client/v4/accounts/{TEST_ACCOUNT}/browser-run/devtools/session")
+        );
+        let headers = requests[0].headers.to_ascii_lowercase();
+        assert!(headers.contains("authorization: bearer token"));
+        assert!(!headers.contains("content-type:"));
+        assert!(requests[0].body.is_empty());
+    }
+
+    for response in [
+        "not-json",
+        r#"{"result":{}}"#,
+        r#"{}"#,
+        r#"{"success":false,"errors":[],"result":[]}"#,
+        r#"{"success":true,"errors":[{"code":1000}],"result":[]}"#,
+    ] {
+        let server = Server::start(vec![(200, response)]);
+        let mut args = capability_args("list_browser_sessions", "{}");
+        args.push("--allow-egress");
+        let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+        assert!(!out.status.success(), "accepted {response}");
+        assert_eq!(server.finish().len(), 1);
+    }
+
+    let mut args = capability_args("list_browser_sessions", "{}");
+    args.push("--allow-egress");
+    let server = Server::start(vec![(400, "{}")]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 1);
+
+    let server = Server::start(vec![(500, "{}"), (500, "{}"), (500, "{}")]);
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(!out.status.success());
+    assert_eq!(server.finish().len(), 3);
+}
+
+#[test]
 fn capability_get_url_html_content_exact_request() {
     let input = r#"{"url":"  https://example.com/path  "}"#;
     for omitted in ["--allow-metered", "--allow-egress", "--allow-long-running"] {

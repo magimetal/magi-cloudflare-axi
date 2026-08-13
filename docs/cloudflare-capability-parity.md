@@ -9,18 +9,18 @@ Denominator: **172**. Full parity is not claimed.
 |---|---|---|
 | inventory | {"complete": 172, "unresolved": 0} | 172 |
 | schema | {"complete": 168, "unresolved": 0, "zero_input_evidenced": 4} | 172 |
-| route | {"complete": 15, "external_blocked": 0, "unresolved": 157} | 15 |
-| behavior | {"specified": 0, "unresolved": 157, "verified": 15} | 15 |
-| policy | {"classified": 0, "unresolved": 157, "verified": 15} | 15 |
-| verification | {"hermetic_verified": 15, "unverified": 157} | 15 |
-| discovery | {"generated": 5, "missing": 157, "verified": 10} | 10 |
+| route | {"complete": 16, "external_blocked": 0, "unresolved": 156} | 16 |
+| behavior | {"specified": 0, "unresolved": 156, "verified": 16} | 16 |
+| policy | {"classified": 0, "unresolved": 156, "verified": 16} | 16 |
+| verification | {"hermetic_verified": 16, "unverified": 156} | 16 |
+| discovery | {"generated": 5, "missing": 156, "verified": 11} | 11 |
 | external_blocker | {"none": 132, "open": 40, "resolved": 0} | 132 |
 
 ## Global parity
 
 | I | S | R | B | P | V | D | X |
 |---:|---:|---:|---:|---:|---:|---:|---:|
-| 172 | 172 | 15 | 15 | 15 | 15 | 10 | 40 |
+| 172 | 172 | 16 | 16 | 16 | 16 | 11 | 40 |
 
 ## Family summary
 
@@ -29,7 +29,7 @@ Denominator: **172**. Full parity is not claimed.
 | ai-gateway | 5 | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | auditlogs | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | autorag | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
-| browser-rendering | 13 | 13 | 13 | 7 | 7 | 7 | 7 | 6 | 0 |
+| browser-rendering | 13 | 13 | 13 | 8 | 8 | 8 | 8 | 7 | 0 |
 | cloudflare-blog | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 0 |
 | cloudflare-one-casb | 11 | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 11 |
 | demo-day | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -53,8 +53,8 @@ Denominator: **172**. Full parity is not claimed.
 | graphql | 6 | 6 | 6 | 1 | 1 | 1 | 1 | 0 | 0 |
 | internal_binding | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | mcp | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 0 | 0 |
-| public_http | 79 | 79 | 79 | 4 | 4 | 4 | 4 | 4 | 0 |
-| rest | 78 | 78 | 78 | 9 | 9 | 9 | 9 | 6 | 32 |
+| public_http | 78 | 78 | 78 | 4 | 4 | 4 | 4 | 4 | 0 |
+| rest | 79 | 79 | 79 | 10 | 10 | 10 | 10 | 7 | 32 |
 
 ## Access classification summary
 
@@ -62,16 +62,16 @@ Denominator: **172**. Full parity is not claimed.
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | blocked | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | mcp_remote | 26 | 26 | 26 | 1 | 1 | 1 | 1 | 0 | 25 |
-| modeled | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 0 |
+| modeled | 7 | 7 | 7 | 7 | 7 | 7 | 7 | 7 | 0 |
 | public_direct | 6 | 6 | 6 | 4 | 4 | 4 | 4 | 4 | 0 |
 | raw_graphql | 6 | 6 | 6 | 1 | 1 | 1 | 1 | 0 | 0 |
-| raw_rest | 127 | 127 | 127 | 3 | 3 | 3 | 3 | 0 | 14 |
+| raw_rest | 126 | 126 | 126 | 3 | 3 | 3 | 3 | 0 | 14 |
 
 ## Read/write operation summary
 
 | Group | Count | I | S | R | B | P | V | D | X |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| read | 150 | 150 | 150 | 14 | 14 | 14 | 14 | 10 | 34 |
+| read | 150 | 150 | 150 | 15 | 15 | 15 | 15 | 11 | 34 |
 | write | 22 | 22 | 22 | 1 | 1 | 1 | 1 | 0 | 6 |
 
 ## Blocker ledger
@@ -221,7 +221,7 @@ Denominator: **172**. Full parity is not claimed.
 | kv_namespaces_list | workers-bindings | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | list_autonomous_systems | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | list_bots | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
-| list_browser_sessions | browser-rendering | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
+| list_browser_sessions | browser-rendering | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | list_ct_authorities | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | list_ct_logs | radar | public_http | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | list_gateways | ai-gateway | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |

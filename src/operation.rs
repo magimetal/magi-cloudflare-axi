@@ -6,8 +6,8 @@ use std::collections::BTreeSet;
 
 const CONTRACTS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
-const BUNDLE_SHA256: &str = "e8067e74af60bde3861dd714d24a2819745b49698231485e7c13e506b86ef1de";
-const CONTRACT_NAMES: [&str; 15] = [
+const BUNDLE_SHA256: &str = "0283e0990d9116cc382624223a89a6e6442125a3357f03c77468f25c13c147d6";
+const CONTRACT_NAMES: [&str; 16] = [
     "d1_database_delete",
     "d1_database_get",
     "get_crawl_result",
@@ -18,13 +18,14 @@ const CONTRACT_NAMES: [&str; 15] = [
     "get_url_markdown",
     "get_url_snapshot",
     "graphql_schema_overview",
+    "list_browser_sessions",
     "list_posts",
     "list_tags",
     "scrape_url_elements",
     "search_cloudflare_documentation",
     "search_posts",
 ];
-const CONTRACT_HASHES: [&str; 15] = [
+const CONTRACT_HASHES: [&str; 16] = [
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
     "e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52",
@@ -35,6 +36,7 @@ const CONTRACT_HASHES: [&str; 15] = [
     "853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed",
     "3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588",
     "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc",
+    "e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1",
     "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c",
     "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd",
     "a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415",
@@ -101,10 +103,10 @@ fn digest(v: &Value) -> String {
 fn contracts() -> Result<Bundle, AppError> {
     let bundle: Bundle = serde_json::from_str(CONTRACTS)
         .map_err(|e| AppError::api(format!("embedded operation contracts are invalid: {e}")))?;
-    if bundle.version != "phase4b-operation-contracts-v1"
+    if bundle.version != "phase4c-operation-contracts-v1"
         || bundle.source_commit != SOURCE_COMMIT
-        || bundle.contract_count != 15
-        || bundle.contracts.len() != 15
+        || bundle.contract_count != 16
+        || bundle.contracts.len() != 16
         || bundle
             .contracts
             .iter()
@@ -204,6 +206,40 @@ fn validate_contract(c: &Contract) -> Result<(), AppError> {
             || c.route.get("transport") != Some(&Value::String("rest".into())))
     {
         return Err(AppError::api("browser JSON/snapshot/crawl route mismatch"));
+    }
+    if c.capability == "list_browser_sessions" {
+        let handler = &c.evidence["pinned_handler"];
+        if c.route["transport"] != "rest"
+            || c.route["method"] != "GET"
+            || c.route["path_template"] != "/accounts/{account_id}/browser-run/devtools/session"
+            || c.route["scope"] != "account"
+            || c.route["auth"] != "account"
+            || c.route["body"] != "none"
+            || c.route["query_parameters"] != json!([])
+            || c.behavior["output_projection"] != "session_array"
+            || c.behavior["empty_state"] != "empty_array"
+            || c.behavior["pagination"] != "none"
+            || c.behavior["error"] != "bare_json_or_result_array"
+            || c.safety.operation != "read"
+            || c.safety.destructive
+            || c.safety.metered
+            || !c.safety.data_egress
+            || c.safety.long_running
+            || c.safety.retry_policy != "transient_read"
+            || c.implementation["adapter"] != "rest"
+            || c.implementation["test_id"]
+                != "tests/transport.rs::capability_list_browser_sessions_exact_request"
+            || handler["commit"] != SOURCE_COMMIT
+            || handler["file"] != "apps/browser-rendering/src/tools/browser.tools.ts"
+            || handler["blob_oid"] != "ae998f642ba8548b715e1573bc0049c96c9e1f28"
+            || handler["lines"] != "522-560"
+            || handler["source_sha256"]
+                != "c6b05861d44395a6e2bc84ac37320cd04d9a7edded73cf14d410fce32e31a361"
+        {
+            return Err(AppError::api(
+                "browser sessions operation semantic mismatch",
+            ));
+        }
     }
     if ["get_post", "list_posts", "list_tags", "search_posts"].contains(&c.capability.as_str()) {
         let expected_method = if c.capability == "search_posts" {
@@ -804,7 +840,7 @@ fn browser_request(
             }
             body
         }
-        "get_crawl_result" => Value::Null,
+        "get_crawl_result" | "list_browser_sessions" => Value::Null,
         _ => json!({"url":input["url"]}),
     };
     let (method, path, retry_policy) = if name == "get_crawl_result" {
@@ -814,6 +850,12 @@ fn browser_request(
                 "/accounts/{account}/browser-run/crawl/{}",
                 path_segment(input["job_id"].as_str().unwrap_or(""), "job_id", Some(256))?
             ),
+            client::RetryPolicy::TransientRead,
+        )
+    } else if name == "list_browser_sessions" {
+        (
+            client::Method::Get,
+            format!("/accounts/{account}/browser-run/devtools/session"),
             client::RetryPolicy::TransientRead,
         )
     } else {
@@ -843,6 +885,25 @@ fn browser_request(
             allow_classified_read_post: true,
         },
     )?;
+    if name == "list_browser_sessions" {
+        let result = if r.envelope.is_array() {
+            r.envelope
+        } else {
+            if r.envelope.get("success").is_some_and(|value| value != true)
+                || r.envelope
+                    .get("errors")
+                    .is_some_and(|value| !value.as_array().is_some_and(Vec::is_empty))
+            {
+                return Err(AppError::api("browser sessions response is malformed"));
+            }
+            r.result
+                .ok_or_else(|| AppError::api("browser sessions result is missing"))?
+        };
+        result
+            .as_array()
+            .ok_or_else(|| AppError::api("browser sessions result must be an array"))?;
+        return Ok(result);
+    }
     if r.envelope.get("success") != Some(&Value::Bool(true))
         || !r
             .envelope
@@ -1144,6 +1205,7 @@ pub fn invoke(
         | "get_crawl_result"
         | "get_url_markdown"
         | "get_url_links"
+        | "list_browser_sessions"
         | "scrape_url_elements" => browser_request(name, &input, endpoint.as_deref(), cli_account),
         _ => Err(AppError::usage(format!(
             "capability '{name}' has no complete route contract"

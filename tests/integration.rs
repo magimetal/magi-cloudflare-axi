@@ -602,6 +602,10 @@ fn capability_browser_discovery_examples_are_exact() {
             "get_crawl_result",
             "get_crawl_result --input '{\"job_id\":\"<job_id>\"}'",
         ),
+        (
+            "list_browser_sessions",
+            "list_browser_sessions --input '{}'",
+        ),
     ] {
         let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
             .args(["--format", "json", "capability", "get", name])

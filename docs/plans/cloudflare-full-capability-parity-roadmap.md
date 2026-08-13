@@ -38,11 +38,11 @@ Registered-name presence alone remains **inventory parity**, not full parity.
 | Registered names | 172/172 | 172/172 |
 | Canonical input schemas | 172/172 | 172/172 |
 | Method metadata | 147/172 | Route-dependent |
-| Path metadata | 12/172 | Every direct route complete |
-| Capability-specific complete routes | 15/172 | 172/172, or maximal attainable parity with explicit blockers |
-| Capability contract tests | 15/172 | 172/172 hermetically verified |
+| Path metadata | 13/172 | Every direct route complete |
+| Capability-specific complete routes | 16/172 | 172/172, or maximal attainable parity with explicit blockers |
+| Capability contract tests | 16/172 | 172/172 hermetically verified |
 
-Phase 4B is in progress. Six authenticated Browser reads are complete, verified, and discovery-verified: `get_url_markdown`, `get_url_links`, `scrape_url_elements`, `get_url_json`, `get_url_snapshot`, and `get_crawl_result`. Exact contract vector: `I=172; S=172; R=B=P=V=15; D=10; X=40`; 157 routes unresolved. `/browser-run` is route authority; official `/browser-rendering` docs corroborate semantics only, with route/transport mismatch stated precisely.
+Phase 4C is in progress. Seven authenticated Browser reads are complete, verified, and discovery-verified: `get_url_markdown`, `get_url_links`, `scrape_url_elements`, `get_url_json`, `get_url_snapshot`, `get_crawl_result`, and `list_browser_sessions`. Exact contract vector: `I=172; S=172; R=B=P=V=16; D=11; X=40`; discovery is 11 verified and five generated, with 156 routes unresolved. For `list_browser_sessions`, pinned `GET /accounts/{account_id}/browser-run/devtools/session` is authority; official docs instead show `/browser-rendering/devtools/session` with optional `limit`/`offset`, while pinned zero-input handler exposes neither query. Binary PNG/PDF Browser reads remain.
 
 Phase 3 exit gate for proven direct unauthenticated Blog cohort:
 
@@ -59,7 +59,7 @@ Phase 3 completed `2026-08-11` for four Blog operations only. Research pool corr
 
 | Scope | Current | Target |
 |---|---:|---:|
-| Verified reads | 14/150 | 150/150 |
+| Verified reads | 15/150 | 150/150 |
 | Hermetically verified writes | 1/22 | 22/22 |
 | Open blocker entries | 40 | 0 |
 | Fully verified families | 1/18 | 18/18 |
@@ -68,8 +68,8 @@ Current access classifications:
 
 | Classification | Count |
 |---|---:|
-| `raw_rest` | 127 |
-| `modeled` | 6 |
+| `raw_rest` | 126 |
+| `modeled` | 7 |
 | `mcp_remote` | 26 |
 | `public_direct` | 6 |
 | `raw_graphql` | 6 |
@@ -79,14 +79,14 @@ Current transport inventory:
 
 | Transport | Count |
 |---|---:|
-| `public_http` | 79 |
-| `rest` | 78 |
+| `public_http` | 78 |
+| `rest` | 79 |
 | `custom_container` | 7 |
 | `graphql` | 6 |
 | `internal_binding` | 1 |
 | `mcp` | 1 |
 
-Twelve catalog records carry both `method` and `path_template`; operation-contract artifact contains fifteen complete routes.
+Thirteen catalog records carry both `method` and `path_template`; operation-contract artifact contains sixteen complete routes.
 
 
 ## Completion formula
@@ -339,6 +339,8 @@ Tasks:
 - [ ] Cover least-privilege auth failures without exposing provider bodies.
 - [ ] Enforce metering, data-egress, and long-running guards before config/auth/network for reads that require them.
 
+Phase 4C evidence: `list_browser_sessions` binds pinned handler lines 522–560 (blob `ae998f642ba8548b715e1573bc0049c96c9e1f28`, SHA-256 `c6b05861d44395a6e2bc84ac37320cd04d9a7edded73cf14d410fce32e31a361`) to account-authenticated `GET /accounts/{account_id}/browser-run/devtools/session`. Output accepts a bare array or object `result` array; only egress opt-in applies; transient-read retries are allowed. Official route/query mismatch remains explicit. Seven Browser reads are discovery-verified; binary PNG/PDF reads remain.
+
 Exit gate:
 
 - [ ] Every direct REST read has exact schema and route.
@@ -552,7 +554,7 @@ Update this table only when gate evidence exists.
 | 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | complete | 2026-08-10 |
 | 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; 167 capability routes deferred | — | complete | 2026-08-11 |
 | 3 — Proven Blog reads | Phase 2 complete | Four Blog reads verified and discovery-verified; 163 total routes unresolved | — | complete-for-proven-cohort | 2026-08-11 |
-| 4 — Authenticated direct API reads | Phase 3 cohort complete | Six Browser reads verified and discovery-verified; 157 total routes unresolved | — | in_progress | — |
+| 4 — Authenticated direct API reads | Phase 3 cohort complete | Seven Browser reads verified and discovery-verified; 156 total routes unresolved | — | in_progress | — |
 | 5 — GraphQL/MCP reads | Phase 2 complete | GraphQL reads 5/5 and exposed MCP reads verified | — | not_started | — |
 | 6 — Writes | Phase 2 complete | Writes 22/22 hermetically verified | — | not_started | — |
 | 7 — Blockers | Route research available | Blockers 0 | — | not_started | — |

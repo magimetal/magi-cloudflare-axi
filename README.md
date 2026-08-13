@@ -31,13 +31,14 @@ magi-cloudflare-axi tool schema search --server cloudflare
 magi-cloudflare-axi capability schema d1_database_get
 `capability schema d1_database_get` is offline and authoritative for registration-input schema.
 magi-cloudflare-axi --account <id> capability invoke d1_database_get --input '{"database_id":"<uuid>"}'
+magi-cloudflare-axi --account <id> capability invoke list_browser_sessions --input '{}' --allow-egress
 ```
 
 Account/zone lists validate fields before auth/network, preserve Cloudflare totals, apply `--limit` client-side, and return explicit zero-page messages. Raw pagination merges only top-level array results; nested arrays are never guessed.
 
 Catalog schema v3 and Phase 4 governance are canonical.
-Phase 3 blog direct reads remains complete.
-`capability list/get` exposes 172 registered tool names at pinned source commit `70ff690553722f731849ede6ba9ce98958395a23`. Phase 4B adds three authenticated Browser reads: `get_url_json`, `get_url_snapshot`, and `get_crawl_result`, bringing exact contracts to 15; six Browser reads now share discovery provenance in `tests/integration.rs::capability_browser_discovery_examples_are_exact`. Vector `I=172; S=172; R=B=P=V=15; D=10; X=40`; 157 routes unresolved. Phase 4 remains in progress. Pinned source `/browser-run` remains route authority; official `/browser-rendering` docs corroborate product semantics but do not establish identical route/transport evidence, so mismatch remains explicit.
+Phase 3 Blog direct reads remain complete.
+Phase 4C adds authenticated `list_browser_sessions`, bringing exact contracts to 16; seven Browser reads are verified and discovery-verified in `tests/integration.rs::capability_browser_discovery_examples_are_exact`. Vector `I=172; S=172; R=B=P=V=16; D=11; X=40`; discovery is 11 verified and five generated, with 156 routes unresolved. Pinned `GET /accounts/{account_id}/browser-run/devtools/session` remains route authority. Official docs instead show `/browser-rendering/devtools/session` with optional `limit`/`offset`; pinned zero-input handler exposes neither query, so mismatch remains explicit. Phase 4 remains in progress; binary PNG/PDF Browser reads remain.
 
 ## Output, errors, safety
 
@@ -53,4 +54,4 @@ CI runs formatting, locked tests, clippy, release build, package verification, d
 
 See `docs/plans/cloudflare-axi-contract.md`, `docs/plans/cloudflare-full-capability-parity-roadmap.md`, and `docs/cloudflare-api-evidence.md` for contract, phased parity work, and evidence limits.
 
-Phase 0–4B governance artifacts: `capabilities/cloudflare-mcp-parity.json` is canonical; fixed per-name legacy-metadata digest protects migration integrity. Schema v3 adds typed evidence provenance plus hash-bound operation-contract artifacts. Repository-development commands `scripts/catalog-governance.py validate`, `self-test`, `generate`, `metrics`, `report`, `sync-schemas`, and `check` validate the catalog, run negative mutations, regenerate deterministic artifacts, print them, and detect drift. CI rejects stale artifacts, source drift, duplicate names, denominator drift, invalid statuses, inapplicable evidence, operation-contract drift, and per-capability metadata drift. Commands are hermetic and credential-free. Remaining 157 routes stay unresolved for Phases 4–7.
+Phase 0–4C governance artifacts: `capabilities/cloudflare-mcp-parity.json` is canonical; fixed per-name legacy-metadata digest protects migration integrity. Schema v3 adds typed evidence provenance plus hash-bound operation-contract artifacts. Repository-development commands `scripts/catalog-governance.py validate`, `self-test`, `generate`, `metrics`, `report`, `sync-schemas`, and `check` validate the catalog, run negative mutations, regenerate deterministic artifacts, print them, and detect drift. CI rejects stale artifacts, source drift, duplicate names, denominator drift, invalid statuses, inapplicable evidence, operation-contract drift, and per-capability metadata drift. Commands are hermetic and credential-free. Remaining 156 routes stay unresolved for Phases 4–7.
