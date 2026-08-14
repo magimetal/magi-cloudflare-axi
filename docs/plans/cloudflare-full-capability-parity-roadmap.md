@@ -38,11 +38,11 @@ Registered-name presence alone remains **inventory parity**, not full parity.
 | Registered names | 172/172 | 172/172 |
 | Canonical input schemas | 172/172 | 172/172 |
 | Method metadata | 147/172 | Route-dependent |
-| Path metadata | 17/172 | Every direct route complete |
-| Capability-specific complete routes | 20/172 | 172/172, or maximal attainable parity with explicit blockers |
-| Capability contract tests | 20/172 | 172/172 hermetically verified |
+| Path metadata | 18/172 | Every direct route complete |
+| Capability-specific complete routes | 21/172 | 172/172, or maximal attainable parity with explicit blockers |
+| Capability contract tests | 21/172 | 172/172 hermetically verified |
 
-Phase 4F adds authenticated `auditlogs_by_account_id` with pinned app-specific OAuth scope additions `account:read` and `auditlogs:read`, fixed portal headers, cursor pagination via `result_info`, count preserved but not treated as total, one request/no retry/no redirect, full response validation before strict sensitive-field projection, `--allow-egress`, and an 8 MiB failure bound. No API-token permission label is inferred. Exact operation contracts total 20; current vector is `I=172; S=172; R=B=P=V=20; D=15; X=40`; 152 routes remain unresolved.
+Phase 4G adds authenticated AutoRAG `list_rags` with pinned app-specific OAuth scope additions `account:read` and `rag:write`, ordered page/per-page defaults 1/20, bounded inputs, strict full response validation before `autorags` projection, exact numeric `total_count` preservation, transient GET retries, redirect refusal, `--allow-egress`, and an 8 MiB failure bound. Deprecated upstream server context does not imply operation unavailability; no API-token permission or least-privilege label is inferred. Exact operation contracts total 21; current vector is `I=172; S=172; R=B=P=V=21; D=16; X=40`; 151 routes remain unresolved.
 
 Phase 3 exit gate for proven direct unauthenticated Blog cohort:
 
@@ -562,7 +562,7 @@ Update this table only when gate evidence exists.
 | 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | complete | 2026-08-10 |
 | 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; 167 capability routes deferred | — | complete | 2026-08-11 |
 | 3 — Proven Blog reads | Phase 2 complete | Four Blog reads verified and discovery-verified; 163 total routes unresolved | — | complete-for-proven-cohort | 2026-08-11 |
-| 4 — Authenticated direct API reads | Phase 3 cohort complete | Phase 4F complete: 19 verified reads, including authenticated Browser, Logpush, and Audit Logs contracts; 152 total routes unresolved | — | in_progress | —
+| 4 — Authenticated direct API reads | Phase 3 cohort complete | Phase 4G complete: 20 verified reads, including authenticated Browser, Logpush, Audit Logs, and AutoRAG contracts; 151 total routes unresolved | — | in_progress | — |
 | 5 — GraphQL/MCP reads | Phase 2 complete | GraphQL reads 5/5 and exposed MCP reads verified | — | not_started | — |
 | 6 — Writes | Phase 2 complete | Writes 22/22 hermetically verified | — | not_started | — |
 | 7 — Blockers | Route research available | Blockers 0 | — | not_started | — |

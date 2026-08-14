@@ -163,6 +163,83 @@ impl RedirectServer {
 }
 
 #[test]
+fn capability_list_rags_redirect_refuses_credential_forwarding() {
+    let server = RedirectServer::start();
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "list_rags",
+            "--input",
+            "{}",
+            "--allow-egress",
+        ],
+        Some(&server.endpoint),
+        Some("redirect-secret"),
+    );
+    assert!(!output.status.success());
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert!(requests[0].contains("redirect-secret"));
+}
+
+#[test]
+fn capability_list_rags_key_email_auth_has_explicit_headers() {
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"result":[],"result_info":{"total_count":0}}"#,
+    )]);
+    let dir = tempfile::tempdir().unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+        .args([
+            "--format",
+            "json",
+            "--endpoint",
+            &server.endpoint,
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "list_rags",
+            "--input",
+            "{}",
+            "--allow-egress",
+        ])
+        .current_dir(dir.path())
+        .env("HOME", dir.path())
+        .env("XDG_CONFIG_HOME", dir.path())
+        .env("CLOUDFLARE_API_KEY", "key")
+        .env("CLOUDFLARE_API_EMAIL", "me@example.com")
+        .env_remove("CLOUDFLARE_API_TOKEN")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let request = &server.finish()[0];
+    assert!(
+        request
+            .headers
+            .to_ascii_lowercase()
+            .contains("x-auth-key: key")
+    );
+    assert!(
+        request
+            .headers
+            .to_ascii_lowercase()
+            .contains("x-auth-email: me@example.com")
+    );
+    assert!(
+        !request
+            .headers
+            .to_ascii_lowercase()
+            .contains("authorization:")
+    );
+}
+
+#[test]
 fn rest_redirect_does_not_forward_credentials() {
     let server = RedirectServer::start();
     let (output, _) = run(
@@ -1097,6 +1174,362 @@ fn get_commands_use_resolved_account_and_zone_selectors() {
             );
         }
     }
+}
+
+#[test]
+fn capability_list_rags_exact_request() {
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"result":[{"id":"rag-1","source":"s3","paused":false,"ignored":true}],"result_info":{"total_count":7,"ignored":true},"ignored":true}"#,
+    )]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "list_rags",
+            "--input",
+            "{}",
+            "--allow-egress",
+        ],
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    assert_eq!(
+        json_stdout(&output),
+        serde_json::json!({"autorags":[{"id":"rag-1","source":"s3","paused":false}],"total_count":7})
+    );
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "GET");
+    assert_eq!(
+        requests[0].target,
+        "/client/v4/accounts/0123456789abcdef0123456789abcdef/autorag/rags?page=1&per_page=20"
+    );
+    assert!(requests[0].body.is_empty());
+}
+
+#[test]
+fn capability_list_rags_supplied_pagination_and_request_headers() {
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"result":[],"result_info":{"total_count":0,"ignored":true},"ignored":true}"#,
+    )]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "list_rags",
+            "--input",
+            r#"{"page":2,"per_page":50,"unknown":true}"#,
+            "--allow-egress",
+        ],
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(
+        requests[0].target,
+        "/client/v4/accounts/0123456789abcdef0123456789abcdef/autorag/rags?page=2&per_page=50"
+    );
+    assert!(requests[0].body.is_empty());
+    assert!(
+        requests[0]
+            .headers
+            .to_ascii_lowercase()
+            .contains("authorization: bearer fixture-token")
+    );
+}
+
+#[test]
+fn capability_list_rags_empty_result_is_empty_array() {
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"result":[],"result_info":{"total_count":0}}"#,
+    )]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "list_rags",
+            "--input",
+            "{}",
+            "--allow-egress",
+        ],
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert_eq!(
+        json_stdout(&output),
+        serde_json::json!({"autorags":[],"total_count":0})
+    );
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_list_rags_validation_precedes_auth_and_network() {
+    for input in [
+        r#"{"page":0}"#,
+        r#"{"page":1.5}"#,
+        r#"{"page":"1"}"#,
+        r#"{"page":true}"#,
+        r#"{"page":null}"#,
+        r#"{"per_page":0}"#,
+        r#"{"per_page":51}"#,
+        r#"{"per_page":1.5}"#,
+        r#"{"per_page":"1"}"#,
+        r#"{"per_page":true}"#,
+        r#"{"per_page":null}"#,
+    ] {
+        let (output, _) = run(
+            &[
+                "--format",
+                "json",
+                "--account",
+                "bad",
+                "capability",
+                "invoke",
+                "list_rags",
+                "--input",
+                input,
+                "--allow-egress",
+            ],
+            None,
+            None,
+        );
+        assert!(
+            !output.status.success(),
+            "input unexpectedly accepted: {input}"
+        );
+    }
+}
+
+#[test]
+fn capability_list_rags_account_and_egress_guards_precede_network() {
+    for args in [
+        vec![
+            "--format",
+            "json",
+            "capability",
+            "invoke",
+            "list_rags",
+            "--input",
+            "{}",
+        ],
+        vec![
+            "--format",
+            "json",
+            "--account",
+            "one",
+            "capability",
+            "invoke",
+            "list_rags",
+            "--input",
+            "{}",
+        ],
+    ] {
+        let (output, _) = run(&args, Some("http://127.0.0.1:1/client/v4"), None);
+        assert!(!output.status.success());
+    }
+}
+
+#[test]
+fn capability_list_rags_malformed_responses_are_api_failures_once() {
+    for body in [
+        "not-json",
+        "[]",
+        r#"{"result":[],"result_info":{"total_count":0}}"#,
+        r#"{"success":true,"result":{}}"#,
+        r#"{"success":false,"result":[],"result_info":{"total_count":0}}"#,
+        r#"{"success":true,"result":[],"result_info":{}}"#,
+        r#"{"success":true,"result":[],"result_info":{"total_count":"1"}}"#,
+        r#"{"success":true,"result":[1],"result_info":{"total_count":1}}"#,
+        r#"{"success":true,"result":[{"id":1,"source":"s","paused":false}],"result_info":{"total_count":1}}"#,
+        r#"{"success":true,"result":[{"id":"id","source":1,"paused":false}],"result_info":{"total_count":1}}"#,
+        r#"{"success":true,"result":[{"id":"id","source":"s","paused":0}],"result_info":{"total_count":1}}"#,
+        r#"{"success":true,"result":[{"id":"id","source":"s"}],"result_info":{"total_count":1}}"#,
+        r#"{"success":true,"result":[{"id":"ok","source":"s","paused":false},{"id":"bad","source":1,"paused":false}],"result_info":{"total_count":2}}"#,
+    ] {
+        let server = Server::start(vec![(200, Box::leak(body.to_owned().into_boxed_str()))]);
+        let (output, _) = run(
+            &[
+                "--format",
+                "json",
+                "--account",
+                "0123456789abcdef0123456789abcdef",
+                "capability",
+                "invoke",
+                "list_rags",
+                "--input",
+                "{}",
+                "--allow-egress",
+            ],
+            Some(&server.endpoint),
+            Some("token"),
+        );
+        assert!(
+            !output.status.success(),
+            "response unexpectedly accepted: {body}"
+        );
+        assert_eq!(server.finish().len(), 1);
+    }
+}
+
+#[test]
+fn capability_list_rags_retries_500_three_times() {
+    let server = Server::start(vec![(500, "{}"), (500, "{}"), (500, "{}")]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "list_rags",
+            "--input",
+            "{}",
+            "--allow-egress",
+        ],
+        Some(&server.endpoint),
+        Some("token-secret"),
+    );
+    assert!(!output.status.success());
+    assert_eq!(server.finish().len(), 3);
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("token-secret"));
+}
+
+#[test]
+fn capability_list_rags_retries_500_then_succeeds() {
+    let server = Server::start(vec![
+        (500, "{}"),
+        (
+            200,
+            r#"{"success":true,"result":[],"result_info":{"total_count":0}}"#,
+        ),
+    ]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "list_rags",
+            "--input",
+            "{}",
+            "--allow-egress",
+        ],
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(output.status.success());
+    assert_eq!(server.finish().len(), 2);
+}
+
+#[test]
+fn capability_list_rags_status_redaction_and_response_bound_are_enforced() {
+    let args = [
+        "--format",
+        "json",
+        "--account",
+        "0123456789abcdef0123456789abcdef",
+        "capability",
+        "invoke",
+        "list_rags",
+        "--input",
+        "{}",
+        "--allow-egress",
+    ];
+    for (status, kind) in [(400, "api"), (401, "auth")] {
+        let server = Server::start(vec![(
+            status,
+            r#"{"errors":[{"code":"credential-secret","message":"provider-secret-message"}]}"#,
+        )]);
+        let (output, _) = run(&args, Some(&server.endpoint), Some("credential-secret"));
+        assert_eq!(output.status.code(), Some(1));
+        assert_eq!(json_stdout(&output)["error"]["type"], kind);
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert!(!text.contains("provider-secret-message"));
+        assert!(!text.contains("credential-secret"));
+        assert_eq!(server.finish().len(), 1);
+    }
+
+    let server = Server::start(vec![
+        (
+            429,
+            r#"{"errors":[{"code":"credential-secret","message":"provider-secret-message"}]}"#,
+        );
+        3
+    ]);
+    let (output, _) = run(&args, Some(&server.endpoint), Some("credential-secret"));
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(json_stdout(&output)["error"]["type"], "network");
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(!text.contains("provider-secret-message"));
+    assert!(!text.contains("credential-secret"));
+    assert_eq!(server.finish().len(), 3);
+
+    let oversized: &'static str = Box::leak("x".repeat(8 * 1024 * 1024 + 1).into_boxed_str());
+    let server = Server::start(vec![(200, oversized)]);
+    let (output, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(json_stdout(&output)["error"]["type"], "network");
+    assert_eq!(
+        json_stdout(&output)["error"]["message"],
+        "response exceeds 8 MiB"
+    );
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_list_rags_preserves_numeric_total_count_exactly() {
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"result":[],"result_info":{"total_count":7.5}}"#,
+    )]);
+    let (output, _) = run(
+        &[
+            "--format",
+            "json",
+            "--account",
+            "0123456789abcdef0123456789abcdef",
+            "capability",
+            "invoke",
+            "list_rags",
+            "--input",
+            "{}",
+            "--allow-egress",
+        ],
+        Some(&server.endpoint),
+        Some("token"),
+    );
+    assert!(output.status.success());
+    assert_eq!(json_stdout(&output)["total_count"], 7.5);
+    assert_eq!(server.finish().len(), 1);
 }
 
 #[test]

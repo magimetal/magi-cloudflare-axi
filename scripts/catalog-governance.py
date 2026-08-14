@@ -18,7 +18,7 @@ METRICS = ROOT / "docs/cloudflare-capability-parity-metrics.json"
 REPORT = ROOT / "docs/cloudflare-capability-parity.md"
 COMMIT = "70ff690553722f731849ede6ba9ce98958395a23"
 REPO = "https://github.com/cloudflare/mcp-server-cloudflare"
-LEGACY_METADATA_SHA256 = "2d422869b10a6dc516742bad1668d90ffc49e3a4cfaeaf82e396ac05bd39d2e5"
+LEGACY_METADATA_SHA256 = "8dccf5d1e0dc4c14036a737d6d9039fbd5951dedc28a6c41e5e9f68abf11a8ce"
 SCHEMA_VERSION = 3
 SCHEMA_EVIDENCE_ID = "ev-phase1-canonical-schemas"
 SCHEMA_SOURCE_REF = f"https://github.com/cloudflare/mcp-server-cloudflare/commit/{COMMIT}"
@@ -30,8 +30,8 @@ SCHEMA_EVIDENCE_FACT = (
 )
 DEPENDENCY_PROVENANCE_COUNT = 803
 DEPENDENCY_PROVENANCE_SHA256 = "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04"
-OPERATION_BUNDLE_SHA256 = "522ffe6ea4b36098392d7cc8fe278d5839036f5d4e5a10a1219529063da09415"
-OPERATION_CONTRACT_HASHES = {'auditlogs_by_account_id': '630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac', 'd1_database_delete': 'd20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da', 'd1_database_get': '6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7', 'get_crawl_result': 'e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52', 'get_post': 'c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1', 'get_url_html_content': '5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909', 'get_url_json': '930b1ee212733b0fcd7e600bd346001ddb6e0154f99bbeebe27bc079e42cdb6d', 'get_url_links': '5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83', 'get_url_markdown': '853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed', 'get_url_pdf': 'c544d991b6a98bace228cd7eb1bb124bd4934a6fa1cf318523579769e9e9780d', 'get_url_screenshot': '97ac366335b2110918db9244d13dfb4bafc35492032810778fd52200497fdbdc', 'get_url_snapshot': '3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588', 'graphql_schema_overview': '72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc', 'list_browser_sessions': 'e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1', 'list_posts': 'f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c', 'list_tags': '7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd', 'logpush_jobs_by_account_id': 'cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef', 'scrape_url_elements': 'a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415', 'search_cloudflare_documentation': '9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41', 'search_posts': '50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91'}
+OPERATION_BUNDLE_SHA256 = "ebcb9c2c8d195e223854dd66919bf6cfc433d25f22d49f91f53f8ff75a154153"
+OPERATION_CONTRACT_HASHES = {'auditlogs_by_account_id': '630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac', 'd1_database_delete': 'd20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da', 'd1_database_get': '6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7', 'get_crawl_result': 'e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52', 'get_post': 'c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1', 'get_url_html_content': '5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909', 'get_url_json': '930b1ee212733b0fcd7e600bd346001ddb6e0154f99bbeebe27bc079e42cdb6d', 'get_url_links': '5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83', 'get_url_markdown': '853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed', 'get_url_pdf': 'c544d991b6a98bace228cd7eb1bb124bd4934a6fa1cf318523579769e9e9780d', 'get_url_screenshot': '97ac366335b2110918db9244d13dfb4bafc35492032810778fd52200497fdbdc', 'get_url_snapshot': '3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588', 'graphql_schema_overview': '72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc', 'list_browser_sessions': 'e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1', 'list_posts': 'f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c', 'list_rags': 'fef8065dad846d2ac68c9893fefafd68e59281516f595d0d788e84a2a4bf02d9', 'list_tags': '7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd', 'logpush_jobs_by_account_id': 'cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef', 'scrape_url_elements': 'a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415', 'search_cloudflare_documentation': '9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41', 'search_posts': '50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91'}
 
 OFFICIAL_DOCS = {
     "d1_database_delete": ("https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/delete/", "2026-08-11", "de0453348a3c58fb2510b64d6300831647c628eb3988acca56f7a9106edb7c5e"),
@@ -93,7 +93,7 @@ COMPLETE_STATUSES = {
 LEGACY_ENUMS = {"scope": {"public", "account", "zone", "custom"}, "operation": {"read", "write"}, "transport": {"rest", "graphql", "mcp", "public_http", "internal_binding", "custom_container"}, "cli_access": {"modeled", "raw_rest", "raw_graphql", "public_direct", "blocked", "mcp_remote"}}
 FAMILIES = {"ai-gateway": 5, "auditlogs": 1, "autorag": 3, "browser-rendering": 13, "cloudflare-blog": 4, "cloudflare-one-casb": 11, "demo-day": 1, "dex-analysis": 18, "dns-analytics": 3, "graphql": 6, "logpush": 1, "radar": 66, "sandbox-container": 7, "shared": 7, "stack-mcp": 2, "workers-bindings": 18, "workers-builds": 3, "workers-observability": 3}
 TRANSPORTS = {"public_http": 76, "rest": 81, "custom_container": 7, "graphql": 6, "internal_binding": 1, "mcp": 1}
-ACCESS = {"raw_rest": 122, "modeled": 11, "mcp_remote": 26, "public_direct": 6, "raw_graphql": 6, "blocked": 1}
+ACCESS = {"raw_rest": 121, "modeled": 12, "mcp_remote": 26, "public_direct": 6, "raw_graphql": 6, "blocked": 1}
 OPERATIONS = {"read": 150, "write": 22}
 BLOCKER_FAMILY = {"dex-analysis": "B-DEX", "cloudflare-one-casb": "B-CASB", "sandbox-container": "B-CONTAINER", "workers-observability": "B-OBS", "shared": "B-SHARED", "stack-mcp": "B-STACK"}
 RECORD_KEYS = {
@@ -365,8 +365,8 @@ def apply_schema_bundle(catalog):
             {"id": prefix + "-verification", "dimension": "verification", "provenance": {"kind": "hermetic_test", "test_id": test_id, "fact": "Hermetic exact-request transport test."}, "fact": "Hermetic exact-request transport test."},
             {"id": prefix + "-discovery", "dimension": "discovery", "provenance": {"kind": "generated_artifact", "artifact": "capabilities/cloudflare-operation-contracts.json", "sha256": json_sha256(operations), "fact": "Generated operation contract artifact.", "capability": name, "contract_sha256": contract["contract_sha256"]}, "fact": "Generated operation contract artifact."},
         ])
-        if name in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot", "get_post", "list_posts", "list_tags", "search_posts", "logpush_jobs_by_account_id", "auditlogs_by_account_id"}:
-            discovery_test = "tests/integration.rs::capability_browser_discovery_examples_are_exact" if name in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot"} else ("tests/integration.rs::capability_logpush_discovery_example_is_exact" if name == "logpush_jobs_by_account_id" else ("tests/integration.rs::capability_auditlogs_discovery_example_is_exact" if name == "auditlogs_by_account_id" else "tests/integration.rs::capability_blog_discovery_examples_are_exact"))
+        if name in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot", "get_post", "list_posts", "list_tags", "search_posts", "logpush_jobs_by_account_id", "auditlogs_by_account_id", "list_rags"}:
+            discovery_test = "tests/integration.rs::capability_browser_discovery_examples_are_exact" if name in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot"} else ("tests/integration.rs::capability_logpush_discovery_example_is_exact" if name == "logpush_jobs_by_account_id" else ("tests/integration.rs::capability_auditlogs_discovery_example_is_exact" if name == "auditlogs_by_account_id" else ("tests/integration.rs::capability_autorag_discovery_example_is_exact" if name == "list_rags" else "tests/integration.rs::capability_blog_discovery_examples_are_exact")))
             evidence.append({"id": prefix + "-discovery-test", "dimension": "discovery", "provenance": {"kind": "hermetic_test", "test_id": discovery_test, "fact": "Hermetic exact discovery example test."}, "fact": "Hermetic exact discovery example test."})
     catalog["evidence"] = sorted(evidence, key=lambda item: item["id"])
     for row in catalog["capabilities"]:
@@ -377,7 +377,8 @@ def apply_schema_bundle(catalog):
         if row["name"] in operation_by_name:
             blog = row["name"] in {"get_post", "list_posts", "list_tags", "search_posts", "logpush_jobs_by_account_id", "auditlogs_by_account_id"}
             browser = row["name"] in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot"}
-            row["parity"].update({"route": {"status": "complete", "evidence_ids": [prefix + "-route"]}, "behavior": {"status": "verified", "evidence_ids": [prefix + "-behavior", prefix + "-behavior-test"]}, "policy": {"status": "verified", "evidence_ids": [prefix + "-policy", prefix + "-policy-test"]}, "verification": {"status": "hermetic_verified", "evidence_ids": [prefix + "-verification"]}, "discovery": {"status": "verified" if blog or browser else "generated", "evidence_ids": [prefix + "-discovery"] + ([prefix + "-discovery-test"] if blog or browser else [])}, "external_blocker": {"status": "none", "evidence_ids": []}})
+            verified_discovery = blog or browser or row["name"] == "list_rags"
+            row["parity"].update({"route": {"status": "complete", "evidence_ids": [prefix + "-route"]}, "behavior": {"status": "verified", "evidence_ids": [prefix + "-behavior", prefix + "-behavior-test"]}, "policy": {"status": "verified", "evidence_ids": [prefix + "-policy", prefix + "-policy-test"]}, "verification": {"status": "hermetic_verified", "evidence_ids": [prefix + "-verification"]}, "discovery": {"status": "verified" if verified_discovery else "generated", "evidence_ids": [prefix + "-discovery"] + ([prefix + "-discovery-test"] if verified_discovery else [])}, "external_blocker": {"status": "none", "evidence_ids": []}})
     catalog["operation_artifacts"] = {"path": "capabilities/cloudflare-operation-contracts.json", "bundle_sha256": json_sha256({**operations, "bundle_sha256": None}), "contracts": [{"capability": item["capability"], "contract_sha256": item["contract_sha256"]} for item in operations["contracts"]]}
     catalog["schema_artifacts"] = {"bundle_sha256": json_sha256(bundle), "fixtures_sha256": json_sha256(fixtures)}
     catalog["legacy_metadata_sha256"] = legacy_digest(catalog["capabilities"])
@@ -565,9 +566,8 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             for dimension, statuses in active_statuses.items():
                 if row["parity"][dimension]["status"] in statuses:
                     fail(row["name"], f"completed {dimension} lacks operation contract")
-    if operations["version"] != "phase4f-operation-contracts-v1" or operations["source_commit"] != COMMIT:
+    if operations["version"] != "phase4g-operation-contracts-v1" or operations["source_commit"] != COMMIT:
         fail("$.operation_artifacts", "operation source mismatch")
-    if operations["canonicalization"] != "lexicographic compact JSON SHA-256; bundle hash sets bundle_sha256=null; each contract hash sets contract_sha256=null":
         fail("$.operation_artifacts", "operation canonicalization mismatch")
     by_name = {row["name"]: row for row in rows}
     if len(by_name) != len(rows):
@@ -596,7 +596,10 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             expected_keys["route"].add("fixed_headers")
             expected_keys["behavior"] |= {"projection_validation", "result_info"}
             expected_keys["evidence"] |= {"query_helper", "response_schema", "auth_scopes"}
-        if capability not in {"get_post", "list_posts", "list_tags", "search_posts", "auditlogs_by_account_id"}:
+        if capability == "list_rags":
+            expected_keys["behavior"] |= {"projection_validation", "result_info"}
+            expected_keys["evidence"] |= {"auth_scopes", "input_defaults", "api_client"}
+        if capability not in {"get_post", "list_posts", "list_tags", "search_posts", "auditlogs_by_account_id", "list_rags"}:
             expected_keys["evidence"].add("official_docs")
         elif capability in {"get_post", "list_posts", "list_tags", "search_posts"}:
             expected_keys["evidence"].add("pinned_deployment")
@@ -699,13 +702,17 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             if not deployment:
                 fail(path, "Blog operation deployment evidence required")
             validate_pinned_evidence(deployment, f"{path}.evidence.pinned_deployment")
-        elif capability != "auditlogs_by_account_id":
+        elif capability not in {"auditlogs_by_account_id", "list_rags"}:
             docs = contract["evidence"]["official_docs"]
             require_keys(docs, {"url", "documentation_date", "fact_sha256"}, set(), f"{path}.evidence.official_docs")
             if not valid_date(docs["documentation_date"]) or not is_hex(docs["fact_sha256"], 64):
                 fail(path, "invalid official operation evidence")
             if tuple(docs[key] for key in ("url", "documentation_date", "fact_sha256")) != OFFICIAL_DOCS[capability]:
                 fail(path, "official operation evidence digest pin mismatch")
+        if capability == "list_rags":
+            expected = {"route": {"transport": "rest", "method": "GET", "path_template": "/accounts/{account_id}/autorag/rags", "path_parameters": [{"name": "account_id", "source": "resolved_account", "format": "single_path_segment", "max_length": 32}], "query_parameters": [{"name": "page", "optional": True, "default": 1, "serialization": "javascript_string", "source": "input"}, {"name": "per_page", "optional": True, "default": 20, "serialization": "javascript_string", "source": "input"}], "body": "none", "scope": "account", "content_type": "application/json", "auth": "account"}, "behavior": {"output_projection": "autorags_and_total_count", "empty_state": "empty_array", "pagination": "page_per_page", "artifact": "none", "error": "strict_autorag_response_schema", "projection_validation": "full_response_before_projection", "result_info": "numeric_total_count"}, "safety": {"operation": "read", "destructive": False, "metered": False, "data_egress": True, "long_running": False, "retry_policy": "transient_read"}, "implementation": {"status": "verified", "adapter": "rest", "test_id": "tests/transport.rs::capability_list_rags_exact_request", "documentation_id": "cloudflare-autorag-list-rags", "reviewed_at": "2026-08-12"}, "evidence": {"pinned_handler": {"blob_oid": "82a5c852a9495569dc2e2f81a5713b79298ba8a4", "commit": COMMIT, "file": "apps/autorag/src/tools/autorag.tools.ts", "lines": "10-60", "source_sha256": "45a826e987690d0e03dec8387f06a0d2f30048da71c2ee6effb358a9dba127f0"}, "input_defaults": {"blob_oid": "6bb37934201dc963750d214e51c7caae479834ee", "commit": COMMIT, "file": "apps/autorag/src/types.ts", "lines": "1-4", "source_sha256": "cee736067ff85c697035ad0a77000fe251d3b2b7bdcf5d32f67eeb86ce03feec"}, "auth_scopes": {"blob_oid": "3036f8e33fb527637d1d69f4425a603a6ada7deb", "commit": COMMIT, "file": "apps/autorag/src/autorag.app.ts", "lines": "36-46", "source_sha256": "c9f743841e3bffa3d81fbab99fee32f5fada9e2029c8897f85f4558e6a9f1d07"}, "api_client": {"blob_oid": "b53d834e977cfb57467a2b1fe4f814f9c2bb2cc7", "commit": COMMIT, "file": "packages/mcp-common/src/cloudflare-api.ts", "lines": "8-18", "source_sha256": "353802917c4371c7fbc6298c1e4ad05a75a2402636f8c6bbe5c34319c488bd52"}}}
+            if any(contract[key] != expected[key] for key in ("route", "behavior", "safety", "implementation", "evidence")):
+                fail(path, "AutoRAG operation semantic or evidence mismatch")
         if capability == "logpush_jobs_by_account_id":
             expected = {"route": {"transport": "rest", "method": "GET", "path_template": "/accounts/{account_id}/logpush/jobs", "path_parameters": [{"name": "account_id", "source": "resolved_account", "format": "single_path_segment", "max_length": 32}], "query_parameters": [], "body": "none", "scope": "account", "content_type": "application/json", "auth": "account", "fixed_headers": {"Content-Type": "application/json", "portal-version": "2"}}, "behavior": {"output_projection": "strict_logpush_jobs_first_100", "empty_state": "empty_result", "pagination": "none", "artifact": "none", "error": "structured_cloudflare_api", "result_limit": 100, "projection_validation": "strict_optional_nullable_fields_and_unknown_field_stripping"}, "safety": {"operation": "read", "destructive": False, "metered": False, "data_egress": True, "long_running": False, "retry_policy": "never"}}
             if any(contract[key] != expected[key] for key in ("route", "behavior", "safety")): fail(path, "Logpush operation semantic mismatch")
@@ -742,6 +749,8 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             fail(path, "Logpush modeled access/path classification mismatch")
         if capability == "auditlogs_by_account_id" and (row["cli_access"] != "modeled" or row.get("path_template") != contract["route"]["path_template"]):
             fail(path, "Audit Logs modeled access/path classification mismatch")
+        if capability == "list_rags" and (row["cli_access"] != "modeled" or row.get("path_template") != contract["route"]["path_template"]):
+            fail(path, "AutoRAG modeled access/path classification mismatch")
         if capability == "search_cloudflare_documentation" and row["cli_access"] != "mcp_remote":
             fail(path, "MCP legacy metadata join mismatch")
         if capability not in {"get_url_html_content", "search_cloudflare_documentation"} and row.get("method") is not None and row["method"] != contract["route"]["method"]:
@@ -752,6 +761,8 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             evidence_items = (contract["evidence"]["pinned_handler"], contract["evidence"]["pinned_deployment"])
         elif capability == "auditlogs_by_account_id":
             evidence_items = (contract["evidence"]["pinned_handler"], contract["evidence"]["query_helper"], contract["evidence"]["response_schema"], contract["evidence"]["auth_scopes"])
+        elif capability == "list_rags":
+            evidence_items = (contract["evidence"]["pinned_handler"], contract["evidence"]["input_defaults"], contract["evidence"]["api_client"], contract["evidence"]["auth_scopes"])
         else:
             evidence_items = (contract["evidence"]["pinned_handler"], contract["evidence"].get("official_docs"))
         for evidence_item in evidence_items:
@@ -771,7 +782,7 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
 
         def exact_discovery(item):
             provenance = item["provenance"]
-            return (provenance["kind"] == "generated_artifact" and provenance.get("artifact") == "capabilities/cloudflare-operation-contracts.json" and provenance.get("capability") == capability and provenance.get("contract_sha256") == contract["contract_sha256"]) or (capability == "auditlogs_by_account_id" and provenance["kind"] == "hermetic_test" and provenance.get("test_id") == "tests/integration.rs::capability_auditlogs_discovery_example_is_exact") or (capability == "logpush_jobs_by_account_id" and provenance["kind"] == "hermetic_test" and provenance.get("test_id") == "tests/integration.rs::capability_logpush_discovery_example_is_exact") or (blog and provenance["kind"] == "hermetic_test" and provenance.get("test_id") == "tests/integration.rs::capability_blog_discovery_examples_are_exact") or (browser and provenance["kind"] == "hermetic_test" and provenance.get("test_id") == "tests/integration.rs::capability_browser_discovery_examples_are_exact")
+            return (provenance["kind"] == "generated_artifact" and provenance.get("artifact") == "capabilities/cloudflare-operation-contracts.json" and provenance.get("capability") == capability and provenance.get("contract_sha256") == contract["contract_sha256"]) or (capability == "auditlogs_by_account_id" and provenance["kind"] == "hermetic_test" and provenance.get("test_id") == "tests/integration.rs::capability_auditlogs_discovery_example_is_exact") or (capability == "logpush_jobs_by_account_id" and provenance["kind"] == "hermetic_test" and provenance.get("test_id") == "tests/integration.rs::capability_logpush_discovery_example_is_exact") or (capability == "list_rags" and provenance["kind"] == "hermetic_test" and provenance.get("test_id") == "tests/integration.rs::capability_autorag_discovery_example_is_exact") or (blog and provenance["kind"] == "hermetic_test" and provenance.get("test_id") == "tests/integration.rs::capability_blog_discovery_examples_are_exact") or (browser and provenance["kind"] == "hermetic_test" and provenance.get("test_id") == "tests/integration.rs::capability_browser_discovery_examples_are_exact")
         active_statuses = {
             "route": {"complete"},
             "behavior": {"specified", "verified"},
@@ -802,9 +813,8 @@ def validate(catalog):
         fail("$", "unsupported catalog envelope or pinned source")
     operations = json.loads(OPERATION_FILE.read_text())
     contracts = operations.get("contracts", [])
-    if operations.get("version") != "phase4f-operation-contracts-v1" or json_sha256({**operations, "bundle_sha256": None}) != OPERATION_BUNDLE_SHA256 or operations.get("bundle_sha256") != OPERATION_BUNDLE_SHA256 or operations.get("contract_count") != len(contracts) or contracts != sorted(contracts, key=lambda item: item.get("capability", "")) or len(contracts) != 20:
+    if operations.get("version") != "phase4g-operation-contracts-v1" or json_sha256({**operations, "bundle_sha256": None}) != OPERATION_BUNDLE_SHA256 or operations.get("bundle_sha256") != OPERATION_BUNDLE_SHA256 or operations.get("contract_count") != len(contracts) or contracts != sorted(contracts, key=lambda item: item.get("capability", "")) or len(contracts) != 21:
         fail("$.operation_artifacts", "operation bundle parsing or hash mismatch")
-    for contract in contracts:
         capability = contract.get("capability")
         unhashed = {**contract, "contract_sha256": None}
         if capability not in OPERATION_CONTRACT_HASHES or contract.get("contract_sha256") != OPERATION_CONTRACT_HASHES[capability] or json_sha256(unhashed) != OPERATION_CONTRACT_HASHES[capability]:
@@ -991,7 +1001,7 @@ def validate(catalog):
             fail("$.capabilities", f"{field} baseline mismatch")
     if sum("method" in row for row in rows) != 147:
         fail("$.capabilities", "method baseline mismatch")
-    if sum("path_template" in row for row in rows) != 17:
+    if sum("path_template" in row for row in rows) != 18:
         fail("$.capabilities", "path baseline mismatch")
     if sum("blocker" in row for row in rows) != 40:
         fail("$.capabilities", "legacy blocker baseline mismatch")
@@ -1415,6 +1425,49 @@ def self_test(catalog):
     ):
         changed = copy.deepcopy(catalog)
         row = next(row for row in changed["capabilities"] if row["name"] == "logpush_jobs_by_account_id")
+        row[field] = value
+        try:
+            validate(changed)
+        except (GovernanceError, KeyError, TypeError, json.JSONDecodeError):
+            rejected.append(label)
+        else:
+            fail("self-test", f"mutation accepted: {label}")
+
+    rags_index = next(index for index, contract in enumerate(operations["contracts"]) if contract["capability"] == "list_rags")
+    for label, mutate in (
+        ("AutoRAG query order mutation", lambda contract: contract["route"]["query_parameters"].reverse()),
+        ("AutoRAG page default mutation", lambda contract: contract["route"]["query_parameters"][0].__setitem__("default", 2)),
+        ("AutoRAG per-page default mutation", lambda contract: contract["route"]["query_parameters"][1].__setitem__("default", 21)),
+        ("AutoRAG retry mutation", lambda contract: contract["safety"].__setitem__("retry_policy", "never")),
+        ("AutoRAG projection mutation", lambda contract: contract["behavior"].__setitem__("output_projection", "raw")),
+        ("AutoRAG handler evidence mutation", lambda contract: contract["evidence"]["pinned_handler"].__setitem__("source_sha256", "0" * 64)),
+        ("AutoRAG defaults evidence mutation", lambda contract: contract["evidence"]["input_defaults"].__setitem__("source_sha256", "0" * 64)),
+        ("AutoRAG auth evidence mutation", lambda contract: contract["evidence"]["auth_scopes"].__setitem__("source_sha256", "0" * 64)),
+        ("AutoRAG client evidence mutation", lambda contract: contract["evidence"]["api_client"].__setitem__("source_sha256", "0" * 64)),
+    ):
+        changed = copy.deepcopy(operations)
+        mutate(changed["contracts"][rags_index])
+        changed["contracts"][rags_index]["contract_sha256"] = json_sha256({**changed["contracts"][rags_index], "contract_sha256": None})
+        changed["bundle_sha256"] = json_sha256({**changed, "bundle_sha256": None})
+        try:
+            validate_operation_contracts(catalog, changed, catalog["capabilities"], evidence)
+        except (GovernanceError, KeyError, TypeError):
+            rejected.append(label)
+        else:
+            fail("self-test", f"mutation accepted: {label}")
+
+    changed = copy.deepcopy(catalog)
+    rags_discovery = next(item for item in changed["evidence"] if item["id"] == "ev-operation-list_rags-discovery-test")
+    rags_discovery["provenance"]["test_id"] = "tests/integration.rs::capability_browser_discovery_examples_are_exact"
+    try:
+        validate(changed)
+    except (GovernanceError, KeyError, TypeError, json.JSONDecodeError):
+        rejected.append("AutoRAG unrelated discovery test mutation")
+    else:
+        fail("self-test", "mutation accepted: AutoRAG unrelated discovery test mutation")
+    for label, field, value in (("AutoRAG modeled access mutation", "cli_access", "raw_rest"), ("AutoRAG path metadata mutation", "path_template", "/invented")):
+        changed = copy.deepcopy(catalog)
+        row = next(row for row in changed["capabilities"] if row["name"] == "list_rags")
         row[field] = value
         try:
             validate(changed)

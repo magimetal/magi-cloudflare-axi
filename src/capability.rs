@@ -12,8 +12,8 @@ const INTEGRATION_TESTS: &str = include_str!("../tests/integration.rs");
 const MCP_TESTS: &str = include_str!("../tests/mcp.rs");
 pub const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
 const OPERATION_BUNDLE_SHA256: &str =
-    "522ffe6ea4b36098392d7cc8fe278d5839036f5d4e5a10a1219529063da09415";
-const OPERATION_NAMES: [&str; 20] = [
+    "ebcb9c2c8d195e223854dd66919bf6cfc433d25f22d49f91f53f8ff75a154153";
+const OPERATION_NAMES: [&str; 21] = [
     "auditlogs_by_account_id",
     "d1_database_delete",
     "d1_database_get",
@@ -29,13 +29,14 @@ const OPERATION_NAMES: [&str; 20] = [
     "graphql_schema_overview",
     "list_browser_sessions",
     "list_posts",
+    "list_rags",
     "list_tags",
     "logpush_jobs_by_account_id",
     "scrape_url_elements",
     "search_cloudflare_documentation",
     "search_posts",
 ];
-const OPERATION_HASHES: [&str; 20] = [
+const OPERATION_HASHES: [&str; 21] = [
     "630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac",
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
@@ -51,6 +52,7 @@ const OPERATION_HASHES: [&str; 20] = [
     "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc",
     "e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1",
     "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c",
+    "fef8065dad846d2ac68c9893fefafd68e59281516f595d0d788e84a2a4bf02d9",
     "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd",
     "cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef",
     "a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415",
@@ -66,8 +68,8 @@ const DEPENDENCY_PROVENANCE_COUNT: usize = 803;
 const DEPENDENCY_PROVENANCE_SHA256: &str =
     "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04";
 const LEGACY_METADATA_SHA256: &str =
-    "2d422869b10a6dc516742bad1668d90ffc49e3a4cfaeaf82e396ac05bd39d2e5";
-const LEGACY_METADATA_FNV1A: u64 = 0xa47505ebf83add4b;
+    "8dccf5d1e0dc4c14036a737d6d9039fbd5951dedc28a6c41e5e9f68abf11a8ce";
+const LEGACY_METADATA_FNV1A: u64 = 0x41034c7241e16aed;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -733,6 +735,22 @@ fn validate_operation_contract(contract: &Value) -> Result<(), serde_json::Error
         }
     }
 
+    if contract["capability"] == "list_rags" {
+        let expected_route = json!({"transport":"rest","method":"GET","path_template":"/accounts/{account_id}/autorag/rags","path_parameters":[{"name":"account_id","source":"resolved_account","format":"single_path_segment","max_length":32}],"query_parameters":[{"name":"page","optional":true,"default":1,"serialization":"javascript_string","source":"input"},{"name":"per_page","optional":true,"default":20,"serialization":"javascript_string","source":"input"}],"body":"none","scope":"account","content_type":"application/json","auth":"account"});
+        let expected_behavior = json!({"output_projection":"autorags_and_total_count","empty_state":"empty_array","pagination":"page_per_page","artifact":"none","error":"strict_autorag_response_schema","projection_validation":"full_response_before_projection","result_info":"numeric_total_count"});
+        let expected_safety = json!({"operation":"read","destructive":false,"metered":false,"data_egress":true,"long_running":false,"retry_policy":"transient_read"});
+        let expected_implementation = json!({"status":"verified","adapter":"rest","test_id":"tests/transport.rs::capability_list_rags_exact_request","documentation_id":"cloudflare-autorag-list-rags","reviewed_at":"2026-08-12"});
+        let expected_evidence = json!({"pinned_handler":{"blob_oid":"82a5c852a9495569dc2e2f81a5713b79298ba8a4","commit":SOURCE_COMMIT,"file":"apps/autorag/src/tools/autorag.tools.ts","lines":"10-60","source_sha256":"45a826e987690d0e03dec8387f06a0d2f30048da71c2ee6effb358a9dba127f0"},"input_defaults":{"blob_oid":"6bb37934201dc963750d214e51c7caae479834ee","commit":SOURCE_COMMIT,"file":"apps/autorag/src/types.ts","lines":"1-4","source_sha256":"cee736067ff85c697035ad0a77000fe251d3b2b7bdcf5d32f67eeb86ce03feec"},"auth_scopes":{"blob_oid":"3036f8e33fb527637d1d69f4425a603a6ada7deb","commit":SOURCE_COMMIT,"file":"apps/autorag/src/autorag.app.ts","lines":"36-46","source_sha256":"c9f743841e3bffa3d81fbab99fee32f5fada9e2029c8897f85f4558e6a9f1d07"},"api_client":{"blob_oid":"b53d834e977cfb57467a2b1fe4f814f9c2bb2cc7","commit":SOURCE_COMMIT,"file":"packages/mcp-common/src/cloudflare-api.ts","lines":"8-18","source_sha256":"353802917c4371c7fbc6298c1e4ad05a75a2402636f8c6bbe5c34319c488bd52"}});
+        if contract["route"] != expected_route
+            || contract["behavior"] != expected_behavior
+            || contract["safety"] != expected_safety
+            || contract["implementation"] != expected_implementation
+            || contract["evidence"] != expected_evidence
+        {
+            return Err(invalid("AutoRAG operation semantic or evidence mismatch"));
+        }
+    }
+
     Ok(())
 }
 
@@ -1198,6 +1216,7 @@ fn validate_operation_evidence(
     let blog = ["get_post", "list_posts", "list_tags", "search_posts"].contains(&capability);
     let logpush = capability == "logpush_jobs_by_account_id";
     let auditlogs = capability == "auditlogs_by_account_id";
+    let autorag = capability == "list_rags";
     let complete = |dimension| match dimension {
         "route" => row.parity.route.status == RouteStatus::Complete,
         "behavior" => matches!(
@@ -1298,6 +1317,9 @@ fn validate_operation_evidence(
                             || (logpush
                                 && test_id
                                     == "tests/integration.rs::capability_logpush_discovery_example_is_exact")
+                            || (autorag
+                                && test_id
+                                    == "tests/integration.rs::capability_autorag_discovery_example_is_exact")
                     }
                     _ => false,
                 },
@@ -1360,8 +1382,7 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
     let contracts = operations["contracts"]
         .as_array()
         .ok_or_else(|| invalid("operation contracts array required"))?;
-    if operations["version"] != "phase4f-operation-contracts-v1"
-        || operations["source_commit"] != SOURCE_COMMIT
+    if operations["version"] != "phase4g-operation-contracts-v1"
         || operations["contract_count"] != OPERATION_NAMES.len()
         || contracts.len() != OPERATION_NAMES.len()
         || json_sha256(&operation_root)? != OPERATION_BUNDLE_SHA256
@@ -1721,10 +1742,10 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             != BTreeMap::from([
                 ("blocked", 1),
                 ("mcp_remote", 26),
-                ("modeled", 11),
+                ("modeled", 12),
                 ("public_direct", 6),
                 ("raw_graphql", 6),
-                ("raw_rest", 122),
+                ("raw_rest", 121),
             ])
         || operation != BTreeMap::from([("read", 150), ("write", 22)])
         || c.capabilities
@@ -1736,7 +1757,7 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             .iter()
             .filter(|row| row.path_template.is_some())
             .count()
-            != 17
+            != 18
         || c.capabilities
             .iter()
             .filter(|row| row.blocker.is_some())
@@ -1819,7 +1840,7 @@ pub fn access_recipe(e: &Capability) -> Value {
         "method": e.method,
         "path_template": e.path_template,
         "blocker": e.blocker,
-        "next_command": if verified { match e.name.as_str() { "auditlogs_by_account_id" => "magi-cloudflare-axi capability invoke auditlogs_by_account_id --input '{\"since\":\"<since>\",\"before\":\"<before>\"}' --allow-egress".to_string(), "get_post" => "magi-cloudflare-axi capability invoke get_post --input '{\"slug\":\"<slug>\"}'".to_string(), "list_browser_sessions" | "list_posts" | "list_tags" => format!("magi-cloudflare-axi capability invoke {} --input '{{}}'", e.name), "logpush_jobs_by_account_id" => "magi-cloudflare-axi capability invoke logpush_jobs_by_account_id --input '{}' --allow-egress".to_string(), "search_posts" => "magi-cloudflare-axi capability invoke search_posts --input '{\"query\":\"<query>\"}'".to_string(), "get_url_pdf" | "get_url_screenshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}' --output <path>", e.name), "get_url_markdown" | "get_url_links" | "get_url_json" | "get_url_snapshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}'", e.name), "get_crawl_result" => "magi-cloudflare-axi capability invoke get_crawl_result --input '{\"job_id\":\"<job_id>\"}'".to_string(), "scrape_url_elements" => "magi-cloudflare-axi capability invoke scrape_url_elements --input '{\"url\":\"<url>\",\"elements\":[{\"selector\":\"h1\"}]}'".to_string(), _ => format!("magi-cloudflare-axi capability invoke {} --input '<json>'", e.name) } } else { format!("magi-cloudflare-axi tool schema {} --server <server>", e.name) },
+        "next_command": if verified { match e.name.as_str() { "auditlogs_by_account_id" => "magi-cloudflare-axi capability invoke auditlogs_by_account_id --input '{\"since\":\"<since>\",\"before\":\"<before>\"}' --allow-egress".to_string(), "get_post" => "magi-cloudflare-axi capability invoke get_post --input '{\"slug\":\"<slug>\"}'".to_string(), "list_browser_sessions" | "list_posts" | "list_tags" => format!("magi-cloudflare-axi capability invoke {} --input '{{}}'", e.name), "list_rags" => "magi-cloudflare-axi capability invoke list_rags --input '{}' --allow-egress".to_string(), "logpush_jobs_by_account_id" => "magi-cloudflare-axi capability invoke logpush_jobs_by_account_id --input '{}' --allow-egress".to_string(), "search_posts" => "magi-cloudflare-axi capability invoke search_posts --input '{\"query\":\"<query>\"}'".to_string(), "get_url_pdf" | "get_url_screenshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}' --output <path>", e.name), "get_url_markdown" | "get_url_links" | "get_url_json" | "get_url_snapshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}'", e.name), "get_crawl_result" => "magi-cloudflare-axi capability invoke get_crawl_result --input '{\"job_id\":\"<job_id>\"}'".to_string(), "scrape_url_elements" => "magi-cloudflare-axi capability invoke scrape_url_elements --input '{\"url\":\"<url>\",\"elements\":[{\"selector\":\"h1\"}]}'".to_string(), _ => format!("magi-cloudflare-axi capability invoke {} --input '<json>'", e.name) } } else { format!("magi-cloudflare-axi tool schema {} --server <server>", e.name) },
         "warning": if verified { "route, behavior, policy, and hermetic verification are complete; discovery remains separately gated" } else { "pinned registration-input schema is complete; live schema may vary by request context, and route/behavior/policy evidence remains incomplete" }
     })
 }
@@ -1955,6 +1976,30 @@ mod tests {
             recipe["next_command"],
             "magi-cloudflare-axi capability invoke logpush_jobs_by_account_id --input '{}' --allow-egress"
         );
+    }
+
+    #[test]
+    fn autorag_recipe_and_actual_transport_discovery_symbols_are_pinned() {
+        let capability = get("list_rags").unwrap().unwrap();
+        let recipe = access_recipe(&capability);
+        assert_eq!(recipe["status"], "operation_verified");
+        assert_eq!(recipe["catalog_access"], "modeled");
+        assert_eq!(recipe["scope"], "account");
+        assert_eq!(recipe["method"], "GET");
+        assert_eq!(
+            recipe["path_template"],
+            "/accounts/{account_id}/autorag/rags"
+        );
+        assert_eq!(
+            recipe["next_command"],
+            "magi-cloudflare-axi capability invoke list_rags --input '{}' --allow-egress"
+        );
+        assert!(valid_test_id(
+            "tests/transport.rs::capability_list_rags_exact_request"
+        ));
+        assert!(valid_test_id(
+            "tests/integration.rs::capability_autorag_discovery_example_is_exact"
+        ));
     }
 
     #[test]

@@ -6,8 +6,8 @@ use std::collections::BTreeSet;
 
 const CONTRACTS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
-const BUNDLE_SHA256: &str = "522ffe6ea4b36098392d7cc8fe278d5839036f5d4e5a10a1219529063da09415";
-const CONTRACT_NAMES: [&str; 20] = [
+const BUNDLE_SHA256: &str = "ebcb9c2c8d195e223854dd66919bf6cfc433d25f22d49f91f53f8ff75a154153";
+const CONTRACT_NAMES: [&str; 21] = [
     "auditlogs_by_account_id",
     "d1_database_delete",
     "d1_database_get",
@@ -23,13 +23,14 @@ const CONTRACT_NAMES: [&str; 20] = [
     "graphql_schema_overview",
     "list_browser_sessions",
     "list_posts",
+    "list_rags",
     "list_tags",
     "logpush_jobs_by_account_id",
     "scrape_url_elements",
     "search_cloudflare_documentation",
     "search_posts",
 ];
-const CONTRACT_HASHES: [&str; 20] = [
+const CONTRACT_HASHES: [&str; 21] = [
     "630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac",
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
@@ -45,6 +46,7 @@ const CONTRACT_HASHES: [&str; 20] = [
     "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc",
     "e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1",
     "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c",
+    "fef8065dad846d2ac68c9893fefafd68e59281516f595d0d788e84a2a4bf02d9",
     "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd",
     "cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef",
     "a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415",
@@ -120,7 +122,7 @@ fn contracts() -> Result<Bundle, AppError> {
             .map(|c| c.capability.as_str())
             .collect::<Vec<_>>()
             != CONTRACT_NAMES
-        || bundle.version != "phase4f-operation-contracts-v1"
+        || bundle.version != "phase4g-operation-contracts-v1"
     {
         return Err(AppError::api(
             "embedded operation contract envelope is invalid",
@@ -507,6 +509,35 @@ fn validate_contract(c: &Contract) -> Result<(), AppError> {
             || c.safety.operation != "write")
     {
         return Err(AppError::api("D1 delete safety mismatch"));
+    }
+    if c.capability == "list_rags" {
+        let expected_route = json!({"auth":"account","body":"none","content_type":"application/json","method":"GET","path_parameters":[{"format":"single_path_segment","max_length":32,"name":"account_id","source":"resolved_account"}],"path_template":"/accounts/{account_id}/autorag/rags","query_parameters":[{"default":1,"name":"page","optional":true,"serialization":"javascript_string","source":"input"},{"default":20,"name":"per_page","optional":true,"serialization":"javascript_string","source":"input"}],"scope":"account","transport":"rest"});
+        let expected_behavior = json!({"artifact":"none","empty_state":"empty_array","error":"strict_autorag_response_schema","output_projection":"autorags_and_total_count","pagination":"page_per_page","projection_validation":"full_response_before_projection","result_info":"numeric_total_count"});
+        let expected_safety = Safety {
+            destructive: false,
+            operation: "read".into(),
+            metered: false,
+            data_egress: true,
+            long_running: false,
+            retry_policy: "transient_read".into(),
+        };
+        let expected_implementation = json!({"adapter":"rest","documentation_id":"cloudflare-autorag-list-rags","reviewed_at":"2026-08-12","status":"verified","test_id":"tests/transport.rs::capability_list_rags_exact_request"});
+        let expected_evidence = json!({"auth_scopes":{"blob_oid":"3036f8e33fb527637d1d69f4425a603a6ada7deb","commit":SOURCE_COMMIT,"file":"apps/autorag/src/autorag.app.ts","lines":"36-46","source_sha256":"c9f743841e3bffa3d81fbab99fee32f5fada9e2029c8897f85f4558e6a9f1d07"},"input_defaults":{"blob_oid":"6bb37934201dc963750d214e51c7caae479834ee","commit":SOURCE_COMMIT,"file":"apps/autorag/src/types.ts","lines":"1-4","source_sha256":"cee736067ff85c697035ad0a77000fe251d3b2b7bdcf5d32f67eeb86ce03feec"},"pinned_handler":{"blob_oid":"82a5c852a9495569dc2e2f81a5713b79298ba8a4","commit":SOURCE_COMMIT,"file":"apps/autorag/src/tools/autorag.tools.ts","lines":"10-60","source_sha256":"45a826e987690d0e03dec8387f06a0d2f30048da71c2ee6effb358a9dba127f0"},"api_client":{"blob_oid":"b53d834e977cfb57467a2b1fe4f814f9c2bb2cc7","commit":SOURCE_COMMIT,"file":"packages/mcp-common/src/cloudflare-api.ts","lines":"8-18","source_sha256":"353802917c4371c7fbc6298c1e4ad05a75a2402636f8c6bbe5c34319c488bd52"}});
+        if c.route != expected_route
+            || c.behavior != expected_behavior
+            || c.safety.operation != expected_safety.operation
+            || c.safety.destructive != expected_safety.destructive
+            || c.safety.metered != expected_safety.metered
+            || c.safety.data_egress != expected_safety.data_egress
+            || c.safety.long_running != expected_safety.long_running
+            || c.safety.retry_policy != expected_safety.retry_policy
+            || c.implementation != expected_implementation
+            || c.evidence != expected_evidence
+        {
+            return Err(AppError::api(
+                "AutoRAG list_rags operation semantic or evidence mismatch",
+            ));
+        }
     }
     Ok(())
 }
@@ -1281,7 +1312,7 @@ fn javascript_number_string(value: &Value) -> Result<String, AppError> {
     let number = value
         .as_f64()
         .filter(|number| number.is_finite())
-        .ok_or_else(|| AppError::usage("audit log numeric query value is invalid"))?;
+        .ok_or_else(|| AppError::usage("numeric query value is invalid"))?;
     if number == 0.0 {
         return Ok("0".into());
     }
@@ -1291,7 +1322,7 @@ fn javascript_number_string(value: &Value) -> Result<String, AppError> {
     if let Some((mantissa, exponent)) = text.split_once(['e', 'E']) {
         let exponent = exponent
             .parse::<i32>()
-            .map_err(|_| AppError::usage("audit log numeric query value cannot be serialized"))?;
+            .map_err(|_| AppError::usage("numeric query value cannot be serialized"))?;
         return Ok(format!(
             "{}{mantissa}e{}{exponent}",
             if negative { "-" } else { "" },
@@ -1319,7 +1350,7 @@ fn javascript_number_string(value: &Value) -> Result<String, AppError> {
     if absolute < 1e-6 {
         let fraction = text
             .strip_prefix("0.")
-            .ok_or_else(|| AppError::usage("audit log numeric query value cannot be serialized"))?;
+            .ok_or_else(|| AppError::usage("numeric query value cannot be serialized"))?;
         let zeros = fraction.bytes().take_while(|byte| *byte == b'0').count();
         let digits = fraction[zeros..].trim_end_matches('0');
         let (first, rest) = digits.split_at(1);
@@ -1547,18 +1578,17 @@ fn browser_request(
             client::RetryPolicy::Never,
         )
     };
-    let r = client::CloudflareClient::new(cfg.clone(), config::auth_for(&cfg)?)?.request(
-        client::RequestOptions {
-            method,
-            path,
-            query: vec![],
-            body: (method != client::Method::Get).then_some(body),
-            allow_write: false,
-            confirm_delete: None,
-            retry_policy,
-            allow_classified_read_post: true,
-        },
-    )?;
+    let auth = config::auth_for(&cfg)?;
+    let r = client::CloudflareClient::new(cfg, auth)?.request(client::RequestOptions {
+        method,
+        path,
+        query: vec![],
+        body: (method != client::Method::Get).then_some(body),
+        allow_write: false,
+        confirm_delete: None,
+        retry_policy,
+        allow_classified_read_post: true,
+    })?;
     if name == "list_browser_sessions" {
         let result = if r.envelope.is_array() {
             r.envelope
@@ -1822,8 +1852,9 @@ pub fn binary_request(
         ),
         _ => return Err(AppError::usage("unsupported binary capability")),
     };
-    let response = client::CloudflareClient::new(cfg.clone(), config::auth_for(&cfg)?)?
-        .request_binary(client::RequestOptions {
+    let auth = config::auth_for(&cfg)?;
+    let response =
+        client::CloudflareClient::new(cfg, auth)?.request_binary(client::RequestOptions {
             method: client::Method::Post,
             path: format!("/accounts/{account}/browser-run/{suffix}"),
             query: vec![],
@@ -1853,6 +1884,89 @@ pub fn binary_request(
     Ok(metadata)
 }
 
+fn autorag_request(
+    input: &Map<String, Value>,
+    endpoint: Option<&str>,
+    cli_account: Option<String>,
+) -> Result<Value, AppError> {
+    let mut cfg = config::load(endpoint.map(str::to_owned), cli_account, None)?;
+    if let (Some(a), Some(i)) = (
+        cfg.account.as_deref(),
+        input.get("account_id").and_then(Value::as_str),
+    ) {
+        if a != i {
+            return Err(AppError::usage(
+                "input account_id conflicts with resolved account scope",
+            ));
+        }
+    }
+    if cfg.account.is_none() {
+        cfg.account = input
+            .get("account_id")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+    }
+    let account = path_segment(
+        cfg.account.as_deref().ok_or_else(|| {
+            AppError::usage("account scope required; use --account or input account_id")
+        })?,
+        "account_id",
+        Some(32),
+    )?;
+    let query = [
+        (
+            "page",
+            input.get("page").cloned().unwrap_or_else(|| json!(1)),
+        ),
+        (
+            "per_page",
+            input.get("per_page").cloned().unwrap_or_else(|| json!(20)),
+        ),
+    ]
+    .into_iter()
+    .map(|(k, v)| Ok::<_, AppError>((k.to_owned(), javascript_number_string(&v)?)))
+    .collect::<Result<Vec<_>, _>>()?;
+    let auth = config::auth_for(&cfg)?;
+    let response = client::CloudflareClient::new(cfg, auth)?.request(client::RequestOptions {
+        method: client::Method::Get,
+        path: format!("/accounts/{account}/autorag/rags"),
+        query,
+        body: None,
+        allow_write: false,
+        confirm_delete: None,
+        retry_policy: client::RetryPolicy::TransientRead,
+        allow_classified_read_post: false,
+    })?;
+    let root = response
+        .envelope
+        .as_object()
+        .ok_or_else(|| AppError::api("AutoRAG response envelope is malformed"))?;
+    if root.get("success") != Some(&Value::Bool(true)) {
+        return Err(AppError::api("AutoRAG response envelope is malformed"));
+    }
+    let rows = root
+        .get("result")
+        .and_then(Value::as_array)
+        .ok_or_else(|| AppError::api("AutoRAG result must be an array"))?;
+    let info = root
+        .get("result_info")
+        .and_then(Value::as_object)
+        .ok_or_else(|| AppError::api("AutoRAG result_info must be an object"))?;
+    let total = info
+        .get("total_count")
+        .filter(|v| v.is_number())
+        .cloned()
+        .ok_or_else(|| AppError::api("AutoRAG total_count must be numeric"))?;
+    let mut out = Vec::with_capacity(rows.len());
+    for row in rows {
+        let o = row
+            .as_object()
+            .ok_or_else(|| AppError::api("AutoRAG result entry must be an object"))?;
+        out.push(json!({"id": o.get("id").and_then(Value::as_str).ok_or_else(|| AppError::api("AutoRAG id must be a string"))?, "source": o.get("source").and_then(Value::as_str).ok_or_else(|| AppError::api("AutoRAG source must be a string"))?, "paused": o.get("paused").and_then(Value::as_bool).ok_or_else(|| AppError::api("AutoRAG paused must be boolean"))?}));
+    }
+    Ok(json!({"autorags": out, "total_count": total}))
+}
+
 pub fn invoke(
     name: &str,
     input: Value,
@@ -1879,6 +1993,7 @@ pub fn invoke(
         }
         "logpush_jobs_by_account_id" => logpush_request(&input, endpoint.as_deref(), cli_account),
         "auditlogs_by_account_id" => auditlogs_request(&input, endpoint.as_deref(), cli_account),
+        "list_rags" => autorag_request(&input, endpoint.as_deref(), cli_account),
         "search_cloudflare_documentation" => {
             mcp::verified_call(name, Value::Object(input), mcp_endpoint.as_deref())
         }
