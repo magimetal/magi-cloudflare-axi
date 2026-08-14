@@ -12,8 +12,9 @@ const INTEGRATION_TESTS: &str = include_str!("../tests/integration.rs");
 const MCP_TESTS: &str = include_str!("../tests/mcp.rs");
 pub const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
 const OPERATION_BUNDLE_SHA256: &str =
-    "f4b9397b7bbae4e88838e9f1991c4c02faef3c759bffd9ac2bf7933c3e801ac2";
-const OPERATION_NAMES: [&str; 19] = [
+    "522ffe6ea4b36098392d7cc8fe278d5839036f5d4e5a10a1219529063da09415";
+const OPERATION_NAMES: [&str; 20] = [
+    "auditlogs_by_account_id",
     "d1_database_delete",
     "d1_database_get",
     "get_crawl_result",
@@ -34,7 +35,8 @@ const OPERATION_NAMES: [&str; 19] = [
     "search_cloudflare_documentation",
     "search_posts",
 ];
-const OPERATION_HASHES: [&str; 19] = [
+const OPERATION_HASHES: [&str; 20] = [
+    "630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac",
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
     "e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52",
@@ -64,8 +66,8 @@ const DEPENDENCY_PROVENANCE_COUNT: usize = 803;
 const DEPENDENCY_PROVENANCE_SHA256: &str =
     "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04";
 const LEGACY_METADATA_SHA256: &str =
-    "32479dc918a846191e809218bf13018ab979c9150208ee66c66631dbf4b36ec4";
-const LEGACY_METADATA_FNV1A: u64 = 0x84b2c32903e383a1;
+    "2d422869b10a6dc516742bad1668d90ffc49e3a4cfaeaf82e396ac05bd39d2e5";
+const LEGACY_METADATA_FNV1A: u64 = 0xa47505ebf83add4b;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -705,9 +707,35 @@ fn validate_operation_contract(contract: &Value) -> Result<(), serde_json::Error
             return Err(invalid("Logpush operation semantic or evidence mismatch"));
         }
     }
+    if contract["capability"] == "auditlogs_by_account_id" {
+        let handler = &contract["evidence"]["pinned_handler"];
+        let expected_query = json!([{"name":"account_name","optional":true,"source":"input"},{"name":"action_result","optional":true,"source":"input"},{"name":"action_type","optional":true,"source":"input"},{"name":"actor_context","optional":true,"source":"input"},{"name":"actor_email","optional":true,"source":"input"},{"name":"actor_id","optional":true,"source":"input"},{"name":"actor_ip_address","optional":true,"source":"input"},{"name":"actor_token_id","optional":true,"source":"input"},{"name":"actor_token_name","optional":true,"source":"input"},{"name":"actor_type","optional":true,"source":"input"},{"name":"audit_log_id","optional":true,"source":"input"},{"name":"raw_cf_ray_id","optional":true,"source":"input"},{"name":"raw_method","optional":true,"source":"input"},{"name":"raw_status_code","optional":true,"serialization":"javascript_string","source":"input"},{"name":"raw_uri","optional":true,"source":"input"},{"name":"resource_id","optional":true,"source":"input"},{"name":"resource_product","optional":true,"source":"input"},{"name":"resource_type","optional":true,"source":"input"},{"name":"resource_scope","optional":true,"source":"input"},{"name":"zone_id","optional":true,"source":"input"},{"name":"zone_name","optional":true,"source":"input"},{"name":"since","optional":false,"source":"input"},{"name":"before","optional":false,"source":"input"},{"name":"direction","optional":true,"source":"input"},{"default":10,"name":"limit","optional":true,"serialization":"javascript_string","source":"input"},{"name":"cursor","optional":true,"source":"input"}]);
+        if contract["route"]
+            != json!({"transport":"rest","method":"GET","path_template":"/accounts/{account_id}/logs/audit","path_parameters":[{"name":"account_id","source":"resolved_account","format":"single_path_segment","max_length":32}],"query_parameters":expected_query,"body":"none","scope":"account","content_type":"application/json","auth":"account","fixed_headers":{"Content-Type":"application/json","portal-version":"2"}})
+            || contract["behavior"]
+                != json!({"output_projection":"strict_trimmed_audit_logs","empty_state":"logs_empty_with_result_info","pagination":"cursor_result_info","artifact":"none","error":"pinned_audit_logs_response_schema","projection_validation":"full_response_before_projection","result_info":"count_and_optional_cursor"})
+            || contract["safety"]
+                != json!({"operation":"read","destructive":false,"metered":false,"data_egress":true,"long_running":false,"retry_policy":"never"})
+            || contract["implementation"]
+                != json!({"status":"verified","adapter":"rest","test_id":"tests/transport.rs::capability_auditlogs_by_account_id_exact_request","documentation_id":"cloudflare-auditlogs-list-account","reviewed_at":"2026-08-12"})
+            || handler
+                != &json!({"commit":SOURCE_COMMIT,"file":"apps/auditlogs/src/tools/auditlogs.tools.ts","blob_oid":"0c86a79c6dabdad38667f835e3b671a982d293f4","lines":"181-278","source_sha256":"36d58e2948d20662bc297bc50ac64f659bf5241515900a6215322d16bf081e2e"})
+            || contract["evidence"]["response_schema"]["source_sha256"]
+                != "1eb3d816d570a1e6af1fd55fddfdcd854bd55f0bac68c565d03d7480c590557f"
+            || contract["evidence"]["query_helper"]["source_sha256"]
+                != "31c1f165a446e241dc93f4880445ad2ea096a9b11a7b757e3e82cc2f63d230d0"
+            || contract["evidence"]["auth_scopes"]["source_sha256"]
+                != "4478bfffaf7e1534767c516a86173a803cc8820fc8345d274ea67413f1c7693f"
+        {
+            return Err(invalid(
+                "Audit Logs operation semantic or evidence mismatch",
+            ));
+        }
+    }
 
     Ok(())
 }
+
 fn is_lower_hex(value: Option<&str>, length: usize) -> bool {
     value.is_some_and(|value| {
         value.len() == length
@@ -1169,6 +1197,7 @@ fn validate_operation_evidence(
     .contains(&capability);
     let blog = ["get_post", "list_posts", "list_tags", "search_posts"].contains(&capability);
     let logpush = capability == "logpush_jobs_by_account_id";
+    let auditlogs = capability == "auditlogs_by_account_id";
     let complete = |dimension| match dimension {
         "route" => row.parity.route.status == RouteStatus::Complete,
         "behavior" => matches!(
@@ -1263,6 +1292,9 @@ fn validate_operation_evidence(
                             || (blog
                                 && test_id
                                     == "tests/integration.rs::capability_blog_discovery_examples_are_exact")
+                            || (auditlogs
+                                && test_id
+                                    == "tests/integration.rs::capability_auditlogs_discovery_example_is_exact")
                             || (logpush
                                 && test_id
                                     == "tests/integration.rs::capability_logpush_discovery_example_is_exact")
@@ -1328,7 +1360,7 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
     let contracts = operations["contracts"]
         .as_array()
         .ok_or_else(|| invalid("operation contracts array required"))?;
-    if operations["version"] != "phase4e-operation-contracts-v1"
+    if operations["version"] != "phase4f-operation-contracts-v1"
         || operations["source_commit"] != SOURCE_COMMIT
         || operations["contract_count"] != OPERATION_NAMES.len()
         || contracts.len() != OPERATION_NAMES.len()
@@ -1689,10 +1721,10 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             != BTreeMap::from([
                 ("blocked", 1),
                 ("mcp_remote", 26),
-                ("modeled", 10),
+                ("modeled", 11),
                 ("public_direct", 6),
                 ("raw_graphql", 6),
-                ("raw_rest", 123),
+                ("raw_rest", 122),
             ])
         || operation != BTreeMap::from([("read", 150), ("write", 22)])
         || c.capabilities
@@ -1704,7 +1736,7 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             .iter()
             .filter(|row| row.path_template.is_some())
             .count()
-            != 16
+            != 17
         || c.capabilities
             .iter()
             .filter(|row| row.blocker.is_some())
@@ -1787,7 +1819,7 @@ pub fn access_recipe(e: &Capability) -> Value {
         "method": e.method,
         "path_template": e.path_template,
         "blocker": e.blocker,
-        "next_command": if verified { match e.name.as_str() { "get_post" => "magi-cloudflare-axi capability invoke get_post --input '{\"slug\":\"<slug>\"}'".to_string(), "list_browser_sessions" | "list_posts" | "list_tags" => format!("magi-cloudflare-axi capability invoke {} --input '{{}}'", e.name), "logpush_jobs_by_account_id" => "magi-cloudflare-axi capability invoke logpush_jobs_by_account_id --input '{}' --allow-egress".to_string(), "search_posts" => "magi-cloudflare-axi capability invoke search_posts --input '{\"query\":\"<query>\"}'".to_string(), "get_url_pdf" | "get_url_screenshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}' --output <path>", e.name), "get_url_markdown" | "get_url_links" | "get_url_json" | "get_url_snapshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}'", e.name), "get_crawl_result" => "magi-cloudflare-axi capability invoke get_crawl_result --input '{\"job_id\":\"<job_id>\"}'".to_string(), "scrape_url_elements" => "magi-cloudflare-axi capability invoke scrape_url_elements --input '{\"url\":\"<url>\",\"elements\":[{\"selector\":\"h1\"}]}'".to_string(), _ => format!("magi-cloudflare-axi capability invoke {} --input '<json>'", e.name) } } else { format!("magi-cloudflare-axi tool schema {} --server <server>", e.name) },
+        "next_command": if verified { match e.name.as_str() { "auditlogs_by_account_id" => "magi-cloudflare-axi capability invoke auditlogs_by_account_id --input '{\"since\":\"<since>\",\"before\":\"<before>\"}' --allow-egress".to_string(), "get_post" => "magi-cloudflare-axi capability invoke get_post --input '{\"slug\":\"<slug>\"}'".to_string(), "list_browser_sessions" | "list_posts" | "list_tags" => format!("magi-cloudflare-axi capability invoke {} --input '{{}}'", e.name), "logpush_jobs_by_account_id" => "magi-cloudflare-axi capability invoke logpush_jobs_by_account_id --input '{}' --allow-egress".to_string(), "search_posts" => "magi-cloudflare-axi capability invoke search_posts --input '{\"query\":\"<query>\"}'".to_string(), "get_url_pdf" | "get_url_screenshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}' --output <path>", e.name), "get_url_markdown" | "get_url_links" | "get_url_json" | "get_url_snapshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}'", e.name), "get_crawl_result" => "magi-cloudflare-axi capability invoke get_crawl_result --input '{\"job_id\":\"<job_id>\"}'".to_string(), "scrape_url_elements" => "magi-cloudflare-axi capability invoke scrape_url_elements --input '{\"url\":\"<url>\",\"elements\":[{\"selector\":\"h1\"}]}'".to_string(), _ => format!("magi-cloudflare-axi capability invoke {} --input '<json>'", e.name) } } else { format!("magi-cloudflare-axi tool schema {} --server <server>", e.name) },
         "warning": if verified { "route, behavior, policy, and hermetic verification are complete; discovery remains separately gated" } else { "pinned registration-input schema is complete; live schema may vary by request context, and route/behavior/policy evidence remains incomplete" }
     })
 }
@@ -1878,6 +1910,37 @@ mod tests {
         );
     }
 
+    #[test]
+    fn auditlogs_recipe_and_actual_transport_discovery_symbols_are_pinned() {
+        let capability = get("auditlogs_by_account_id").unwrap().unwrap();
+        let recipe = access_recipe(&capability);
+        assert_eq!(recipe["status"], "operation_verified");
+        assert_eq!(recipe["catalog_access"], "modeled");
+        assert_eq!(recipe["method"], "GET");
+        assert_eq!(recipe["path_template"], "/accounts/{account_id}/logs/audit");
+        assert_eq!(
+            recipe["next_command"],
+            "magi-cloudflare-axi capability invoke auditlogs_by_account_id --input '{\"since\":\"<since>\",\"before\":\"<before>\"}' --allow-egress"
+        );
+        let operations: Value = serde_json::from_str(OPERATIONS).unwrap();
+        let contract = operations["contracts"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|contract| contract["capability"] == "auditlogs_by_account_id")
+            .unwrap();
+        assert_eq!(contract["route"]["query_parameters"][24]["default"], 10);
+        assert_eq!(
+            contract["route"]["query_parameters"][13]["serialization"],
+            "javascript_string"
+        );
+        assert!(valid_test_id(
+            "tests/transport.rs::capability_auditlogs_by_account_id_exact_request"
+        ));
+        assert!(valid_test_id(
+            "tests/integration.rs::capability_auditlogs_discovery_example_is_exact"
+        ));
+    }
     #[test]
     fn logpush_capability_output_reports_exact_verified_operation() {
         let capability = get("logpush_jobs_by_account_id").unwrap().unwrap();

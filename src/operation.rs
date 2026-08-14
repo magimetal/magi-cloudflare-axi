@@ -6,8 +6,9 @@ use std::collections::BTreeSet;
 
 const CONTRACTS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
-const BUNDLE_SHA256: &str = "f4b9397b7bbae4e88838e9f1991c4c02faef3c759bffd9ac2bf7933c3e801ac2";
-const CONTRACT_NAMES: [&str; 19] = [
+const BUNDLE_SHA256: &str = "522ffe6ea4b36098392d7cc8fe278d5839036f5d4e5a10a1219529063da09415";
+const CONTRACT_NAMES: [&str; 20] = [
+    "auditlogs_by_account_id",
     "d1_database_delete",
     "d1_database_get",
     "get_crawl_result",
@@ -28,7 +29,8 @@ const CONTRACT_NAMES: [&str; 19] = [
     "search_cloudflare_documentation",
     "search_posts",
 ];
-const CONTRACT_HASHES: [&str; 19] = [
+const CONTRACT_HASHES: [&str; 20] = [
+    "630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac",
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
     "e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52",
@@ -118,7 +120,7 @@ fn contracts() -> Result<Bundle, AppError> {
             .map(|c| c.capability.as_str())
             .collect::<Vec<_>>()
             != CONTRACT_NAMES
-        || bundle.version != "phase4e-operation-contracts-v1"
+        || bundle.version != "phase4f-operation-contracts-v1"
     {
         return Err(AppError::api(
             "embedded operation contract envelope is invalid",
@@ -429,6 +431,72 @@ fn validate_contract(c: &Contract) -> Result<(), AppError> {
         {
             return Err(AppError::api(
                 "Cloudflare Blog evidence or semantic pin mismatch",
+            ));
+        }
+    }
+    if c.capability == "auditlogs_by_account_id" {
+        let evidence = &c.evidence;
+        let query_parameters = json!([
+            {"name":"account_name","optional":true,"source":"input"},
+            {"name":"action_result","optional":true,"source":"input"},
+            {"name":"action_type","optional":true,"source":"input"},
+            {"name":"actor_context","optional":true,"source":"input"},
+            {"name":"actor_email","optional":true,"source":"input"},
+            {"name":"actor_id","optional":true,"source":"input"},
+            {"name":"actor_ip_address","optional":true,"source":"input"},
+            {"name":"actor_token_id","optional":true,"source":"input"},
+            {"name":"actor_token_name","optional":true,"source":"input"},
+            {"name":"actor_type","optional":true,"source":"input"},
+            {"name":"audit_log_id","optional":true,"source":"input"},
+            {"name":"raw_cf_ray_id","optional":true,"source":"input"},
+            {"name":"raw_method","optional":true,"source":"input"},
+            {"name":"raw_status_code","optional":true,"serialization":"javascript_string","source":"input"},
+            {"name":"raw_uri","optional":true,"source":"input"},
+            {"name":"resource_id","optional":true,"source":"input"},
+            {"name":"resource_product","optional":true,"source":"input"},
+            {"name":"resource_type","optional":true,"source":"input"},
+            {"name":"resource_scope","optional":true,"source":"input"},
+            {"name":"zone_id","optional":true,"source":"input"},
+            {"name":"zone_name","optional":true,"source":"input"},
+            {"name":"since","optional":false,"source":"input"},
+            {"name":"before","optional":false,"source":"input"},
+            {"name":"direction","optional":true,"source":"input"},
+            {"default":10,"name":"limit","optional":true,"serialization":"javascript_string","source":"input"},
+            {"name":"cursor","optional":true,"source":"input"}
+        ]);
+        if c.route["transport"] != "rest"
+            || c.route["method"] != "GET"
+            || c.route["path_template"] != "/accounts/{account_id}/logs/audit"
+            || c.route["path_parameters"]
+                != json!([{"name":"account_id","source":"resolved_account","format":"single_path_segment","max_length":32}])
+            || c.route["query_parameters"] != query_parameters
+            || c.route["body"] != "none"
+            || c.route["scope"] != "account"
+            || c.route["content_type"] != "application/json"
+            || c.route["auth"] != "account"
+            || c.route["fixed_headers"]
+                != json!({"Content-Type":"application/json","portal-version":"2"})
+            || c.behavior
+                != json!({"output_projection":"strict_trimmed_audit_logs","empty_state":"logs_empty_with_result_info","pagination":"cursor_result_info","artifact":"none","error":"pinned_audit_logs_response_schema","projection_validation":"full_response_before_projection","result_info":"count_and_optional_cursor"})
+            || c.safety.operation != "read"
+            || c.safety.destructive
+            || c.safety.metered
+            || !c.safety.data_egress
+            || c.safety.long_running
+            || c.safety.retry_policy != "never"
+            || c.implementation
+                != json!({"status":"verified","adapter":"rest","test_id":"tests/transport.rs::capability_auditlogs_by_account_id_exact_request","documentation_id":"cloudflare-auditlogs-list-account","reviewed_at":"2026-08-12"})
+            || evidence["pinned_handler"]
+                != json!({"commit":SOURCE_COMMIT,"file":"apps/auditlogs/src/tools/auditlogs.tools.ts","blob_oid":"0c86a79c6dabdad38667f835e3b671a982d293f4","lines":"181-278","source_sha256":"36d58e2948d20662bc297bc50ac64f659bf5241515900a6215322d16bf081e2e"})
+            || evidence["response_schema"]
+                != json!({"commit":SOURCE_COMMIT,"file":"apps/auditlogs/src/tools/auditlogs.tools.ts","blob_oid":"0c86a79c6dabdad38667f835e3b671a982d293f4","lines":"78-177","source_sha256":"1eb3d816d570a1e6af1fd55fddfdcd854bd55f0bac68c565d03d7480c590557f"})
+            || evidence["query_helper"]
+                != json!({"commit":SOURCE_COMMIT,"file":"packages/mcp-common/src/cloudflare-api.ts","blob_oid":"b53d834e977cfb57467a2b1fe4f814f9c2bb2cc7","lines":"20-71","source_sha256":"31c1f165a446e241dc93f4880445ad2ea096a9b11a7b757e3e82cc2f63d230d0"})
+            || evidence["auth_scopes"]
+                != json!({"commit":SOURCE_COMMIT,"file":"apps/auditlogs/src/auditlogs.app.ts","blob_oid":"30b4294a04d17ad54c29a18a99df15e01843ebb1","lines":"8-17","source_sha256":"4478bfffaf7e1534767c516a86173a803cc8820fc8345d274ea67413f1c7693f"})
+        {
+            return Err(AppError::api(
+                "Audit Logs operation semantic or evidence mismatch",
             ));
         }
     }
@@ -1103,6 +1171,296 @@ fn logpush_request(
     Ok(json!({"result": projected.into_iter().take(100).collect::<Vec<_>>() }))
 }
 
+const ZOD_EMAIL_PATTERN: &str = r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$";
+const ZOD_DATETIME_PATTERN: &str = r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?Z$";
+
+fn auditlogs_response_schema() -> Value {
+    json!({
+        "type": "object",
+        "required": ["success", "result_info"],
+        "properties": {
+            "success": {"const": true},
+            "errors": {"type": "array", "items": {"type": "object", "required": ["message"], "properties": {"message": {"type": "string"}}}},
+            "result": {"type": "array", "items": {
+                "type": "object",
+                "required": ["id", "account", "action"],
+                "properties": {
+                    "id": {"type": "string", "maxLength": 36},
+                    "account": {"type": "object", "required": ["id", "name"], "properties": {"id": {"type": "string"}, "name": {"type": "string"}}},
+                    "action": {"type": "object", "required": ["result", "time", "type"], "properties": {
+                        "description": {"type": "string"},
+                        "result": {"enum": ["success", "failure", ""]},
+                        "time": {"type": "string", "pattern": ZOD_DATETIME_PATTERN},
+                        "type": {"enum": ["create", "delete", "view", "update", "login"]}
+                    }},
+                    "actor": {"type": "object", "properties": {
+                        "context": {"enum": ["api_key", "api_token", "dash", "oauth", "origin_ca_key"]},
+                        "email": {"type": "string", "pattern": ZOD_EMAIL_PATTERN},
+                        "id": {"type": "string"},
+                        "ip_address": {"type": "string"},
+                        "type": {"enum": ["cloudflare_admin", "account", "user", "system"]},
+                        "token_id": {"type": "string"},
+                        "token_name": {"type": "string"}
+                    }},
+                    "resource": {"type": "object", "properties": {
+                        "id": {"type": "string"},
+                        "product": {"type": "string"},
+                        "request": {"type": "object"},
+                        "response": {"type": "object"},
+                        "scope": {"anyOf": [{"type": "string"}, {"type": "object"}]},
+                        "type": {"type": "string"}
+                    }},
+                    "raw": {"type": "object", "properties": {
+                        "cf_ray_id": {"type": "string"},
+                        "method": {"type": "string"},
+                        "status_code": {"type": "number"},
+                        "uri": {"type": "string"},
+                        "user_agent": {"type": "string"}
+                    }},
+                    "zone": {"type": "object", "properties": {"id": {"type": "string"}, "name": {"type": "string"}}}
+                }
+            }},
+            "result_info": {"type": "object", "required": ["count"], "properties": {"count": {"type": "number"}, "cursor": {"type": "string"}}}
+        }
+    })
+}
+
+fn auditlog_projection(value: &Value) -> Result<Value, AppError> {
+    let object = value
+        .as_object()
+        .ok_or_else(|| AppError::api("audit log entry must be an object"))?;
+    if object
+        .get("id")
+        .and_then(Value::as_str)
+        .is_none_or(|id| id.encode_utf16().count() > 36)
+    {
+        return Err(AppError::api(
+            "audit log id must be a string of at most 36 UTF-16 units",
+        ));
+    }
+    let action = object
+        .get("action")
+        .and_then(Value::as_object)
+        .ok_or_else(|| AppError::api("audit log action must be an object"))?;
+    let time = action
+        .get("time")
+        .and_then(Value::as_str)
+        .ok_or_else(|| AppError::api("audit log action time must be a string"))?;
+    let mut out = Map::new();
+    out.insert(
+        "description".into(),
+        Value::String(
+            action
+                .get("description")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .into(),
+        ),
+    );
+    out.insert("time".into(), Value::String(time.into()));
+    if let Some(actor) = object.get("actor").and_then(Value::as_object) {
+        if let Some(email) = actor.get("email") {
+            out.insert("actor_email".into(), email.clone());
+        }
+        if let Some(token_name) = actor.get("token_name") {
+            out.insert("actor_token_name".into(), token_name.clone());
+        }
+    }
+    if let Some(resource) = object.get("resource").and_then(Value::as_object) {
+        if let Some(product) = resource.get("product") {
+            out.insert("product".into(), product.clone());
+        }
+        if let Some(kind) = resource.get("type") {
+            out.insert("type".into(), kind.clone());
+        }
+    }
+    Ok(Value::Object(out))
+}
+
+fn javascript_number_string(value: &Value) -> Result<String, AppError> {
+    let number = value
+        .as_f64()
+        .filter(|number| number.is_finite())
+        .ok_or_else(|| AppError::usage("audit log numeric query value is invalid"))?;
+    if number == 0.0 {
+        return Ok("0".into());
+    }
+    let negative = number.is_sign_negative();
+    let absolute = number.abs();
+    let mut text = absolute.to_string();
+    if let Some((mantissa, exponent)) = text.split_once(['e', 'E']) {
+        let exponent = exponent
+            .parse::<i32>()
+            .map_err(|_| AppError::usage("audit log numeric query value cannot be serialized"))?;
+        return Ok(format!(
+            "{}{mantissa}e{}{exponent}",
+            if negative { "-" } else { "" },
+            if exponent >= 0 { "+" } else { "" }
+        ));
+    }
+    if absolute >= 1e21 {
+        let exponent = text.find('.').unwrap_or(text.len()) as i32 - 1;
+        text.retain(|character| character != '.');
+        while text.ends_with('0') {
+            text.pop();
+        }
+        let (first, rest) = text.split_at(1);
+        return Ok(format!(
+            "{}{}{}e+{exponent}",
+            if negative { "-" } else { "" },
+            first,
+            if rest.is_empty() {
+                String::new()
+            } else {
+                format!(".{rest}")
+            }
+        ));
+    }
+    if absolute < 1e-6 {
+        let fraction = text
+            .strip_prefix("0.")
+            .ok_or_else(|| AppError::usage("audit log numeric query value cannot be serialized"))?;
+        let zeros = fraction.bytes().take_while(|byte| *byte == b'0').count();
+        let digits = fraction[zeros..].trim_end_matches('0');
+        let (first, rest) = digits.split_at(1);
+        return Ok(format!(
+            "{}{}{}e-{}",
+            if negative { "-" } else { "" },
+            first,
+            if rest.is_empty() {
+                String::new()
+            } else {
+                format!(".{rest}")
+            },
+            zeros + 1
+        ));
+    }
+    if negative {
+        text.insert(0, '-');
+    }
+    Ok(text)
+}
+
+fn auditlogs_request(
+    input: &Map<String, Value>,
+    endpoint: Option<&str>,
+    cli_account: Option<String>,
+) -> Result<Value, AppError> {
+    let mut cfg = config::load(endpoint.map(str::to_owned), cli_account, None)?;
+    if let (Some(configured), Some(provided)) = (
+        cfg.account.as_deref(),
+        input.get("account_id").and_then(Value::as_str),
+    ) {
+        if configured != provided {
+            return Err(AppError::usage(
+                "input account_id conflicts with resolved account scope",
+            ));
+        }
+    }
+    if cfg.account.is_none() {
+        cfg.account = input
+            .get("account_id")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+    }
+    let account = path_segment(
+        cfg.account.as_deref().ok_or_else(|| {
+            AppError::usage("account scope required; use --account or input account_id")
+        })?,
+        "account_id",
+        Some(32),
+    )?;
+    let mut query = Vec::new();
+    for key in [
+        "account_name",
+        "action_result",
+        "action_type",
+        "actor_context",
+        "actor_email",
+        "actor_id",
+        "actor_ip_address",
+        "actor_token_id",
+        "actor_token_name",
+        "actor_type",
+        "audit_log_id",
+        "raw_cf_ray_id",
+        "raw_method",
+        "raw_status_code",
+        "raw_uri",
+        "resource_id",
+        "resource_product",
+        "resource_type",
+        "resource_scope",
+        "zone_id",
+        "zone_name",
+        "since",
+        "before",
+        "direction",
+        "limit",
+        "cursor",
+    ] {
+        let value = if key == "limit" {
+            input.get(key).cloned().unwrap_or_else(|| json!(10))
+        } else if let Some(value) = input.get(key) {
+            value.clone()
+        } else {
+            continue;
+        };
+        let value = match value {
+            Value::String(value) => value,
+            Value::Number(_) => javascript_number_string(&value)?,
+            _ => return Err(AppError::usage("audit log query value has invalid type")),
+        };
+        query.push((key.into(), value));
+    }
+    let auth = config::auth_for(&cfg)?;
+    let response = client::CloudflareClient::new(cfg, auth)?.request_with_trusted_headers(
+        client::RequestOptions {
+            method: client::Method::Get,
+            path: format!("/accounts/{account}/logs/audit"),
+            query,
+            body: None,
+            allow_write: false,
+            confirm_delete: None,
+            retry_policy: client::RetryPolicy::Never,
+            allow_classified_read_post: false,
+        },
+        &[
+            ("Content-Type", "application/json"),
+            ("portal-version", "2"),
+        ],
+        true,
+    )?;
+    let schema = auditlogs_response_schema();
+    let validator = jsonschema::draft202012::new(&schema)
+        .map_err(|_| AppError::api("embedded audit logs response schema is invalid"))?;
+    if !validator.is_valid(&response.envelope) {
+        return Err(AppError::api("audit logs response envelope is malformed"));
+    }
+    let envelope = response
+        .envelope
+        .as_object()
+        .ok_or_else(|| AppError::api("audit logs response envelope is malformed"))?;
+    let rows = envelope
+        .get("result")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let logs = rows
+        .iter()
+        .map(auditlog_projection)
+        .collect::<Result<Vec<_>, _>>()?;
+    let info = envelope["result_info"]
+        .as_object()
+        .ok_or_else(|| AppError::api("audit logs result_info is malformed"))?;
+    let mut result_info = Map::new();
+    result_info.insert("count".into(), info["count"].clone());
+    if let Some(cursor) = info.get("cursor") {
+        result_info.insert("cursor".into(), cursor.clone());
+    }
+    Ok(json!({"logs": logs, "result_info": result_info}))
+}
+
 fn browser_request(
     name: &str,
     input: &Map<String, Value>,
@@ -1520,6 +1878,7 @@ pub fn invoke(
             blog_request(name, &input, endpoint.as_deref())
         }
         "logpush_jobs_by_account_id" => logpush_request(&input, endpoint.as_deref(), cli_account),
+        "auditlogs_by_account_id" => auditlogs_request(&input, endpoint.as_deref(), cli_account),
         "search_cloudflare_documentation" => {
             mcp::verified_call(name, Value::Object(input), mcp_endpoint.as_deref())
         }

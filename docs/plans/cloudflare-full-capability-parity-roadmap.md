@@ -3,7 +3,7 @@ title: Cloudflare full capability parity roadmap
 status: phase-4-in-progress
 owner: magimetal
 created: 2026-08-10
-last_reviewed: 2026-08-11
+last_reviewed: 2026-08-12
 current_phase: phase-4-in-progress
 baseline_source_commit: 70ff690553722f731849ede6ba9ce98958395a23
 baseline_capabilities: 172
@@ -38,11 +38,11 @@ Registered-name presence alone remains **inventory parity**, not full parity.
 | Registered names | 172/172 | 172/172 |
 | Canonical input schemas | 172/172 | 172/172 |
 | Method metadata | 147/172 | Route-dependent |
-| Path metadata | 16/172 | Every direct route complete |
-| Capability-specific complete routes | 19/172 | 172/172, or maximal attainable parity with explicit blockers |
-| Capability contract tests | 19/172 | 172/172 hermetically verified |
+| Path metadata | 17/172 | Every direct route complete |
+| Capability-specific complete routes | 20/172 | 172/172, or maximal attainable parity with explicit blockers |
+| Capability contract tests | 20/172 | 172/172 hermetically verified |
 
-Phase 4E adds authenticated `logpush_jobs_by_account_id`. Historical Phase 4D exit metrics remain `I=172; S=172; R=B=P=V=18; D=13; X=40` with 154 unresolved. Phase 4E current vector is `I=172; S=172; R=B=P=V=19; D=14; X=40`, with 153 unresolved. Invoke using `magi-cloudflare-axi capability invoke logpush_jobs_by_account_id --input '{}' --allow-egress`; API token requires Logs Write permission. This read is data-egress guarded and calls `GET /accounts/{account_id}/logpush/jobs` with fixed bodyless GET headers `Content-Type: application/json` and `portal-version: 2`. The shared request helper never retries or follows redirects. Optional errors may be absent or empty; missing `result` becomes `[]`; known job fields are strict optional/nullable and unknown fields are stripped. Only first 100 jobs are available: no query pagination or continuation exists, and capability cannot retrieve beyond first 100. Phase 4 remains in progress.
+Phase 4F adds authenticated `auditlogs_by_account_id` with pinned app-specific OAuth scope additions `account:read` and `auditlogs:read`, fixed portal headers, cursor pagination via `result_info`, count preserved but not treated as total, one request/no retry/no redirect, full response validation before strict sensitive-field projection, `--allow-egress`, and an 8 MiB failure bound. No API-token permission label is inferred. Exact operation contracts total 20; current vector is `I=172; S=172; R=B=P=V=20; D=15; X=40`; 152 routes remain unresolved.
 
 Phase 3 exit gate for proven direct unauthenticated Blog cohort:
 
@@ -59,7 +59,7 @@ Phase 3 completed `2026-08-11` for four Blog operations only. Research pool corr
 
 | Scope | Current | Target |
 |---|---:|---:|
-| Verified reads | 18/150 | 150/150 |
+| Verified reads | 19/150 | 150/150 |
 | Hermetically verified writes | 1/22 | 22/22 |
 | Open blocker entries | 40 | 0 |
 | Fully verified families | 1/18 | 18/18 |
@@ -68,8 +68,8 @@ Current access classifications:
 
 | Classification | Count |
 |---|---:|
-| `raw_rest` | 123 |
-| `modeled` | 10 |
+| `raw_rest` | 122 |
+| `modeled` | 11 |
 | `mcp_remote` | 26 |
 | `public_direct` | 6 |
 | `raw_graphql` | 6 |
@@ -86,7 +86,7 @@ Current transport inventory:
 | `internal_binding` | 1 |
 | `mcp` | 1 |
 
-Sixteen catalog records carry both `method` and `path_template`; operation-contract artifact contains nineteen complete routes.
+Seventeen catalog records carry both `method` and `path_template`; operation-contract artifact contains twenty complete routes.
 
 
 ## Completion formula
@@ -562,7 +562,7 @@ Update this table only when gate evidence exists.
 | 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | complete | 2026-08-10 |
 | 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; 167 capability routes deferred | — | complete | 2026-08-11 |
 | 3 — Proven Blog reads | Phase 2 complete | Four Blog reads verified and discovery-verified; 163 total routes unresolved | — | complete-for-proven-cohort | 2026-08-11 |
-| 4 — Authenticated direct API reads | Phase 3 cohort complete | Phase 4E complete: nine authenticated Browser reads and one authenticated Logpush read discovery-verified; 153 total routes unresolved | — | in_progress | — |
+| 4 — Authenticated direct API reads | Phase 3 cohort complete | Phase 4F complete: 19 verified reads, including authenticated Browser, Logpush, and Audit Logs contracts; 152 total routes unresolved | — | in_progress | —
 | 5 — GraphQL/MCP reads | Phase 2 complete | GraphQL reads 5/5 and exposed MCP reads verified | — | not_started | — |
 | 6 — Writes | Phase 2 complete | Writes 22/22 hermetically verified | — | not_started | — |
 | 7 — Blockers | Route research available | Blockers 0 | — | not_started | — |

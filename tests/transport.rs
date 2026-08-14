@@ -3479,3 +3479,383 @@ fn capability_logpush_jobs_by_account_id_exact_request() {
     assert!(headers.contains("x-auth-email: email-secret@example.com"));
     assert!(!headers.contains("authorization:"));
 }
+
+#[test]
+fn capability_auditlogs_by_account_id_exact_request() {
+    let input = r#"{"since":"2024-01-01","before":"2024-01-02","account_name":"Acme & Co","action_result":"success","action_type":"create","actor_context":"api_token","actor_email":"a+b@example.com","actor_id":"actor 1","actor_ip_address":"192.0.2.1","actor_token_id":"tok/1","actor_token_name":"token name","actor_type":"user","audit_log_id":"log/1","raw_cf_ray_id":"ray?1","raw_method":"GET /x","raw_status_code":1e21,"raw_uri":"/a b?x=1&y=2","resource_id":"res 1","resource_product":"Workers","resource_type":"worker","resource_scope":"accounts","zone_id":"zone/1","zone_name":"Zone & One","direction":"asc","limit":1e0,"cursor":"next cursor","unknown":true}"#;
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"result":[],"result_info":{"count":0,"cursor":"next"}}"#,
+    )]);
+    let mut args = capability_args("auditlogs_by_account_id", input);
+    args.push("--allow-egress");
+    let (out, _) = run(&args, Some(&server.endpoint), Some("token"));
+    assert!(out.status.success(), "{out:?}");
+    assert!(out.stderr.is_empty());
+    let value = json_stdout(&out);
+    assert_eq!(value["logs"], serde_json::json!([]));
+    assert_eq!(value["result_info"]["count"], 0);
+    assert_eq!(value["result_info"]["cursor"], "next");
+
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    let request = &requests[0];
+    assert_eq!(request.method, "GET");
+    assert!(request.body.is_empty());
+    assert_eq!(
+        request.target,
+        "/client/v4/accounts/account-123/logs/audit?account_name=Acme+%26+Co&action_result=success&action_type=create&actor_context=api_token&actor_email=a%2Bb%40example.com&actor_id=actor+1&actor_ip_address=192.0.2.1&actor_token_id=tok%2F1&actor_token_name=token+name&actor_type=user&audit_log_id=log%2F1&raw_cf_ray_id=ray%3F1&raw_method=GET+%2Fx&raw_status_code=1e%2B21&raw_uri=%2Fa+b%3Fx%3D1%26y%3D2&resource_id=res+1&resource_product=Workers&resource_type=worker&resource_scope=accounts&zone_id=zone%2F1&zone_name=Zone+%26+One&since=2024-01-01&before=2024-01-02&direction=asc&limit=1&cursor=next+cursor"
+    );
+    let headers = request.headers.to_ascii_lowercase();
+    assert!(headers.contains("authorization: bearer token"));
+    assert!(headers.contains("content-type: application/json"));
+    assert!(headers.contains("portal-version: 2"));
+    assert!(!headers.contains("x-auth-key:"));
+    assert!(!headers.contains("x-auth-email:"));
+
+    for status in [400, 401, 429, 500] {
+        let server = Server::start(vec![(status, r#"{"errors":[{"message":"secret"}]}"#)]);
+        let mut args = capability_args(
+            "auditlogs_by_account_id",
+            r#"{"since":"2024-01-01","before":"2024-01-02"}"#,
+        );
+        args.push("--allow-egress");
+        let (out, _) = run(&args, Some(&server.endpoint), Some("secret"));
+        assert!(!out.status.success());
+        let text = format!(
+            "{}{}",
+            String::from_utf8_lossy(&out.stdout),
+            String::from_utf8_lossy(&out.stderr)
+        );
+        assert!(!text.contains("secret"));
+        assert_eq!(server.finish().len(), 1);
+    }
+}
+
+fn audit_args(input: &str) -> Vec<&str> {
+    let input = if input == "{}" {
+        r#"{"since":"2024-01-01","before":"2024-01-02"}"#
+    } else {
+        input
+    };
+    let mut args = capability_args("auditlogs_by_account_id", input);
+    args.push("--allow-egress");
+    args
+}
+
+fn audit_entry(id: &str) -> String {
+    format!(
+        r#"{{"id":"{id}","account":{{"id":"acct","name":"Account"}},"action":{{"result":"success","time":"2024-02-29T23:59:59.123Z","type":"create","description":"created"}}}}"#
+    )
+}
+
+#[test]
+fn capability_auditlogs_guards_and_scope_validation_precede_network() {
+    for input in [
+        r#"{"since":"2024-01-01","before":"2024-01-02","account_id":"bad/account"}"#,
+        r#"{"since":"2024-01-01","before":"2024-01-02","account_id":"bad%account"}"#,
+        r#"{"since":"2024-01-01","before":"2024-01-02","account_id":"bad?account"}"#,
+    ] {
+        let mut args = capability_args("auditlogs_by_account_id", input);
+        let (out, _) = run(&args, Some("http://example.com"), None);
+        assert_eq!(out.status.code(), Some(2));
+        assert!(String::from_utf8_lossy(&out.stdout).contains("--allow-egress"));
+        args.push("--allow-egress");
+        let (out, _) = run(&args, Some("http://example.com"), None);
+        assert_eq!(out.status.code(), Some(2));
+        assert!(String::from_utf8_lossy(&out.stdout).contains("account_id"));
+        assert!(!String::from_utf8_lossy(&out.stdout).contains("HTTPS"));
+    }
+
+    let directory = tempfile::tempdir().unwrap();
+    std::fs::write(
+        directory.path().join(".cloudflare-axi.toml"),
+        "account_id = 'configured'\n",
+    )
+    .unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+        .args(audit_args(
+            r#"{"since":"2024-01-01","before":"2024-01-02","account_id":"provided"}"#,
+        ))
+        .current_dir(directory.path())
+        .env("HOME", directory.path())
+        .env("XDG_CONFIG_HOME", directory.path())
+        .env_remove("CLOUDFLARE_API_TOKEN")
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("conflicts with resolved account scope")
+    );
+}
+
+#[test]
+fn capability_auditlogs_default_limit_and_javascript_number_serialization() {
+    for (input, expected) in [
+        (
+            r#"{"since":"2024-01-01","before":"2024-01-02"}"#,
+            "limit=10",
+        ),
+        (
+            r#"{"raw_status_code":-0,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=0",
+        ),
+        (
+            r#"{"raw_status_code":1e-6,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=0.000001",
+        ),
+        (
+            r#"{"raw_status_code":1e20,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=100000000000000000000",
+        ),
+        (
+            r#"{"raw_status_code":1e21,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=1e%2B21",
+        ),
+        (
+            r#"{"raw_status_code":1e-7,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=1e-7",
+        ),
+        (
+            r#"{"raw_status_code":-2.5e-7,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=-2.5e-7",
+        ),
+        (
+            r#"{"raw_status_code":9007199254740993,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=9007199254740992",
+        ),
+        (
+            r#"{"raw_status_code":1.7976931348623157e308,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=1.7976931348623157e%2B308",
+        ),
+        (
+            r#"{"raw_status_code":1000000000000000128,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=1000000000000000100",
+        ),
+        (
+            r#"{"raw_status_code":5e-324,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=5e-324",
+        ),
+        (
+            r#"{"raw_status_code":-1.7976931348623157e308,"since":"2024-01-01","before":"2024-01-02"}"#,
+            "raw_status_code=-1.7976931348623157e%2B308",
+        ),
+    ] {
+        let server = Server::start(vec![(
+            200,
+            r#"{"success":true,"errors":[],"result":[],"result_info":{"count":0}}"#,
+        )]);
+        let out = run(&audit_args(input), Some(&server.endpoint), Some("token")).0;
+        assert!(out.status.success(), "{input}: {out:?}");
+        assert!(server.finish()[0].target.contains(expected), "{input}");
+    }
+}
+
+#[test]
+fn capability_auditlogs_validates_success_envelope_errors_and_result_presence() {
+    for body in [
+        r#"{"success":true,"result_info":{"count":0}}"#,
+        r#"{"success":true,"errors":[],"result_info":{"count":0}}"#,
+        r#"{"success":true,"errors":[{"message":"notice"}],"result_info":{"count":0}}"#,
+    ] {
+        let server = Server::start(vec![(200, body)]);
+        let out = run(&audit_args("{}"), Some(&server.endpoint), Some("token")).0;
+        assert!(out.status.success(), "accepted envelope failed: {body}");
+        assert_eq!(json_stdout(&out)["logs"], serde_json::json!([]));
+        server.finish();
+    }
+    for body in [
+        r#"{"success":true,"errors":[{}],"result_info":{"count":0}}"#,
+        r#"{"success":true,"errors":[{"message":7}],"result_info":{"count":0}}"#,
+    ] {
+        let server = Server::start(vec![(200, body)]);
+        let out = run(&audit_args("{}"), Some(&server.endpoint), Some("token")).0;
+        assert!(!out.status.success(), "accepted invalid errors: {body}");
+        server.finish();
+    }
+}
+
+#[test]
+fn capability_auditlogs_redirect_is_refused_without_forwarding_credentials() {
+    let server = RedirectServer::start();
+    let out = run(
+        &audit_args("{}"),
+        Some(&server.endpoint),
+        Some("audit-secret"),
+    )
+    .0;
+    assert!(!out.status.success());
+    let requests = server.finish();
+    assert_eq!(
+        requests.len(),
+        1,
+        "Audit request followed redirect: {requests:?}"
+    );
+    assert!(requests[0].contains("audit-secret"));
+}
+
+#[test]
+fn capability_auditlogs_projects_full_known_nested_fields_and_scope_variants() {
+    let body = r#"{"success":true,"errors":[],"result":[
+        {"id":"log-string","account":{"id":"acct","name":"Account"},"action":{"result":"success","time":"2024-02-29T23:59:59.123Z","type":"create","description":"string scope"},"actor":{"context":"api_key","email":"user@example.com","id":"actor","ip_address":"192.0.2.1","type":"user","token_id":"tid","token_name":"tname"},"resource":{"id":"rid","product":"Workers","request":{},"response":{},"scope":"accounts","type":"worker"},"raw":{"cf_ray_id":"ray","method":"GET","status_code":200,"uri":"/x","user_agent":"ua"},"zone":{"id":"zone","name":"Zone"}},
+        {"id":"log-object","account":{"id":"acct","name":"Account"},"action":{"result":"failure","time":"2024-02-29T23:59:59.123Z","type":"delete"},"resource":{"scope":{} }}
+    ],"result_info":{"count":2}}"#;
+    let server = Server::start(vec![(200, body)]);
+    let out = run(&audit_args("{}"), Some(&server.endpoint), Some("token")).0;
+    assert!(out.status.success(), "{out:?}");
+    let logs = &json_stdout(&out)["logs"];
+    assert_eq!(logs[0]["actor_email"], "user@example.com");
+    assert_eq!(logs[0]["actor_token_name"], "tname");
+    assert_eq!(logs[0]["product"], "Workers");
+    assert_eq!(logs[0]["type"], "worker");
+    assert_eq!(logs[1]["description"], "");
+    assert_eq!(logs[1]["time"], "2024-02-29T23:59:59.123Z");
+    server.finish();
+}
+
+#[test]
+fn capability_auditlogs_key_email_auth_and_full_projection_are_strict() {
+    let entry = r#"{"id":"log-1","account":{"id":"acct","name":"Account"},"action":{"result":"success","time":"2024-02-29T23:59:59.123Z","type":"create"},"actor":{"email":"user@example.com","token_name":"deploy"},"resource":{"product":"Workers","type":"worker","scope":{"id":"scope"}},"raw":{"status_code":200,"user_agent":"ua"},"zone":{"id":"zone","name":"Zone"},"secret":"strip"}"#;
+    let body = format!(
+        r#"{{"success":true,"errors":[],"result":[{entry}],"result_info":{{"count":1,"cursor":"next"}}}}"#
+    );
+    let leaked: &'static str = Box::leak(body.into_boxed_str());
+    let server = Server::start(vec![(200, leaked)]);
+    let directory = tempfile::tempdir().unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+        .args(audit_args("{}"))
+        .current_dir(directory.path())
+        .env("HOME", directory.path())
+        .env("XDG_CONFIG_HOME", directory.path())
+        .env_remove("CLOUDFLARE_API_TOKEN")
+        .env("CLOUDFLARE_API_KEY", "key")
+        .env("CLOUDFLARE_API_EMAIL", "auth@example.com")
+        .arg("--endpoint")
+        .arg(&server.endpoint)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let value = json_stdout(&output);
+    assert_eq!(
+        value["logs"][0],
+        serde_json::json!({"description":"","time":"2024-02-29T23:59:59.123Z","actor_email":"user@example.com","actor_token_name":"deploy","product":"Workers","type":"worker"})
+    );
+    assert_eq!(value["result_info"]["cursor"], "next");
+    let request = &server.finish()[0];
+    let headers = request.headers.to_ascii_lowercase();
+    assert!(headers.contains("x-auth-key: key"));
+    assert!(headers.contains("x-auth-email: auth@example.com"));
+    assert!(!headers.contains("authorization:"));
+}
+#[test]
+fn capability_auditlogs_rejects_malformed_roots_nested_values_and_bounds() {
+    let valid = audit_entry("ok");
+    let cases = [
+        ("not-json", "api"),
+        (r#"{}"#, "api"),
+        (
+            r#"{"success":true,"errors":[],"result":{},"result_info":{"count":0}}"#,
+            "api",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":[],"result_info":{}}"#,
+            "api",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":[1],"result_info":{"count":1}}"#,
+            "api",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":[{"account":{},"action":{}}],"result_info":{"count":1}}"#,
+            "api",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":[{"id":"x","account":{"id":"a","name":"n"},"action":{"result":"success","time":"2023-02-29T00:00Z","type":"create"}}],"result_info":{"count":1}}"#,
+            "api",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":[{"id":"x","account":{"id":"a","name":"n"},"action":{"result":"success","time":"2024-01-01T00:00Z","type":"create"},"actor":{"email":"bad"}}],"result_info":{"count":1}}"#,
+            "api",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":[{"id":"x","account":{"id":"a","name":"n"},"action":{"result":"success","time":"2024-01-01T00:00Z","type":"create"},"actor":{"context":"bad"}}],"result_info":{"count":1}}"#,
+            "api",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":[{"id":"x","account":{"id":"a","name":"n"},"action":{"result":"success","time":"2024-01-01T00:00Z","type":"create"},"resource":{"scope":7}}],"result_info":{"count":1}}"#,
+            "api",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":[{"id":"x","account":{"id":"a","name":"n"},"action":{"result":"success","time":"2024-01-01T00:00Z","type":"create"},"raw":{"status_code":"200"}}],"result_info":{"count":1}}"#,
+            "api",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":[{"id":"x","account":{"id":"a","name":"n"},"action":{"result":"success","time":"2024-01-01T00:00Z","type":"create"},"zone":{"id":7}}],"result_info":{"count":1}}"#,
+            "api",
+        ),
+        (
+            r#"{"success":true,"errors":[],"result":[{"id":"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀","account":{"id":"a","name":"n"},"action":{"result":"success","time":"2024-01-01T00:00Z","type":"create"}}],"result_info":{"count":1}}"#,
+            "api",
+        ),
+    ];
+    for (body, kind) in cases {
+        let server = Server::start(vec![(200, body)]);
+        let out = run(&audit_args("{}"), Some(&server.endpoint), Some("token")).0;
+        assert_eq!(out.status.code(), Some(1), "accepted {body}");
+        assert_eq!(json_stdout(&out)["error"]["type"], kind);
+        assert_eq!(server.finish().len(), 1);
+    }
+    let server = Server::start(vec![(
+        200,
+        Box::leak(
+            format!(
+                r#"{{"success":true,"errors":[],"result":[{}],"result_info":{{"count":1}}}}"#,
+                valid
+            )
+            .into_boxed_str(),
+        ),
+    )]);
+    let out = run(&audit_args("{}"), Some(&server.endpoint), Some("token")).0;
+    assert!(out.status.success());
+    assert_eq!(json_stdout(&out)["logs"][0]["description"], "created");
+    server.finish();
+}
+
+#[test]
+fn capability_auditlogs_does_not_retry_and_rejects_provider_errors_redirects_and_large_body() {
+    for status in [400, 401, 429, 500] {
+        let server = Server::start(vec![(
+            status,
+            r#"{"errors":[{"code":"token-secret","message":"provider-message"}]}"#,
+        )]);
+        let out = run(
+            &audit_args("{}"),
+            Some(&server.endpoint),
+            Some("token-secret"),
+        )
+        .0;
+        assert!(!out.status.success());
+        assert_eq!(
+            json_stdout(&out)["error"]["type"],
+            if status == 401 {
+                "auth"
+            } else if status == 429 {
+                "network"
+            } else {
+                "api"
+            }
+        );
+        let text = String::from_utf8_lossy(&out.stdout);
+        assert!(!text.contains("token-secret"));
+        assert!(!text.contains("provider-message"));
+        if status != 429 {
+            assert!(text.contains("[redacted]"));
+        }
+        assert_eq!(server.finish().len(), 1);
+    }
+    let oversized: &'static str = Box::leak("x".repeat(8 * 1024 * 1024 + 1).into_boxed_str());
+    let server = Server::start(vec![(200, oversized)]);
+    let out = run(&audit_args("{}"), Some(&server.endpoint), Some("token")).0;
+    assert_eq!(json_stdout(&out)["error"]["type"], "network");
+    assert_eq!(server.finish().len(), 1);
+}
