@@ -2124,6 +2124,691 @@ fn capability_args<'a>(name: &'a str, input: &'a str) -> Vec<&'a str> {
         input,
     ]
 }
+fn workers_args(input: &str) -> Vec<&str> {
+    let mut args = capability_args("workers_builds_get_build", input);
+    args.push("--allow-egress");
+    args
+}
+
+fn workers_build_response(created_on: &str) -> &'static str {
+    let created_on: Value = serde_json::from_str(created_on).unwrap();
+    let response = serde_json::json!({
+        "success": true,
+        "errors": [{"message": "fixture warning", "code": 1001, "ignored": "strip"}],
+        "messages": ["fixture message"],
+        "result": {
+            "build_uuid": "build-not-a-uuid",
+            "status": "success",
+            "build_outcome": "success",
+            "created_on": created_on,
+            "modified_on": "2024-01-02T03:04:05.678Z",
+            "initializing_on": null,
+            "running_on": "2024-01-02T03:04:05Z",
+            "stopped_on": null,
+            "trigger": {
+                "trigger_uuid": "trigger-1",
+                "external_script_id": "script-1",
+                "trigger_name": "main",
+                "build_command": "npm run build",
+                "deploy_command": "npm run deploy",
+                "root_directory": "/",
+                "branch_includes": ["main"],
+                "branch_excludes": [],
+                "path_includes": [],
+                "path_excludes": [],
+                "build_caching_enabled": true,
+                "created_on": "2024-01-02T03:04:05Z",
+                "modified_on": "2024-01-02T03:04:05Z",
+                "deleted_on": null,
+                "repo_connection": {
+                    "repo_connection_uuid": "repo-connection-1",
+                    "repo_id": "repo-1",
+                    "repo_name": "example",
+                    "provider_type": "github",
+                    "provider_account_id": "account-1",
+                    "provider_account_name": "example-account",
+                    "created_on": "2024-01-02T03:04:05Z",
+                    "modified_on": "2024-01-02T03:04:05Z",
+                    "deleted_on": null,
+                    "ignored_repo_field": "strip"
+                },
+                "ignored_trigger_field": "strip"
+            },
+            "build_trigger_metadata": {
+                "build_trigger_source": "push",
+                "branch": "main",
+                "commit_hash": "abc123",
+                "commit_message": "fixture commit",
+                "author": "fixture author",
+                "build_command": "npm run build",
+                "deploy_command": "npm run deploy",
+                "root_directory": "/",
+                "build_token_uuid": "build-token-1",
+                "environment_variables": {
+                    "SECRET_TOKEN": {
+                        "is_secret": true,
+                        "created_on": "2024-01-02T03:04:05Z",
+                        "value": "top-secret",
+                        "ignored_variable_field": "strip"
+                    },
+                    "PUBLIC_VALUE": {
+                        "is_secret": false,
+                        "created_on": "2024-01-02T03:04:05Z",
+                        "value": "public"
+                    }
+                },
+                "repo_name": "example",
+                "provider_account_name": "example-account",
+                "provider_type": "github",
+                "ignored_metadata_field": "strip"
+            },
+            "pull_request": null,
+            "ignored_build_field": "strip"
+        },
+        "ignored_root_field": "strip"
+    });
+    Box::leak(serde_json::to_string(&response).unwrap().into_boxed_str())
+}
+fn workers_build_response_with_change(pointer: &str, replacement: Option<Value>) -> &'static str {
+    let mut response: Value =
+        serde_json::from_str(workers_build_response(r#""2024-01-01T00:00:00.000Z""#)).unwrap();
+    let (parent, field) = pointer.rsplit_once('/').unwrap();
+    let object = response
+        .pointer_mut(parent)
+        .and_then(Value::as_object_mut)
+        .unwrap();
+    match replacement {
+        Some(value) => {
+            let _ = object.insert(field.to_owned(), value);
+        }
+        None => {
+            let _ = object.remove(field);
+        }
+    }
+    Box::leak(serde_json::to_string(&response).unwrap().into_boxed_str())
+}
+fn run_workers_without_auth(
+    environment_endpoint: Option<&str>,
+    global_endpoint: Option<&str>,
+) -> (Output, TempDir) {
+    let dir = tempfile::tempdir().unwrap();
+    let home = dir.path().join("home");
+    let xdg = dir.path().join("xdg");
+    std::fs::create_dir_all(&home).unwrap();
+    std::fs::create_dir_all(&xdg).unwrap();
+    if let Some(endpoint) = global_endpoint {
+        let global = xdg.join("cloudflare");
+        std::fs::create_dir_all(&global).unwrap();
+        std::fs::write(
+            global.join("cloudflare-axi.toml"),
+            format!("endpoint = {endpoint:?}\n"),
+        )
+        .unwrap();
+    }
+    let mut command = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"));
+    command
+        .args([
+            "--format",
+            "json",
+            "--account",
+            TEST_ACCOUNT,
+            "capability",
+            "invoke",
+            "workers_builds_get_build",
+            "--input",
+            r#"{"buildUUID":"build-not-a-uuid"}"#,
+            "--allow-egress",
+        ])
+        .current_dir(dir.path())
+        .env("HOME", &home)
+        .env("XDG_CONFIG_HOME", &xdg);
+    for key in [
+        "CLOUDFLARE_API_BASE",
+        "CLOUDFLARE_ENDPOINT",
+        "CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_API_KEY",
+        "CLOUDFLARE_API_EMAIL",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_ACOUNT_ID",
+        "CLOUDFLARE_ZONE_ID",
+    ] {
+        command.env_remove(key);
+    }
+    if let Some(endpoint) = environment_endpoint {
+        command.env("CLOUDFLARE_ENDPOINT", endpoint);
+    }
+    (command.output().unwrap(), dir)
+}
+
+fn run_workers_with_account_source(source: &str, account: &str) -> Output {
+    let directory = tempfile::tempdir().unwrap();
+    let home = directory.path().join("home");
+    let xdg = directory.path().join("xdg");
+    std::fs::create_dir_all(&home).unwrap();
+    std::fs::create_dir_all(&xdg).unwrap();
+    if source == "global" {
+        std::fs::create_dir_all(xdg.join("cloudflare")).unwrap();
+        let serialized = serde_json::to_string(account).unwrap();
+        std::fs::write(
+            xdg.join("cloudflare/cloudflare-axi.toml"),
+            format!("account_id = {serialized}\n"),
+        )
+        .unwrap();
+    }
+    let mut command = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"));
+    command
+        .args([
+            "--format",
+            "json",
+            "--endpoint",
+            "http://127.0.0.1:1/client/v4",
+        ])
+        .current_dir(directory.path())
+        .env("HOME", &home)
+        .env("XDG_CONFIG_HOME", &xdg)
+        .env("CLOUDFLARE_API_TOKEN", "fixture-token");
+    for key in [
+        "CLOUDFLARE_API_BASE",
+        "CLOUDFLARE_ENDPOINT",
+        "CLOUDFLARE_API_KEY",
+        "CLOUDFLARE_API_EMAIL",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_ACOUNT_ID",
+        "CLOUDFLARE_ZONE_ID",
+    ] {
+        command.env_remove(key);
+    }
+    if source == "cli" {
+        command.args(["--account", account]);
+    } else if source == "environment" {
+        command.env("CLOUDFLARE_ACCOUNT_ID", account);
+    }
+    command
+        .args([
+            "capability",
+            "invoke",
+            "workers_builds_get_build",
+            "--input",
+            r#"{"buildUUID":"build-not-a-uuid"}"#,
+            "--allow-egress",
+        ])
+        .output()
+        .unwrap()
+}
+
+fn workers_oversized_response() -> &'static str {
+    let mut response =
+        String::from(r#"{"success":true,"errors":[],"messages":[],"result":null,"padding":"#);
+    response.push_str(&"x".repeat(8 * 1024 * 1024 + 1));
+    response.push_str(r#""}"#);
+    Box::leak(response.into_boxed_str())
+}
+
+#[test]
+fn capability_workers_builds_get_build_exact_request() {
+    let server = Server::start(vec![(
+        200,
+        workers_build_response(r#""2024-01-01T00:00:00.123Z""#),
+    )]);
+    let (output, _) = run(
+        &workers_args(r#"{"buildUUID":"build-not-a-uuid","unknown":true}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(
+        json_stdout(&output),
+        serde_json::json!({
+            "buildUUID": "build-not-a-uuid",
+            "createdOn": "2024-01-01T00:00:00.123Z",
+            "status": "success",
+            "buildOutcome": "success",
+            "branch": "main",
+            "commitHash": "abc123",
+            "commitMessage": "fixture commit",
+            "commitAuthor": "fixture author",
+            "buildCommand": "npm run build",
+            "deployCommand": "npm run deploy"
+        })
+    );
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "GET");
+    assert_eq!(
+        requests[0].target,
+        "/client/v4/accounts/account-123/builds/builds/build-not-a-uuid"
+    );
+    assert!(requests[0].body.is_empty());
+    let headers = requests[0].headers.to_ascii_lowercase();
+    assert!(headers.contains("authorization: bearer fixture-token"));
+    assert!(!headers.contains("content-type:"));
+    let output_text = String::from_utf8_lossy(&output.stdout);
+    assert!(!output_text.contains("top-secret"));
+    assert!(!output_text.contains("environment_variables"));
+}
+
+#[test]
+fn capability_workers_builds_get_build_key_email_auth_has_explicit_headers() {
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"messages":[],"result":null}"#,
+    )]);
+    let directory = tempfile::tempdir().unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+        .args([
+            "--format",
+            "json",
+            "--endpoint",
+            server.endpoint.as_str(),
+            "--account",
+            TEST_ACCOUNT,
+            "capability",
+            "invoke",
+            "workers_builds_get_build",
+            "--input",
+            r#"{"buildUUID":"build-not-a-uuid"}"#,
+            "--allow-egress",
+        ])
+        .current_dir(directory.path())
+        .env("HOME", directory.path())
+        .env("XDG_CONFIG_HOME", directory.path())
+        .env_remove("CLOUDFLARE_API_BASE")
+        .env_remove("CLOUDFLARE_ENDPOINT")
+        .env_remove("CLOUDFLARE_API_TOKEN")
+        .env("CLOUDFLARE_API_KEY", "fixture-key")
+        .env("CLOUDFLARE_API_EMAIL", "fixture@example.invalid")
+        .env_remove("CLOUDFLARE_ACCOUNT_ID")
+        .env_remove("CLOUDFLARE_ACOUNT_ID")
+        .env_remove("CLOUDFLARE_ZONE_ID")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    let headers = requests[0].headers.to_ascii_lowercase();
+    assert!(headers.contains("x-auth-key: fixture-key"));
+    assert!(headers.contains("x-auth-email: fixture@example.invalid"));
+    assert!(!headers.contains("authorization:"));
+}
+
+#[test]
+fn capability_workers_builds_get_build_accepts_iso_and_numeric_dates() {
+    for (created_on, expected) in [
+        (
+            r#""2024-01-01T02:00:00.123+02:00""#,
+            "2024-01-01T00:00:00.123Z",
+        ),
+        ("1704067200123", "2024-01-01T00:00:00.123Z"),
+    ] {
+        let server = Server::start(vec![(200, workers_build_response(created_on))]);
+        let (output, _) = run(
+            &workers_args(r#"{"buildUUID":"build-not-a-uuid"}"#),
+            Some(&server.endpoint),
+            Some("fixture-token"),
+        );
+        assert!(output.status.success(), "{output:?}");
+        assert_eq!(json_stdout(&output)["createdOn"], expected);
+        assert_eq!(server.finish().len(), 1);
+    }
+}
+#[test]
+fn capability_workers_builds_get_build_null_result_is_json_null() {
+    let server = Server::start(vec![(
+        200,
+        r#"{"success":true,"errors":[],"messages":[],"result":null,"ignored":true}"#,
+    )]);
+    let (output, _) = run(
+        &workers_args(r#"{"buildUUID":"build-not-a-uuid"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(json_stdout(&output), Value::Null);
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_workers_builds_get_build_rejects_malformed_full_responses() {
+    let cases = vec![
+        ("success", "/success", Some(serde_json::json!(false)), false),
+        ("errors type", "/errors", Some(serde_json::json!({})), false),
+        (
+            "error entry type",
+            "/errors",
+            Some(serde_json::json!(["not-an-object"])),
+            false,
+        ),
+        (
+            "error message type",
+            "/errors/0/message",
+            Some(serde_json::json!(1001)),
+            false,
+        ),
+        ("error message required", "/errors/0/message", None, false),
+        (
+            "error code type",
+            "/errors/0/code",
+            Some(serde_json::json!("1001")),
+            false,
+        ),
+        (
+            "messages type",
+            "/messages",
+            Some(serde_json::json!({})),
+            false,
+        ),
+        (
+            "result type",
+            "/result",
+            Some(serde_json::json!("not-an-object")),
+            false,
+        ),
+        ("pull request required", "/result/pull_request", None, false),
+        (
+            "unknown pull request value",
+            "/result/pull_request",
+            Some(serde_json::json!({"provider_shape": [true, null]})),
+            true,
+        ),
+        (
+            "build UUID type",
+            "/result/build_uuid",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "status type",
+            "/result/status",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "build outcome nullable type",
+            "/result/build_outcome",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "created date type",
+            "/result/created_on",
+            Some(serde_json::json!(null)),
+            false,
+        ),
+        (
+            "modified date type",
+            "/result/modified_on",
+            Some(serde_json::json!(null)),
+            false,
+        ),
+        (
+            "initializing nullable date type",
+            "/result/initializing_on",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "running nullable date type",
+            "/result/running_on",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "stopped nullable date type",
+            "/result/stopped_on",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "trigger object type",
+            "/result/trigger",
+            Some(serde_json::json!("not-an-object")),
+            false,
+        ),
+        (
+            "trigger string type",
+            "/result/trigger/trigger_uuid",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "trigger array type",
+            "/result/trigger/branch_includes",
+            Some(serde_json::json!("main")),
+            false,
+        ),
+        (
+            "trigger array item type",
+            "/result/trigger/branch_excludes",
+            Some(serde_json::json!([false])),
+            false,
+        ),
+        (
+            "trigger boolean type",
+            "/result/trigger/build_caching_enabled",
+            Some(serde_json::json!("true")),
+            false,
+        ),
+        (
+            "trigger date type",
+            "/result/trigger/created_on",
+            Some(serde_json::json!(null)),
+            false,
+        ),
+        (
+            "trigger nullable date type",
+            "/result/trigger/deleted_on",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "repo connection object type",
+            "/result/trigger/repo_connection",
+            Some(serde_json::json!([])),
+            false,
+        ),
+        (
+            "repo connection string type",
+            "/result/trigger/repo_connection/repo_id",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "repo connection date type",
+            "/result/trigger/repo_connection/created_on",
+            Some(serde_json::json!(null)),
+            false,
+        ),
+        (
+            "repo connection nullable date type",
+            "/result/trigger/repo_connection/deleted_on",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "build metadata object type",
+            "/result/build_trigger_metadata",
+            Some(serde_json::json!([])),
+            false,
+        ),
+        (
+            "build metadata string type",
+            "/result/build_trigger_metadata/branch",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+        (
+            "environment variables object type",
+            "/result/build_trigger_metadata/environment_variables",
+            Some(serde_json::json!([])),
+            false,
+        ),
+        (
+            "environment variable record type",
+            "/result/build_trigger_metadata/environment_variables/SECRET_TOKEN",
+            Some(serde_json::json!("not-an-object")),
+            false,
+        ),
+        (
+            "environment variable boolean type",
+            "/result/build_trigger_metadata/environment_variables/SECRET_TOKEN/is_secret",
+            Some(serde_json::json!("true")),
+            false,
+        ),
+        (
+            "environment variable date type",
+            "/result/build_trigger_metadata/environment_variables/SECRET_TOKEN/created_on",
+            Some(serde_json::json!(null)),
+            false,
+        ),
+        (
+            "environment variable nullable value type",
+            "/result/build_trigger_metadata/environment_variables/SECRET_TOKEN/value",
+            Some(serde_json::json!(false)),
+            false,
+        ),
+    ];
+    for (label, pointer, replacement, expected_success) in cases {
+        let body = workers_build_response_with_change(pointer, replacement);
+        let server = Server::start(vec![(200, body)]);
+        let (output, _) = run(
+            &workers_args(r#"{"buildUUID":"build-not-a-uuid"}"#),
+            Some(&server.endpoint),
+            Some("fixture-token"),
+        );
+        assert_eq!(
+            output.status.success(),
+            expected_success,
+            "{label}: {output:?}"
+        );
+        if expected_success {
+            let projected = json_stdout(&output);
+            assert_eq!(projected["buildUUID"], "build-not-a-uuid", "{label}");
+            assert_eq!(
+                projected["createdOn"], "2024-01-01T00:00:00.000Z",
+                "{label}"
+            );
+            assert!(
+                !projected.to_string().contains("environment_variables"),
+                "{label}"
+            );
+        } else {
+            assert!(
+                String::from_utf8_lossy(&output.stdout).contains("malformed"),
+                "{label}: {output:?}"
+            );
+        }
+        assert_eq!(server.finish().len(), 1, "{label}");
+    }
+}
+#[test]
+fn capability_workers_builds_get_build_preflight_guards_and_path_limits() {
+    assert_usage_before_network(
+        &capability_args(
+            "workers_builds_get_build",
+            r#"{"buildUUID":"build-not-a-uuid"}"#,
+        ),
+        "--allow-egress",
+    );
+    assert_usage_before_network(&workers_args(r#"{"buildUUID":"bad/path"}"#), "buildUUID");
+    for build_uuid in [" leading", "trailing ", "\t", "\n", "\r", "\u{0000}"] {
+        let input = serde_json::json!({"buildUUID": build_uuid}).to_string();
+        assert_usage_before_network(&workers_args(&input), "buildUUID");
+    }
+    let too_long = format!(r#"{{"buildUUID":"{}"}}"#, "x".repeat(257));
+    assert_usage_before_network(&workers_args(&too_long), "buildUUID");
+    assert_usage_before_network(
+        &workers_args(r#"{"buildUUID":"build-not-a-uuid","account_id":"other"}"#),
+        "conflicts with resolved account scope",
+    );
+}
+
+#[test]
+fn capability_workers_builds_get_build_rejects_resolved_account_whitespace_and_control_before_auth_or_network()
+ {
+    for source in ["cli", "environment", "global"] {
+        for account in ["account with space", "account\u{0007}with-control"] {
+            let output = run_workers_with_account_source(source, account);
+            assert_eq!(output.status.code(), Some(2), "{source} {account:?}");
+            let error = json_stdout(&output)["error"].clone();
+            assert_eq!(error["type"], "usage", "{source} {account:?}");
+            assert!(
+                error["message"]
+                    .as_str()
+                    .is_some_and(|message| message.contains("account_id must be one safe")),
+                "{source} {account:?}: {error}"
+            );
+            assert_ne!(error["type"], "auth", "{source} {account:?}");
+            assert_ne!(error["type"], "network", "{source} {account:?}");
+        }
+    }
+}
+
+#[test]
+fn capability_workers_builds_get_build_validates_resolved_endpoint_before_auth() {
+    for (source, environment_endpoint, global_endpoint) in [
+        ("environment", Some("http://example.com/client/v4"), None),
+        ("global config", None, Some("http://example.com/client/v4")),
+    ] {
+        let (output, _directory) = run_workers_without_auth(environment_endpoint, global_endpoint);
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert_eq!(output.status.code(), Some(1), "{source}: {text}");
+        assert!(
+            text.contains("HTTPS") || text.contains("invalid API endpoint"),
+            "{source}: {text}"
+        );
+        assert!(!text.contains("CLOUDFLARE_API_TOKEN"), "{source}: {text}");
+    }
+}
+
+#[test]
+fn capability_workers_builds_get_build_status_retry_redaction_and_redirects() {
+    let failure = r#"{"errors":[{"code":"fixture-token","message":"failure"}]}"#;
+    let server = Server::start(vec![(500, failure), (500, failure), (500, failure)]);
+    let (output, _) = run(
+        &workers_args(r#"{"buildUUID":"build-not-a-uuid"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(!output.status.success());
+    let text = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(!text.contains("fixture-token"));
+    assert_eq!(server.finish().len(), 3);
+
+    let server = Server::start(vec![(400, failure)]);
+    let (output, _) = run(
+        &workers_args(r#"{"buildUUID":"build-not-a-uuid"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(!output.status.success());
+    assert_eq!(server.finish().len(), 1);
+
+    let server = RedirectServer::start();
+    let (output, _) = run(
+        &workers_args(r#"{"buildUUID":"build-not-a-uuid"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(!output.status.success());
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_workers_builds_get_build_response_bound_is_enforced() {
+    let server = Server::start(vec![(200, workers_oversized_response())]);
+    let (output, _) = run(
+        &workers_args(r#"{"buildUUID":"build-not-a-uuid"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stdout).contains("response exceeds 8 MiB"));
+    assert_eq!(server.finish().len(), 1);
+}
 
 fn assert_usage_before_network(args: &[&str], expected: &str) {
     let (out, _) = run(args, Some("http://example.com"), None);

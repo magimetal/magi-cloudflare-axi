@@ -7,7 +7,7 @@
     "ref": "pinned-source"
   },
   "denominator": 172,
-  "legacy_metadata_sha256": "8dccf5d1e0dc4c14036a737d6d9039fbd5951dedc28a6c41e5e9f68abf11a8ce",
+  "legacy_metadata_sha256": "cb03a54935afa80047e374577cd1690371c86ed63ae1f13887f9cb83d360fb4a",
   "evidence": [
     {
       "id": "ev-ai_search-inventory",
@@ -2519,7 +2519,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "auditlogs_by_account_id",
         "contract_sha256": "630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac"
@@ -2614,7 +2614,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "d1_database_delete",
         "contract_sha256": "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da"
@@ -2699,7 +2699,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "d1_database_get",
         "contract_sha256": "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7"
@@ -2784,7 +2784,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "get_crawl_result",
         "contract_sha256": "e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52"
@@ -2879,7 +2879,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "get_post",
         "contract_sha256": "c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1"
@@ -2974,7 +2974,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_html_content",
         "contract_sha256": "5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909"
@@ -3059,7 +3059,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_json",
         "contract_sha256": "930b1ee212733b0fcd7e600bd346001ddb6e0154f99bbeebe27bc079e42cdb6d"
@@ -3154,7 +3154,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_links",
         "contract_sha256": "5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83"
@@ -3249,7 +3249,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_markdown",
         "contract_sha256": "853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed"
@@ -3344,7 +3344,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_pdf",
         "contract_sha256": "c544d991b6a98bace228cd7eb1bb124bd4934a6fa1cf318523579769e9e9780d"
@@ -3439,7 +3439,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_screenshot",
         "contract_sha256": "97ac366335b2110918db9244d13dfb4bafc35492032810778fd52200497fdbdc"
@@ -3534,7 +3534,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "get_url_snapshot",
         "contract_sha256": "3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588"
@@ -3629,7 +3629,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "graphql_schema_overview",
         "contract_sha256": "72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc"
@@ -3714,7 +3714,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "list_browser_sessions",
         "contract_sha256": "e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1"
@@ -3809,7 +3809,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "list_posts",
         "contract_sha256": "f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c"
@@ -3904,7 +3904,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "list_rags",
         "contract_sha256": "fef8065dad846d2ac68c9893fefafd68e59281516f595d0d788e84a2a4bf02d9"
@@ -3999,7 +3999,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "list_tags",
         "contract_sha256": "7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd"
@@ -4094,7 +4094,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "logpush_jobs_by_account_id",
         "contract_sha256": "cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef"
@@ -4189,7 +4189,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "scrape_url_elements",
         "contract_sha256": "a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415"
@@ -4284,7 +4284,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "search_cloudflare_documentation",
         "contract_sha256": "9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41"
@@ -4369,7 +4369,7 @@
       "provenance": {
         "kind": "generated_artifact",
         "artifact": "capabilities/cloudflare-operation-contracts.json",
-        "sha256": "6381e55ada921b57899bf1152dc514bd41c755d4b4abc4dd01ff0c4239a3cc61",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
         "fact": "Generated operation contract artifact.",
         "capability": "search_posts",
         "contract_sha256": "50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91"
@@ -4430,6 +4430,134 @@
       "provenance": {
         "kind": "hermetic_test",
         "test_id": "tests/transport.rs::capability_cloudflare_blog_public_reads_exact_requests",
+        "fact": "Hermetic exact-request transport test."
+      },
+      "fact": "Hermetic exact-request transport test."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-behavior",
+      "dimension": "behavior",
+      "provenance": {
+        "kind": "pinned_git",
+        "repo": "https://github.com/cloudflare/mcp-server-cloudflare",
+        "commit": "70ff690553722f731849ede6ba9ce98958395a23",
+        "source_ref": "apps/workers-builds/src/tools/workers-builds.tools.ts:78-129",
+        "blob": "3936684ab52f24fd02247b6a5e785f061b9bd2bd",
+        "span": "78-129",
+        "source_sha256": "fe096c34187b7646ad6e2ee033a3c2f46d50ee8623b4a9619f1f1bd6e8045ae3"
+      },
+      "fact": "Authoritative operation behavior."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-behavior-test",
+      "dimension": "behavior",
+      "provenance": {
+        "kind": "hermetic_test",
+        "test_id": "tests/transport.rs::capability_workers_builds_get_build_exact_request",
+        "fact": "Hermetic exact-request transport test."
+      },
+      "fact": "Hermetic exact-request transport test."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-discovery",
+      "dimension": "discovery",
+      "provenance": {
+        "kind": "generated_artifact",
+        "artifact": "capabilities/cloudflare-operation-contracts.json",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
+        "fact": "Generated operation contract artifact.",
+        "capability": "workers_builds_get_build",
+        "contract_sha256": "156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa"
+      },
+      "fact": "Generated operation contract artifact."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-discovery-test",
+      "dimension": "discovery",
+      "provenance": {
+        "kind": "hermetic_test",
+        "test_id": "tests/integration.rs::capability_workers_builds_discovery_example_is_exact",
+        "fact": "Hermetic exact discovery example test."
+      },
+      "fact": "Hermetic exact discovery example test."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-policy",
+      "dimension": "policy",
+      "provenance": {
+        "kind": "pinned_git",
+        "repo": "https://github.com/cloudflare/mcp-server-cloudflare",
+        "commit": "70ff690553722f731849ede6ba9ce98958395a23",
+        "source_ref": "apps/workers-builds/src/tools/workers-builds.tools.ts:78-129",
+        "blob": "3936684ab52f24fd02247b6a5e785f061b9bd2bd",
+        "span": "78-129",
+        "source_sha256": "fe096c34187b7646ad6e2ee033a3c2f46d50ee8623b4a9619f1f1bd6e8045ae3"
+      },
+      "fact": "Pinned upstream handler establishes upstream read-only intent only."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-policy-contract",
+      "dimension": "policy",
+      "provenance": {
+        "kind": "generated_artifact",
+        "artifact": "capabilities/cloudflare-operation-contracts.json",
+        "sha256": "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25",
+        "fact": "Generated operation contract establishes local AXI safety classifications: operation=read, destructive=false, metered=false, data_egress=true, long_running=false, retry_policy=transient_read.",
+        "capability": "workers_builds_get_build",
+        "contract_sha256": "156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa"
+      },
+      "fact": "Generated operation contract establishes local AXI safety classifications: operation=read, destructive=false, metered=false, data_egress=true, long_running=false, retry_policy=transient_read."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-policy-egress",
+      "dimension": "policy",
+      "provenance": {
+        "kind": "hermetic_test",
+        "test_id": "tests/transport.rs::capability_workers_builds_get_build_preflight_guards_and_path_limits",
+        "fact": "Hermetic preflight guard test verifies explicit --allow-egress opt-in before network dispatch."
+      },
+      "fact": "Hermetic preflight guard test verifies explicit --allow-egress opt-in before network dispatch."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-policy-retry",
+      "dimension": "policy",
+      "provenance": {
+        "kind": "hermetic_test",
+        "test_id": "tests/transport.rs::capability_workers_builds_get_build_status_retry_redaction_and_redirects",
+        "fact": "Hermetic status/retry test verifies transient-read retries."
+      },
+      "fact": "Hermetic status/retry test verifies transient-read retries."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-policy-test",
+      "dimension": "policy",
+      "provenance": {
+        "kind": "hermetic_test",
+        "test_id": "tests/transport.rs::capability_workers_builds_get_build_exact_request",
+        "fact": "Hermetic exact-request transport test verifies successful bodyless read dispatch without --allow-metered, under explicit --allow-egress opt-in."
+      },
+      "fact": "Hermetic exact-request transport test verifies successful bodyless read dispatch without --allow-metered, under explicit --allow-egress opt-in."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-route",
+      "dimension": "route",
+      "provenance": {
+        "kind": "pinned_git",
+        "repo": "https://github.com/cloudflare/mcp-server-cloudflare",
+        "commit": "70ff690553722f731849ede6ba9ce98958395a23",
+        "source_ref": "apps/workers-builds/src/api/workers-builds.api.ts:34-49",
+        "blob": "061f5240161acc5c2d355d968002e7a178df416b",
+        "span": "34-49",
+        "source_sha256": "8bdd02f9580cfffc1f40e6f33f38f1dc8d8650e5d5778876c60ed4e28bbc7f84"
+      },
+      "fact": "Pinned operation route and request construction."
+    },
+    {
+      "id": "ev-operation-workers_builds_get_build-verification",
+      "dimension": "verification",
+      "provenance": {
+        "kind": "hermetic_test",
+        "test_id": "tests/transport.rs::capability_workers_builds_get_build_exact_request",
         "fact": "Hermetic exact-request transport test."
       },
       "fact": "Hermetic exact-request transport test."
@@ -18226,7 +18354,7 @@
       "scope": "account",
       "operation": "read",
       "transport": "rest",
-      "cli_access": "raw_rest",
+      "cli_access": "modeled",
       "method": "GET",
       "sdk_method": "Cloudflare API operation for workers_builds_get_build",
       "source_commit": "70ff690553722f731849ede6ba9ce98958395a23",
@@ -18245,31 +18373,48 @@
           ]
         },
         "route": {
-          "status": "unresolved",
-          "evidence_ids": []
+          "status": "complete",
+          "evidence_ids": [
+            "ev-operation-workers_builds_get_build-route"
+          ]
         },
         "behavior": {
-          "status": "unresolved",
-          "evidence_ids": []
+          "status": "verified",
+          "evidence_ids": [
+            "ev-operation-workers_builds_get_build-behavior",
+            "ev-operation-workers_builds_get_build-behavior-test"
+          ]
         },
         "policy": {
-          "status": "unresolved",
-          "evidence_ids": []
+          "status": "verified",
+          "evidence_ids": [
+            "ev-operation-workers_builds_get_build-policy",
+            "ev-operation-workers_builds_get_build-policy-contract",
+            "ev-operation-workers_builds_get_build-policy-test",
+            "ev-operation-workers_builds_get_build-policy-egress",
+            "ev-operation-workers_builds_get_build-policy-retry"
+          ]
         },
         "verification": {
-          "status": "unverified",
-          "evidence_ids": []
+          "status": "hermetic_verified",
+          "evidence_ids": [
+            "ev-operation-workers_builds_get_build-verification"
+          ]
         },
         "discovery": {
-          "status": "missing",
-          "evidence_ids": []
+          "status": "verified",
+          "evidence_ids": [
+            "ev-operation-workers_builds_get_build-discovery",
+            "ev-operation-workers_builds_get_build-discovery-test"
+          ]
         },
         "external_blocker": {
           "status": "none",
           "evidence_ids": []
         }
       },
-      "schema_contract_sha256": "68a6f044331980532d4d34922fe54027cb72e92802254745c2714c2f8687ad90"
+      "schema_contract_sha256": "68a6f044331980532d4d34922fe54027cb72e92802254745c2714c2f8687ad90",
+      "path_template": "/accounts/{account_id}/builds/builds/{buildUUID}"
     },
     {
       "name": "workers_builds_get_build_logs",
@@ -18805,7 +18950,7 @@
   },
   "operation_artifacts": {
     "path": "capabilities/cloudflare-operation-contracts.json",
-    "bundle_sha256": "ebcb9c2c8d195e223854dd66919bf6cfc433d25f22d49f91f53f8ff75a154153",
+    "bundle_sha256": "152335217fb4766f9843fac569cf5e1c01bb57ef400f1417ac6b30fcf465e2ac",
     "contracts": [
       {
         "capability": "auditlogs_by_account_id",
@@ -18890,6 +19035,10 @@
       {
         "capability": "search_posts",
         "contract_sha256": "50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91"
+      },
+      {
+        "capability": "workers_builds_get_build",
+        "contract_sha256": "156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa"
       }
     ]
   }

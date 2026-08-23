@@ -6,8 +6,8 @@ use std::collections::BTreeSet;
 
 const CONTRACTS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
-const BUNDLE_SHA256: &str = "ebcb9c2c8d195e223854dd66919bf6cfc433d25f22d49f91f53f8ff75a154153";
-const CONTRACT_NAMES: [&str; 21] = [
+const BUNDLE_SHA256: &str = "152335217fb4766f9843fac569cf5e1c01bb57ef400f1417ac6b30fcf465e2ac";
+const CONTRACT_NAMES: [&str; 22] = [
     "auditlogs_by_account_id",
     "d1_database_delete",
     "d1_database_get",
@@ -29,8 +29,9 @@ const CONTRACT_NAMES: [&str; 21] = [
     "scrape_url_elements",
     "search_cloudflare_documentation",
     "search_posts",
+    "workers_builds_get_build",
 ];
-const CONTRACT_HASHES: [&str; 21] = [
+const CONTRACT_HASHES: [&str; 22] = [
     "630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac",
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
@@ -52,6 +53,7 @@ const CONTRACT_HASHES: [&str; 21] = [
     "a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415",
     "9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41",
     "50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91",
+    "156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa",
 ];
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
@@ -122,7 +124,7 @@ fn contracts() -> Result<Bundle, AppError> {
             .map(|c| c.capability.as_str())
             .collect::<Vec<_>>()
             != CONTRACT_NAMES
-        || bundle.version != "phase4g-operation-contracts-v1"
+        || bundle.version != "phase4h-operation-contracts-v1"
     {
         return Err(AppError::api(
             "embedded operation contract envelope is invalid",
@@ -539,6 +541,23 @@ fn validate_contract(c: &Contract) -> Result<(), AppError> {
             ));
         }
     }
+    if c.capability == "workers_builds_get_build" {
+        let expected_route = json!({"auth":"account","body":"none","content_type":"application/json","method":"GET","path_parameters":[{"format":"single_path_segment","max_length":32,"name":"account_id","source":"resolved_account"},{"format":"single_path_segment","max_length":256,"name":"buildUUID","source":"input"}],"path_template":"/accounts/{account_id}/builds/builds/{buildUUID}","query_parameters":[],"scope":"account","transport":"rest"});
+        let expected_behavior = json!({"artifact":"none","empty_state":"null","error":"strict_v4_build_details_response_schema","output_projection":"strict_build_details","pagination":"none","projection_validation":"full_response_before_projection"});
+        let expected_safety = json!({"operation":"read","destructive":false,"metered":false,"data_egress":true,"long_running":false,"retry_policy":"transient_read"});
+        let expected_implementation = json!({"status":"verified","adapter":"rest","test_id":"tests/transport.rs::capability_workers_builds_get_build_exact_request","documentation_id":"cloudflare-workers-builds-get-build","reviewed_at":"2026-08-14"});
+        let expected_evidence = json!({"api_client":{"blob_oid":"b53d834e977cfb57467a2b1fe4f814f9c2bb2cc7","commit":SOURCE_COMMIT,"file":"packages/mcp-common/src/cloudflare-api.ts","lines":"20-71","source_sha256":"31c1f165a446e241dc93f4880445ad2ea096a9b11a7b757e3e82cc2f63d230d0"},"api_route":{"blob_oid":"061f5240161acc5c2d355d968002e7a178df416b","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/api/workers-builds.api.ts","lines":"34-49","source_sha256":"8bdd02f9580cfffc1f40e6f33f38f1dc8d8650e5d5778876c60ed4e28bbc7f84"},"auth_scopes":{"blob_oid":"1d1ce050974abaebc3b6497d833b3f7c8f39ab94","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/workers-builds.app.ts","lines":"21-28","source_sha256":"e087ea416688217a28e509e26401a74ef76b53742cb97ca4f8244d6f93adf384"},"get_build_alias":{"blob_oid":"7520d4accba6d6ace4d59fb11cf25e096e90501e","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/types/workers-builds.types.ts","lines":"82-83","source_sha256":"d8b455f727a41608914f7d3c0a94ff05b87e6385f41b15eed989432e16245926"},"pinned_handler":{"blob_oid":"3936684ab52f24fd02247b6a5e785f061b9bd2bd","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/tools/workers-builds.tools.ts","lines":"78-129","source_sha256":"fe096c34187b7646ad6e2ee033a3c2f46d50ee8623b4a9619f1f1bd6e8045ae3"},"response_schema":{"blob_oid":"7520d4accba6d6ace4d59fb11cf25e096e90501e","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/types/workers-builds.types.ts","lines":"3-64","source_sha256":"a830f11089342d0ad203ee29f66e9eee6664cffad1386e7da2c1f1044e8bfd75"},"v4_envelope":{"blob_oid":"6748c68b64694c7a7c225dbd5daa388c779ab135","commit":SOURCE_COMMIT,"file":"packages/mcp-common/src/v4-api.ts","lines":"29-55","source_sha256":"2866e0a419736d107bc77dc8d49bb95583101caa5317ecc8660a40062093fdfc"}});
+        if c.route != expected_route
+            || c.behavior != expected_behavior
+            || serde_json::to_value(&c.safety).unwrap() != expected_safety
+            || c.implementation != expected_implementation
+            || c.evidence != expected_evidence
+        {
+            return Err(AppError::api(
+                "Workers Builds get-build operation semantic or evidence mismatch",
+            ));
+        }
+    }
     Ok(())
 }
 fn guard(name: &str, s: &Safety, f: GuardFlags<'_>) -> Result<(), AppError> {
@@ -581,6 +600,23 @@ fn path_segment(v: &str, label: &str, max: Option<usize>) -> Result<String, AppE
     } else {
         Ok(v.into())
     }
+}
+fn workers_account_id(v: &str) -> Result<String, AppError> {
+    if v.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        return Err(AppError::usage(
+            "account_id must be one safe non-empty path segment",
+        ));
+    }
+    path_segment(v, "account_id", Some(32))
+}
+
+fn workers_build_uuid(v: &str) -> Result<String, AppError> {
+    if v.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        return Err(AppError::usage(
+            "buildUUID must be one safe non-empty path segment",
+        ));
+    }
+    path_segment(v, "buildUUID", Some(256))
 }
 fn encode_uri_component(value: &str) -> String {
     let mut encoded = String::with_capacity(value.len());
@@ -716,18 +752,36 @@ pub fn preflight(
     }
     let effective = effective(name, input.clone())?;
     if let Some(input_account) = effective.get("account_id").and_then(Value::as_str) {
-        path_segment(input_account, "account_id", Some(32))?;
+        if name == "workers_builds_get_build" {
+            workers_account_id(input_account)?;
+        } else {
+            path_segment(input_account, "account_id", Some(32))?;
+        }
         if account.is_some_and(|resolved| resolved != input_account) {
             return Err(AppError::usage(
                 "input account_id conflicts with resolved account scope",
             ));
         }
     }
+    if name == "workers_builds_get_build" {
+        let build_uuid = effective
+            .get("buildUUID")
+            .and_then(Value::as_str)
+            .ok_or_else(|| AppError::usage("buildUUID is required"))?;
+        workers_build_uuid(build_uuid)?;
+    }
+    if name == "workers_builds_get_build" {
+        if let Some(a) = account {
+            workers_account_id(a)?;
+        }
+    }
     if let Some(e) = endpoint {
         client::validate_endpoint(e)?;
     }
     if let Some(a) = account {
-        path_segment(a, "account_id", Some(32))?;
+        if name != "workers_builds_get_build" {
+            path_segment(a, "account_id", Some(32))?;
+        }
     }
     if name.starts_with("d1_database_") {
         database_id(effective.get("database_id").unwrap_or(&Value::Null))?;
@@ -1967,6 +2021,457 @@ fn autorag_request(
     Ok(json!({"autorags": out, "total_count": total}))
 }
 
+fn workers_response_error(field: &str) -> AppError {
+    AppError::api(format!("Workers Builds response {field} is malformed"))
+}
+
+fn workers_object<'a>(value: &'a Value, field: &str) -> Result<&'a Map<String, Value>, AppError> {
+    value
+        .as_object()
+        .ok_or_else(|| workers_response_error(&format!("{field} must be an object")))
+}
+
+fn workers_string(object: &Map<String, Value>, field: &str) -> Result<String, AppError> {
+    object
+        .get(field)
+        .and_then(Value::as_str)
+        .map(str::to_owned)
+        .ok_or_else(|| workers_response_error(&format!("{field} must be a string")))
+}
+
+fn workers_nullable_string(object: &Map<String, Value>, field: &str) -> Result<Value, AppError> {
+    match object.get(field) {
+        Some(Value::Null) => Ok(Value::Null),
+        Some(Value::String(value)) => Ok(Value::String(value.clone())),
+        _ => Err(workers_response_error(&format!(
+            "{field} must be null or a string"
+        ))),
+    }
+}
+
+fn workers_nullable_string_type(object: &Map<String, Value>, field: &str) -> Result<(), AppError> {
+    match object.get(field) {
+        Some(Value::Null | Value::String(_)) => Ok(()),
+        _ => Err(workers_response_error(&format!(
+            "{field} must be null or a string"
+        ))),
+    }
+}
+
+fn workers_bool(object: &Map<String, Value>, field: &str) -> Result<(), AppError> {
+    if object.get(field).is_some_and(Value::is_boolean) {
+        Ok(())
+    } else {
+        Err(workers_response_error(&format!(
+            "{field} must be a boolean"
+        )))
+    }
+}
+
+fn workers_string_array(object: &Map<String, Value>, field: &str) -> Result<(), AppError> {
+    let values = object
+        .get(field)
+        .and_then(Value::as_array)
+        .ok_or_else(|| workers_response_error(&format!("{field} must be an array")))?;
+    if values.iter().all(Value::is_string) {
+        Ok(())
+    } else {
+        Err(workers_response_error(&format!(
+            "{field} must contain only strings"
+        )))
+    }
+}
+
+const WORKERS_DATE_MAX_MILLIS: i128 = 8_640_000_000_000_000;
+
+fn workers_digits(bytes: &[u8], start: usize, length: usize) -> Option<u32> {
+    let end = start.checked_add(length)?;
+    if end > bytes.len() {
+        return None;
+    }
+    let mut value = 0u32;
+    for byte in &bytes[start..end] {
+        if !byte.is_ascii_digit() {
+            return None;
+        }
+        value = value
+            .checked_mul(10)?
+            .checked_add(u32::from(*byte - b'0'))?;
+    }
+    Some(value)
+}
+
+fn workers_leap(year: i64) -> bool {
+    year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+}
+
+fn workers_days_from_civil(year: i64, month: u32, day: u32) -> i64 {
+    let year = year - i64::from(month <= 2);
+    let era = if year >= 0 {
+        year / 400
+    } else {
+        (year - 399) / 400
+    };
+    let year_of_era = year - era * 400;
+    let month_prime = i64::from(month) + if month > 2 { -3 } else { 9 };
+    let day_of_year = (153 * month_prime + 2) / 5 + i64::from(day) - 1;
+    let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+    era * 146_097 + day_of_era - 719_468
+}
+
+fn workers_civil_from_days(days: i64) -> (i64, u32, u32) {
+    let days = days + 719_468;
+    let era = if days >= 0 {
+        days / 146_097
+    } else {
+        (days - 146_096) / 146_097
+    };
+    let day_of_era = days - era * 146_097;
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let year = year_of_era + era * 400;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_prime = (5 * day_of_year + 2) / 153;
+    let day = day_of_year - (153 * month_prime + 2) / 5 + 1;
+    let month = month_prime + if month_prime < 10 { 3 } else { -9 };
+    (year + i64::from(month <= 2), month as u32, day as u32)
+}
+
+fn workers_iso_millis(timestamp: i128) -> Option<String> {
+    if !(-WORKERS_DATE_MAX_MILLIS..=WORKERS_DATE_MAX_MILLIS).contains(&timestamp) {
+        return None;
+    }
+    let timestamp = i64::try_from(timestamp).ok()?;
+    let seconds = timestamp.div_euclid(1_000);
+    let millis = timestamp.rem_euclid(1_000);
+    let days = seconds.div_euclid(86_400);
+    let day_seconds = seconds.rem_euclid(86_400);
+    let (year, month, day) = workers_civil_from_days(days);
+    let hour = day_seconds / 3_600;
+    let minute = day_seconds.rem_euclid(3_600) / 60;
+    let second = day_seconds.rem_euclid(60);
+    let year = match year {
+        0..=9_999 => format!("{year:04}"),
+        year if year < 0 => format!("-{:06}", year.unsigned_abs()),
+        year => format!("+{year:06}"),
+    };
+    Some(format!(
+        "{year}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}.{millis:03}Z"
+    ))
+}
+
+// The pinned provider schema uses z.coerce.date(). JSON responses carry this
+// as an ISO date/time string or a millisecond number; reject ambiguous values
+// and project both accepted forms through the Date.toISOString() shape.
+fn workers_parse_iso_date(value: &str) -> Option<i128> {
+    let bytes = value.trim().as_bytes();
+    if bytes.len() < 10 || bytes[4] != b'-' || bytes[7] != b'-' {
+        return None;
+    }
+    let year = i64::from(workers_digits(bytes, 0, 4)?);
+    let month = workers_digits(bytes, 5, 2)?;
+    let day = workers_digits(bytes, 8, 2)?;
+    let maximum_day = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if workers_leap(year) => 29,
+        2 => 28,
+        _ => return None,
+    };
+    if day == 0 || day > maximum_day {
+        return None;
+    }
+    if bytes.len() == 10 {
+        return Some(i128::from(workers_days_from_civil(year, month, day)) * 86_400_000);
+    }
+    if bytes.len() < 20 || bytes[10] != b'T' || bytes[13] != b':' || bytes[16] != b':' {
+        return None;
+    }
+    let hour = workers_digits(bytes, 11, 2)?;
+    let minute = workers_digits(bytes, 14, 2)?;
+    let second = workers_digits(bytes, 17, 2)?;
+    if hour > 23 || minute > 59 || second > 59 {
+        return None;
+    }
+
+    let mut index = 19;
+    let mut fraction = 0u32;
+    if bytes.get(index) == Some(&b'.') {
+        index += 1;
+        let start = index;
+        while bytes.get(index).is_some_and(u8::is_ascii_digit) {
+            index += 1;
+        }
+        let digits = &bytes[start..index];
+        if digits.is_empty() || digits.len() > 9 {
+            return None;
+        }
+        for byte in digits.iter().take(3) {
+            fraction = fraction * 10 + u32::from(*byte - b'0');
+        }
+        for _ in digits.len().min(3)..3 {
+            fraction *= 10;
+        }
+    }
+
+    let offset_minutes = match bytes.get(index) {
+        Some(b'Z') if index + 1 == bytes.len() => 0,
+        Some(sign @ (b'+' | b'-')) if index + 6 == bytes.len() && bytes[index + 3] == b':' => {
+            let offset_hour = workers_digits(bytes, index + 1, 2)?;
+            let offset_minute = workers_digits(bytes, index + 4, 2)?;
+            if offset_hour > 23 || offset_minute > 59 {
+                return None;
+            }
+            let minutes = i32::try_from(offset_hour * 60 + offset_minute).ok()?;
+            if *sign == b'+' { minutes } else { -minutes }
+        }
+        _ => return None,
+    };
+    let local = i128::from(workers_days_from_civil(year, month, day)) * 86_400_000
+        + i128::from(hour) * 3_600_000
+        + i128::from(minute) * 60_000
+        + i128::from(second) * 1_000
+        + i128::from(fraction);
+    Some(local - i128::from(offset_minutes) * 60_000)
+}
+
+fn workers_coerce_date(value: &Value) -> Option<String> {
+    let timestamp = match value {
+        Value::Number(number) => {
+            let millis = number.as_f64()?;
+            if !millis.is_finite()
+                || millis < -(WORKERS_DATE_MAX_MILLIS as f64)
+                || millis > WORKERS_DATE_MAX_MILLIS as f64
+            {
+                return None;
+            }
+            millis.trunc() as i128
+        }
+        Value::String(value) => workers_parse_iso_date(value)?,
+        _ => return None,
+    };
+    workers_iso_millis(timestamp)
+}
+
+fn workers_date(object: &Map<String, Value>, field: &str) -> Result<String, AppError> {
+    workers_coerce_date(
+        object
+            .get(field)
+            .ok_or_else(|| workers_response_error(&format!("{field} is required")))?,
+    )
+    .ok_or_else(|| workers_response_error(&format!("{field} must be a valid date")))
+}
+
+fn workers_nullable_date(object: &Map<String, Value>, field: &str) -> Result<(), AppError> {
+    let value = object
+        .get(field)
+        .ok_or_else(|| workers_response_error(&format!("{field} is required")))?;
+    if value.is_null() {
+        Ok(())
+    } else {
+        workers_coerce_date(value)
+            .map(|_| ())
+            .ok_or_else(|| workers_response_error(&format!("{field} must be null or a valid date")))
+    }
+}
+
+fn workers_validate_environment_variables(object: &Map<String, Value>) -> Result<(), AppError> {
+    let variables = workers_object(
+        object
+            .get("environment_variables")
+            .ok_or_else(|| workers_response_error("environment_variables is required"))?,
+        "environment_variables",
+    )?;
+    for (name, value) in variables {
+        let variable = workers_object(value, &format!("environment_variables.{name}"))?;
+        workers_bool(variable, "is_secret")?;
+        workers_date(variable, "created_on")?;
+        workers_nullable_string_type(variable, "value")?;
+    }
+    Ok(())
+}
+
+fn workers_validate_build_details(value: &Value) -> Result<Value, AppError> {
+    let build = workers_object(value, "result")?;
+    let build_uuid = workers_string(build, "build_uuid")?;
+    let status = workers_string(build, "status")?;
+    let build_outcome = workers_nullable_string(build, "build_outcome")?;
+    let created_on = workers_date(build, "created_on")?;
+    workers_date(build, "modified_on")?;
+    workers_nullable_date(build, "initializing_on")?;
+    workers_nullable_date(build, "running_on")?;
+    workers_nullable_date(build, "stopped_on")?;
+
+    let trigger = workers_object(
+        build
+            .get("trigger")
+            .ok_or_else(|| workers_response_error("trigger is required"))?,
+        "trigger",
+    )?;
+    for field in [
+        "trigger_uuid",
+        "external_script_id",
+        "trigger_name",
+        "build_command",
+        "deploy_command",
+        "root_directory",
+    ] {
+        workers_string(trigger, field)?;
+    }
+    for field in [
+        "branch_includes",
+        "branch_excludes",
+        "path_includes",
+        "path_excludes",
+    ] {
+        workers_string_array(trigger, field)?;
+    }
+    workers_bool(trigger, "build_caching_enabled")?;
+    workers_date(trigger, "created_on")?;
+    workers_date(trigger, "modified_on")?;
+    workers_nullable_date(trigger, "deleted_on")?;
+    let repo_connection = workers_object(
+        trigger
+            .get("repo_connection")
+            .ok_or_else(|| workers_response_error("repo_connection is required"))?,
+        "repo_connection",
+    )?;
+    for field in [
+        "repo_connection_uuid",
+        "repo_id",
+        "repo_name",
+        "provider_type",
+        "provider_account_id",
+        "provider_account_name",
+    ] {
+        workers_string(repo_connection, field)?;
+    }
+    workers_date(repo_connection, "created_on")?;
+    workers_date(repo_connection, "modified_on")?;
+    workers_nullable_date(repo_connection, "deleted_on")?;
+
+    let metadata = workers_object(
+        build
+            .get("build_trigger_metadata")
+            .ok_or_else(|| workers_response_error("build_trigger_metadata is required"))?,
+        "build_trigger_metadata",
+    )?;
+    for field in [
+        "build_trigger_source",
+        "branch",
+        "commit_hash",
+        "commit_message",
+        "author",
+        "build_command",
+        "deploy_command",
+        "root_directory",
+        "build_token_uuid",
+        "repo_name",
+        "provider_account_name",
+        "provider_type",
+    ] {
+        workers_string(metadata, field)?;
+    }
+    workers_validate_environment_variables(metadata)?;
+    if !build.contains_key("pull_request") {
+        return Err(workers_response_error("pull_request is required"));
+    }
+
+    Ok(json!({
+        "buildUUID": build_uuid,
+        "createdOn": created_on,
+        "status": status,
+        "buildOutcome": build_outcome,
+        "branch": workers_string(metadata, "branch")?,
+        "commitHash": workers_string(metadata, "commit_hash")?,
+        "commitMessage": workers_string(metadata, "commit_message")?,
+        "commitAuthor": workers_string(metadata, "author")?,
+        "buildCommand": workers_string(metadata, "build_command")?,
+        "deployCommand": workers_string(metadata, "deploy_command")?,
+    }))
+}
+
+fn workers_builds_response(envelope: Value) -> Result<Value, AppError> {
+    let root = workers_object(&envelope, "root envelope")?;
+    if root.get("success") != Some(&Value::Bool(true)) {
+        return Err(workers_response_error("success must be true"));
+    }
+    let errors = root
+        .get("errors")
+        .and_then(Value::as_array)
+        .ok_or_else(|| workers_response_error("errors must be an array"))?;
+    for error in errors {
+        let error = workers_object(error, "errors entry")?;
+        workers_string(error, "message")?;
+        if let Some(code) = error.get("code") {
+            if !code.is_number() {
+                return Err(workers_response_error("error code must be a number"));
+            }
+        }
+    }
+    if !root.get("messages").is_some_and(Value::is_array) {
+        return Err(workers_response_error("messages must be an array"));
+    }
+    let result = root
+        .get("result")
+        .ok_or_else(|| workers_response_error("result is required"))?;
+    if result.is_null() {
+        Ok(Value::Null)
+    } else {
+        workers_validate_build_details(result)
+    }
+}
+
+fn workers_builds_get_build_request(
+    input: &Map<String, Value>,
+    endpoint: Option<&str>,
+    cli_account: Option<String>,
+) -> Result<Value, AppError> {
+    let mut cfg = config::load(endpoint.map(str::to_owned), cli_account, None)?;
+    if let (Some(configured), Some(provided)) = (
+        cfg.account.as_deref(),
+        input.get("account_id").and_then(Value::as_str),
+    ) {
+        if configured != provided {
+            return Err(AppError::usage(
+                "input account_id conflicts with resolved account scope",
+            ));
+        }
+    }
+    if cfg.account.is_none() {
+        cfg.account = input
+            .get("account_id")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+    }
+    let account = workers_account_id(cfg.account.as_deref().ok_or_else(|| {
+        AppError::usage("account scope required; use --account or input account_id")
+    })?)?;
+    let build_uuid = workers_build_uuid(
+        input
+            .get("buildUUID")
+            .and_then(Value::as_str)
+            .ok_or_else(|| AppError::usage("buildUUID is required"))?,
+    )?;
+    client::validate_endpoint(&cfg.endpoint)?;
+    let auth = config::auth_for(&cfg)?;
+    let response = client::CloudflareClient::new(cfg, auth)?.request_with_trusted_headers(
+        client::RequestOptions {
+            method: client::Method::Get,
+            path: format!("/accounts/{account}/builds/builds/{build_uuid}"),
+            query: vec![],
+            body: None,
+            allow_write: false,
+            confirm_delete: None,
+            retry_policy: client::RetryPolicy::TransientRead,
+            allow_classified_read_post: false,
+        },
+        &[],
+        true,
+    )?;
+    workers_builds_response(response.envelope)
+}
+
 pub fn invoke(
     name: &str,
     input: Value,
@@ -1993,6 +2498,9 @@ pub fn invoke(
         }
         "logpush_jobs_by_account_id" => logpush_request(&input, endpoint.as_deref(), cli_account),
         "auditlogs_by_account_id" => auditlogs_request(&input, endpoint.as_deref(), cli_account),
+        "workers_builds_get_build" => {
+            workers_builds_get_build_request(&input, endpoint.as_deref(), cli_account)
+        }
         "list_rags" => autorag_request(&input, endpoint.as_deref(), cli_account),
         "search_cloudflare_documentation" => {
             mcp::verified_call(name, Value::Object(input), mcp_endpoint.as_deref())

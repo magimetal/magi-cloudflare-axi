@@ -662,10 +662,11 @@ mod tests {
         let readme = include_str!("../README.md");
         let contract = include_str!("../docs/plans/cloudflare-axi-contract.md");
         let roadmap = include_str!("../docs/plans/cloudflare-full-capability-parity-roadmap.md");
+        let evidence = include_str!("../docs/cloudflare-api-evidence.md");
         let skill = include_str!("../skills/magi-cloudflare-axi/SKILL.md");
         for phrase in [
             "schema v3",
-            "I=172; S=172; R=B=P=V=21; D=16; X=40",
+            "I=172; S=172; R=B=P=V=22; D=17; X=40",
             "capability invoke d1_database_get",
             "logpush_jobs_by_account_id",
             "GET /accounts/{account_id}/logpush/jobs",
@@ -680,12 +681,42 @@ mod tests {
             assert!(contract.contains(phrase), "contract missing {phrase}");
             assert!(skill.contains(phrase), "skill missing {phrase}");
         }
+        for artifact in [readme, contract, roadmap, evidence, skill] {
+            for phrase in [
+                "Phase 0–4H",
+                "workers_builds_get_build",
+                "GET /accounts/{account_id}/builds/builds/{buildUUID}",
+                "account:read",
+                "workers:read",
+                "workers_builds:read",
+                "strict V4 envelope",
+                "strict ten-field projection",
+                "not upstream facts",
+                "credential/provider-message redaction",
+                "8 MiB response bound",
+                "I=172; S=172; R=B=P=V=22; D=17; X=40",
+                "150 routes remain unresolved",
+            ] {
+                assert!(
+                    artifact.contains(phrase),
+                    "guidance artifact missing {phrase}"
+                );
+            }
+        }
         for artifact in [readme, contract, skill] {
             assert!(artifact.contains("Phase 3"));
         }
+        let workers_command = "magi-cloudflare-axi capability invoke workers_builds_get_build --input '{\"buildUUID\":\"<buildUUID>\"}' --allow-egress";
+        for artifact in [readme, contract, roadmap, evidence, skill] {
+            assert!(artifact.contains(workers_command));
+        }
+        assert!(readme.contains("22 exact operation contracts"));
+        assert!(contract.contains("Exact contracts now total 22"));
+        assert!(roadmap.contains("exact operation contracts total 22"));
+        assert!(evidence.contains("22 exact operation contracts"));
+        assert!(skill.contains("22 exact operation contracts"));
         assert!(roadmap.contains("current_phase: phase-4-in-progress"));
-        assert!(roadmap.contains("I=172; S=172; R=B=P=V=21; D=16; X=40"));
-        assert!(roadmap.contains("151 routes remain unresolved"));
+        assert!(roadmap.contains("21 verified reads, including authenticated Browser, Logpush, Audit Logs, AutoRAG, and Workers Builds contracts; 150 total routes unresolved"));
         for phrase in [
             "registration-input schema",
             "--allow-write --allow-metered --confirm",
