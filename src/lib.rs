@@ -657,6 +657,16 @@ mod tests {
             r#"query { value(text: "escaped \\\")") } mutation Update { change }"#
         ));
     }
+    fn phase_4i_narrative<'a>(artifact_name: &str, artifact: &'a str, marker: &str) -> &'a str {
+        let start = artifact.find(marker).unwrap_or_else(|| {
+            panic!("{artifact_name} missing Phase 4I narrative marker {marker}")
+        });
+        let narrative = &artifact[start..];
+        narrative
+            .split_once("\n\n")
+            .map_or(narrative, |(block, _)| block)
+    }
+
     #[test]
     fn guidance_artifacts_keep_core_contract_in_sync() {
         let readme = include_str!("../README.md");
@@ -666,7 +676,7 @@ mod tests {
         let skill = include_str!("../skills/magi-cloudflare-axi/SKILL.md");
         for phrase in [
             "schema v3",
-            "I=172; S=172; R=B=P=V=22; D=17; X=40",
+            "I=172; S=172; R=B=P=V=23; D=18; X=40",
             "capability invoke d1_database_get",
             "logpush_jobs_by_account_id",
             "GET /accounts/{account_id}/logpush/jobs",
@@ -676,6 +686,8 @@ mod tests {
             "GET /accounts/{account_id}/logs/audit",
             "list_rags",
             "GET /accounts/{account_id}/autorag/rags",
+            "workers_builds_list_builds",
+            "GET /accounts/{account_id}/builds/workers/{workerId}/builds?page={page}&per_page={perPage}",
         ] {
             assert!(readme.contains(phrase), "README missing {phrase}");
             assert!(contract.contains(phrase), "contract missing {phrase}");
@@ -683,7 +695,7 @@ mod tests {
         }
         for artifact in [readme, contract, roadmap, evidence, skill] {
             for phrase in [
-                "Phase 0–4H",
+                "Phase 0–4I",
                 "workers_builds_get_build",
                 "GET /accounts/{account_id}/builds/builds/{buildUUID}",
                 "account:read",
@@ -694,14 +706,143 @@ mod tests {
                 "not upstream facts",
                 "credential/provider-message redaction",
                 "8 MiB response bound",
-                "I=172; S=172; R=B=P=V=22; D=17; X=40",
-                "150 routes remain unresolved",
+                "I=172; S=172; R=B=P=V=23; D=18; X=40",
+                "149 routes remain unresolved",
             ] {
                 assert!(
                     artifact.contains(phrase),
                     "guidance artifact missing {phrase}"
                 );
             }
+        }
+        let list_command = "magi-cloudflare-axi capability invoke workers_builds_list_builds --input '{\"workerId\":\"<workerId>\"}' --allow-egress";
+        let list_route = "GET /accounts/{account_id}/builds/workers/{workerId}/builds?page={page}&per_page={perPage}";
+        let phase_4i_artifacts = [
+            (
+                "README",
+                phase_4i_narrative("README", readme, "Phase 4I adds Workers Builds"),
+            ),
+            (
+                "contract",
+                phase_4i_narrative(
+                    "contract",
+                    contract,
+                    "Phase 4I adds authenticated Workers Builds",
+                ),
+            ),
+            (
+                "roadmap",
+                phase_4i_narrative(
+                    "roadmap",
+                    roadmap,
+                    "Phase 4I adds `workers_builds_list_builds`",
+                ),
+            ),
+            (
+                "evidence",
+                phase_4i_narrative("evidence", evidence, "Phase 4I evidence:"),
+            ),
+            (
+                "skill",
+                phase_4i_narrative("skill", skill, "Phase 4I adds `workers_builds_list_builds`"),
+            ),
+        ];
+        for (artifact_name, artifact) in phase_4i_artifacts {
+            for phrase in [
+                list_command,
+                list_route,
+                "one page only",
+                "defaults page 1/perPage 10",
+                "workerId",
+                "safe single segment",
+                "whitespace",
+                "control characters",
+                "path delimiters",
+                "success=true",
+                "result_info",
+                "finite numeric milliseconds",
+                "stable newest-first",
+                "exactly eight fields",
+                "data-egress",
+                "transient_read",
+                "--allow-egress",
+                "transient GET retries",
+                "redirect refusal",
+                "credential/provider-message",
+                "8 MiB response bound",
+            ] {
+                assert!(
+                    artifact.contains(phrase),
+                    "{artifact_name} Phase 4I guidance missing {phrase}"
+                );
+            }
+            assert!(
+                artifact.contains("page` 1–10000 and") || artifact.contains("page` to 1–10000 and"),
+                "{artifact_name} Phase 4I guidance missing contextual page bound"
+            );
+            assert!(
+                artifact.contains("perPage` 1–100;")
+                    || artifact.contains("perPage` to 1–100;")
+                    || artifact.contains("perPage` to 1–100`"),
+                "{artifact_name} Phase 4I guidance missing contextual perPage bound"
+            );
+            for field in [
+                "buildUUID",
+                "createdOn",
+                "status",
+                "buildOutcome",
+                "branch",
+                "commitHash",
+                "commitMessage",
+                "commitAuthor",
+            ] {
+                assert!(
+                    artifact.contains(field),
+                    "{artifact_name} Phase 4I guidance missing projected field {field}"
+                );
+            }
+            assert!(
+                artifact.contains("`result` yields `builds=[]` and `pagination_info=null")
+                    || artifact.contains("`result` returns `builds=[]` and `pagination_info=null")
+                    || artifact
+                        .contains("`result` returns empty `builds` with null `pagination_info`"),
+                "{artifact_name} Phase 4I guidance missing null-result behavior"
+            );
+            assert!(
+                artifact.contains("empty array preserves valid `pagination_info`"),
+                "{artifact_name} Phase 4I guidance missing empty-pagination behavior"
+            );
+            for phrase in [
+                "app OAuth",
+                "account:read",
+                "workers:read",
+                "workers_builds:read",
+                "not API-token permissions",
+                "least-privilege claim",
+                "local AXI policy classifications, not upstream facts",
+            ] {
+                assert!(
+                    artifact.contains(phrase),
+                    "{artifact_name} Phase 4I guidance missing {phrase}"
+                );
+            }
+            assert!(
+                artifact.contains("non-metered") || artifact.contains("Non-metered"),
+                "{artifact_name} Phase 4I guidance missing non-metered policy"
+            );
+        }
+        for hash in [
+            "59e614836b66369317d481f4f64c530c12f88b0a915b885b4e40a60b664cb01e",
+            "3c35543e920f795a867d543e0a3700c2eeeca93d3d76ce36d535d6c0595b0db4",
+            "81f7d85ef9411c94b45805d82a53eea32dd94c2d93dbe7611c55b466b1cb4c9d",
+            "2f5d1e8f6c7c90f0d50db43d65a35a5019bede5ce2eaee29f1f02cadea9f683c",
+            "a830f11089342d0ad203ee29f66e9eee6664cffad1386e7da2c1f1044e8bfd75",
+            "e087ea416688217a28e509e26401a74ef76b53742cb97ca4f8244d6f93adf384",
+        ] {
+            assert!(
+                evidence.contains(hash),
+                "evidence missing Phase 4I hash {hash}"
+            );
         }
         for artifact in [readme, contract, skill] {
             assert!(artifact.contains("Phase 3"));
@@ -710,13 +851,13 @@ mod tests {
         for artifact in [readme, contract, roadmap, evidence, skill] {
             assert!(artifact.contains(workers_command));
         }
-        assert!(readme.contains("22 exact operation contracts"));
-        assert!(contract.contains("Exact contracts now total 22"));
-        assert!(roadmap.contains("exact operation contracts total 22"));
-        assert!(evidence.contains("22 exact operation contracts"));
-        assert!(skill.contains("22 exact operation contracts"));
+        assert!(readme.contains("23 exact operation contracts"));
+        assert!(contract.contains("Exact contracts now total 23"));
+        assert!(roadmap.contains("exact operation contracts total 23"));
+        assert!(evidence.contains("23 exact operation contracts"));
+        assert!(skill.contains("23 exact operation contracts"));
         assert!(roadmap.contains("current_phase: phase-4-in-progress"));
-        assert!(roadmap.contains("21 verified reads, including authenticated Browser, Logpush, Audit Logs, AutoRAG, and Workers Builds contracts; 150 total routes unresolved"));
+        assert!(roadmap.contains("Phase 4I complete: 22 verified reads, including authenticated Browser, Logpush, Audit Logs, AutoRAG, and Workers Builds contracts; 149 total routes unresolved"));
         for phrase in [
             "registration-input schema",
             "--allow-write --allow-metered --confirm",

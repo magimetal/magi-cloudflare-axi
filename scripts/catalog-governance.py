@@ -21,7 +21,7 @@ METRICS = ROOT / "docs/cloudflare-capability-parity-metrics.json"
 REPORT = ROOT / "docs/cloudflare-capability-parity.md"
 COMMIT = "70ff690553722f731849ede6ba9ce98958395a23"
 REPO = "https://github.com/cloudflare/mcp-server-cloudflare"
-LEGACY_METADATA_SHA256 = "cb03a54935afa80047e374577cd1690371c86ed63ae1f13887f9cb83d360fb4a"
+LEGACY_METADATA_SHA256 = "9384bd837265f5afb2a7612bd00a1ed2bcd24ff9b93513cead7f929aec9c2989"
 SCHEMA_VERSION = 3
 SCHEMA_EVIDENCE_ID = "ev-phase1-canonical-schemas"
 SCHEMA_SOURCE_REF = f"https://github.com/cloudflare/mcp-server-cloudflare/commit/{COMMIT}"
@@ -33,8 +33,8 @@ SCHEMA_EVIDENCE_FACT = (
 )
 DEPENDENCY_PROVENANCE_COUNT = 803
 DEPENDENCY_PROVENANCE_SHA256 = "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04"
-OPERATION_BUNDLE_SHA256 = "152335217fb4766f9843fac569cf5e1c01bb57ef400f1417ac6b30fcf465e2ac"
-OPERATION_CONTRACT_HASHES = {'auditlogs_by_account_id': '630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac', 'd1_database_delete': 'd20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da', 'd1_database_get': '6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7', 'get_crawl_result': 'e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52', 'get_post': 'c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1', 'get_url_html_content': '5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909', 'get_url_json': '930b1ee212733b0fcd7e600bd346001ddb6e0154f99bbeebe27bc079e42cdb6d', 'get_url_links': '5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83', 'get_url_markdown': '853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed', 'get_url_pdf': 'c544d991b6a98bace228cd7eb1bb124bd4934a6fa1cf318523579769e9e9780d', 'get_url_screenshot': '97ac366335b2110918db9244d13dfb4bafc35492032810778fd52200497fdbdc', 'get_url_snapshot': '3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588', 'graphql_schema_overview': '72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc', 'list_browser_sessions': 'e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1', 'list_posts': 'f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c', 'list_rags': 'fef8065dad846d2ac68c9893fefafd68e59281516f595d0d788e84a2a4bf02d9', 'list_tags': '7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd', 'logpush_jobs_by_account_id': 'cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef', 'scrape_url_elements': 'a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415', 'search_cloudflare_documentation': '9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41', 'search_posts': '50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91', 'workers_builds_get_build': '156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa'}
+OPERATION_BUNDLE_SHA256 = "80c335cdb1fe8198d08ca55aa4c4ef3a1078d95e3fe11f07e92aec9c2478eb7a"
+OPERATION_CONTRACT_HASHES = {'auditlogs_by_account_id': '630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac', 'd1_database_delete': 'd20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da', 'd1_database_get': '6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7', 'get_crawl_result': 'e0743e3581acf1b7b0961b2588632a77838ae54a4ad922b58c635e15f040ac52', 'get_post': 'c8db96e377307473c88cd2948acb864dd48016ab131b668941c1dec0b43af4e1', 'get_url_html_content': '5a84bbcdbead36b9caae6cde60445f71d614681f387d0b0b02ee2b6e4c2b4909', 'get_url_json': '930b1ee212733b0fcd7e600bd346001ddb6e0154f99bbeebe27bc079e42cdb6d', 'get_url_links': '5c2aad547b8c1a50e9af0290d29b2bbe7639d4d580a0c8d6713b30c0ef31ae83', 'get_url_markdown': '853f582a9e39fe0a908117b2b7982be75d4c3c96c5bf5927d767ce8adc70abed', 'get_url_pdf': 'c544d991b6a98bace228cd7eb1bb124bd4934a6fa1cf318523579769e9e9780d', 'get_url_screenshot': '97ac366335b2110918db9244d13dfb4bafc35492032810778fd52200497fdbdc', 'get_url_snapshot': '3efc9a49696872d3ee6635a132056725737832846914cd816a0e18bc55b37588', 'graphql_schema_overview': '72fdb97a538fc6cf3a465e62c9d612a59605cc3829a21d08d3918a016d53d0cc', 'list_browser_sessions': 'e4a219d186616d0e00b5f33e3b856350282a727a4fcccbaac3920fe2aa34a5a1', 'list_posts': 'f9a765b3d1a962ab8d09cbdf304f855cbdbe87a03b73a9e280b343d4bec0a46c', 'list_rags': 'fef8065dad846d2ac68c9893fefafd68e59281516f595d0d788e84a2a4bf02d9', 'list_tags': '7702537f950b693041ce32f2dc8d8c82c226cf4058b45319e060383a0095b2bd', 'logpush_jobs_by_account_id': 'cbe26861e59a2594e0639b1367fdf882ba7e8d98cc666a9b2cb080ce12adc4ef', 'scrape_url_elements': 'a5b4b365d1239a717b90f27a5cc3f7f9378f393e4e73e92ce3d3bb32ee54d415', 'search_cloudflare_documentation': '9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41', 'search_posts': '50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91', 'workers_builds_get_build': '156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa', 'workers_builds_list_builds': 'b718a53caf8183c9115a7e82ee5bf46fba0a87323c3f2a8f6a87327a187e179c'}
 
 OFFICIAL_DOCS = {
     "d1_database_delete": ("https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/delete/", "2026-08-11", "de0453348a3c58fb2510b64d6300831647c628eb3988acca56f7a9106edb7c5e"),
@@ -53,7 +53,7 @@ OFFICIAL_DOCS = {
     "get_url_screenshot": ("https://developers.cloudflare.com/browser-run/quick-actions/screenshot-endpoint/", "2026-08-11", "f743f6b6bc692170cd0b5832e6f502dbad7c8bc1d27d271923e7d2870df8af41"),
     "logpush_jobs_by_account_id": ("https://developers.cloudflare.com/api/resources/logpush/subresources/jobs/methods/list/", "2026-08-11", "ae49c1ea87722041a4a75c14fdf370274734245d1b027ec85d600fb69e391097")
 }
-NO_OFFICIAL_DOCS = {"auditlogs_by_account_id", "list_rags", "workers_builds_get_build"}
+NO_OFFICIAL_DOCS = {"auditlogs_by_account_id", "list_rags", "workers_builds_get_build", "workers_builds_list_builds"}
 DISCOVERY_TESTS = {
     **{name: "tests/integration.rs::capability_browser_discovery_examples_are_exact" for name in {"get_url_links", "get_url_markdown", "scrape_url_elements", "get_url_json", "get_url_snapshot", "get_crawl_result", "list_browser_sessions", "get_url_pdf", "get_url_screenshot"}},
     **{name: "tests/integration.rs::capability_blog_discovery_examples_are_exact" for name in {"get_post", "list_posts", "list_tags", "search_posts"}},
@@ -61,6 +61,7 @@ DISCOVERY_TESTS = {
     "auditlogs_by_account_id": "tests/integration.rs::capability_auditlogs_discovery_example_is_exact",
     "list_rags": "tests/integration.rs::capability_autorag_discovery_example_is_exact",
     "workers_builds_get_build": "tests/integration.rs::capability_workers_builds_discovery_example_is_exact",
+    "workers_builds_list_builds": "tests/integration.rs::capability_workers_builds_list_builds_discovery_example_is_exact",
 }
 DISCOVERY_ALLOWLIST = set(DISCOVERY_TESTS)
 TEST_TARGETS = {
@@ -89,6 +90,19 @@ WORKERS_BUILDS_POLICY_RETRY_FACT = (
 )
 WORKERS_BUILDS_POLICY_EGRESS_TEST_ID = "tests/transport.rs::capability_workers_builds_get_build_preflight_guards_and_path_limits"
 WORKERS_BUILDS_POLICY_RETRY_TEST_ID = "tests/transport.rs::capability_workers_builds_get_build_status_retry_redaction_and_redirects"
+WORKERS_BUILDS_LIST_POLICY_EGRESS_TEST_ID = "tests/transport.rs::capability_workers_builds_list_builds_preflight_guards_and_path_limits"
+WORKERS_BUILDS_LIST_POLICY_RETRY_TEST_ID = "tests/transport.rs::capability_workers_builds_list_builds_transient_statuses_retry_three_times_and_can_succeed"
+WORKERS_BUILDS_POLICY_TEST_IDS = {
+    "workers_builds_get_build": (WORKERS_BUILDS_POLICY_EGRESS_TEST_ID, WORKERS_BUILDS_POLICY_RETRY_TEST_ID),
+    "workers_builds_list_builds": (WORKERS_BUILDS_LIST_POLICY_EGRESS_TEST_ID, WORKERS_BUILDS_LIST_POLICY_RETRY_TEST_ID),
+}
+WORKERS_BUILDS_POLICY_CAPABILITIES = set(WORKERS_BUILDS_POLICY_TEST_IDS)
+
+def workers_builds_policy_test_ids(capability):
+    try:
+        return WORKERS_BUILDS_POLICY_TEST_IDS[capability]
+    except KeyError:
+        fail(capability, "unknown Workers Builds policy capability")
 
 DIMENSIONS = (
     "inventory",
@@ -133,7 +147,7 @@ COMPLETE_STATUSES = {
 LEGACY_ENUMS = {"scope": {"public", "account", "zone", "custom"}, "operation": {"read", "write"}, "transport": {"rest", "graphql", "mcp", "public_http", "internal_binding", "custom_container"}, "cli_access": {"modeled", "raw_rest", "raw_graphql", "public_direct", "blocked", "mcp_remote"}}
 FAMILIES = {"ai-gateway": 5, "auditlogs": 1, "autorag": 3, "browser-rendering": 13, "cloudflare-blog": 4, "cloudflare-one-casb": 11, "demo-day": 1, "dex-analysis": 18, "dns-analytics": 3, "graphql": 6, "logpush": 1, "radar": 66, "sandbox-container": 7, "shared": 7, "stack-mcp": 2, "workers-bindings": 18, "workers-builds": 3, "workers-observability": 3}
 TRANSPORTS = {"public_http": 76, "rest": 81, "custom_container": 7, "graphql": 6, "internal_binding": 1, "mcp": 1}
-ACCESS = {"raw_rest": 120, "modeled": 13, "mcp_remote": 26, "public_direct": 6, "raw_graphql": 6, "blocked": 1}
+ACCESS = {"raw_rest": 119, "modeled": 14, "mcp_remote": 26, "public_direct": 6, "raw_graphql": 6, "blocked": 1}
 OPERATIONS = {"read": 150, "write": 22}
 BLOCKER_FAMILY = {"dex-analysis": "B-DEX", "cloudflare-one-casb": "B-CASB", "sandbox-container": "B-CONTAINER", "workers-observability": "B-OBS", "shared": "B-SHARED", "stack-mcp": "B-STACK"}
 RECORD_KEYS = {
@@ -530,13 +544,14 @@ def apply_schema_bundle(catalog):
         route = pinned_provenance(contract["evidence"].get("api_route", contract["evidence"]["pinned_handler"]))
         test_id = contract["implementation"]["test_id"]
         prefix = f"ev-operation-{name}"
-        if name == "workers_builds_get_build":
+        if name in WORKERS_BUILDS_POLICY_CAPABILITIES:
+            egress_test_id, retry_test_id = workers_builds_policy_test_ids(name)
             policy_evidence = [
                 {"id": prefix + "-policy", "dimension": "policy", "provenance": handler, "fact": WORKERS_BUILDS_POLICY_UPSTREAM_FACT},
                 {"id": prefix + "-policy-contract", "dimension": "policy", "provenance": {"kind": "generated_artifact", "artifact": "capabilities/cloudflare-operation-contracts.json", "sha256": json_sha256(operations), "fact": WORKERS_BUILDS_POLICY_CONTRACT_FACT, "capability": name, "contract_sha256": contract["contract_sha256"]}, "fact": WORKERS_BUILDS_POLICY_CONTRACT_FACT},
                 {"id": prefix + "-policy-test", "dimension": "policy", "provenance": {"kind": "hermetic_test", "test_id": test_id, "fact": WORKERS_BUILDS_POLICY_TEST_FACT}, "fact": WORKERS_BUILDS_POLICY_TEST_FACT},
-                {"id": prefix + "-policy-egress", "dimension": "policy", "provenance": {"kind": "hermetic_test", "test_id": WORKERS_BUILDS_POLICY_EGRESS_TEST_ID, "fact": WORKERS_BUILDS_POLICY_EGRESS_FACT}, "fact": WORKERS_BUILDS_POLICY_EGRESS_FACT},
-                {"id": prefix + "-policy-retry", "dimension": "policy", "provenance": {"kind": "hermetic_test", "test_id": WORKERS_BUILDS_POLICY_RETRY_TEST_ID, "fact": WORKERS_BUILDS_POLICY_RETRY_FACT}, "fact": WORKERS_BUILDS_POLICY_RETRY_FACT},
+                {"id": prefix + "-policy-egress", "dimension": "policy", "provenance": {"kind": "hermetic_test", "test_id": egress_test_id, "fact": WORKERS_BUILDS_POLICY_EGRESS_FACT}, "fact": WORKERS_BUILDS_POLICY_EGRESS_FACT},
+                {"id": prefix + "-policy-retry", "dimension": "policy", "provenance": {"kind": "hermetic_test", "test_id": retry_test_id, "fact": WORKERS_BUILDS_POLICY_RETRY_FACT}, "fact": WORKERS_BUILDS_POLICY_RETRY_FACT},
             ]
             policy_ids = [
                 prefix + "-policy",
@@ -571,7 +586,7 @@ def apply_schema_bundle(catalog):
         if row["name"] in operation_by_name:
             verified_discovery = row["name"] in DISCOVERY_ALLOWLIST
             policy_ids = [prefix + "-policy", prefix + "-policy-test"]
-            if row["name"] == "workers_builds_get_build":
+            if row["name"] in WORKERS_BUILDS_POLICY_CAPABILITIES:
                 policy_ids = [
                     prefix + "-policy",
                     prefix + "-policy-contract",
@@ -580,7 +595,7 @@ def apply_schema_bundle(catalog):
                     prefix + "-policy-retry",
                 ]
             row["parity"].update({"route": {"status": "complete", "evidence_ids": [prefix + "-route"]}, "behavior": {"status": "verified", "evidence_ids": [prefix + "-behavior", prefix + "-behavior-test"]}, "policy": {"status": "verified", "evidence_ids": policy_ids}, "verification": {"status": "hermetic_verified", "evidence_ids": [prefix + "-verification"]}, "discovery": {"status": "verified" if verified_discovery else "generated", "evidence_ids": [prefix + "-discovery"] + ([prefix + "-discovery-test"] if verified_discovery else [])}, "external_blocker": {"status": "none", "evidence_ids": []}})
-            if row["name"] == "workers_builds_get_build":
+            if row["name"] in WORKERS_BUILDS_POLICY_CAPABILITIES:
                 operation = operation_by_name[row["name"]]
                 row["cli_access"] = "modeled"
                 row["method"] = operation["route"]["method"]
@@ -780,7 +795,7 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             for dimension, statuses in active_statuses.items():
                 if row["parity"][dimension]["status"] in statuses:
                     fail(row["name"], f"completed {dimension} lacks operation contract")
-    if operations["version"] != "phase4h-operation-contracts-v1" or operations["source_commit"] != COMMIT or operations["canonicalization"] != "lexicographic compact JSON SHA-256; bundle hash sets bundle_sha256=null; each contract hash sets contract_sha256=null":
+    if operations["version"] != "phase4i-operation-contracts-v1" or operations["source_commit"] != COMMIT or operations["canonicalization"] != "lexicographic compact JSON SHA-256; bundle hash sets bundle_sha256=null; each contract hash sets contract_sha256=null":
         fail("$.operation_artifacts", "operation source or canonicalization mismatch")
     if operations["bundle_sha256"] != OPERATION_BUNDLE_SHA256 or json_sha256({**operations, "bundle_sha256": None}) != OPERATION_BUNDLE_SHA256:
         fail("$.operation_artifacts", "operation bundle hash mismatch")
@@ -814,9 +829,14 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
         if capability == "list_rags":
             expected_keys["behavior"] |= {"projection_validation", "result_info"}
             expected_keys["evidence"] |= {"auth_scopes", "input_defaults", "api_client"}
-        if capability == "workers_builds_get_build":
+        if capability in WORKERS_BUILDS_POLICY_CAPABILITIES:
             expected_keys["behavior"].add("projection_validation")
-            expected_keys["evidence"] |= {"api_client", "api_route", "auth_scopes", "get_build_alias", "response_schema", "v4_envelope"}
+            expected_keys["evidence"] |= {"api_client", "api_route", "auth_scopes", "response_schema", "v4_envelope"}
+            if capability == "workers_builds_get_build":
+                expected_keys["evidence"].add("get_build_alias")
+            else:
+                expected_keys["behavior"].add("result_info")
+                expected_keys["evidence"] |= {"input_schema", "list_result_info_types"}
         if capability not in NO_OFFICIAL_DOCS and capability not in {"get_post", "list_posts", "list_tags", "search_posts"}:
             expected_keys["evidence"].add("official_docs")
         elif capability in {"get_post", "list_posts", "list_tags", "search_posts"}:
@@ -949,6 +969,25 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             }
             if any(contract[key] != expected[key] for key in ("route", "behavior", "safety", "implementation", "evidence")):
                 fail(path, "Workers Builds operation semantic or evidence mismatch")
+        if capability == "workers_builds_list_builds":
+            expected = {
+                "route": {"transport": "rest", "method": "GET", "path_template": "/accounts/{account_id}/builds/workers/{workerId}/builds", "path_parameters": [{"name": "account_id", "source": "resolved_account", "format": "single_path_segment", "max_length": 32}, {"name": "workerId", "source": "input", "format": "single_path_segment", "max_length": 256}], "query_parameters": [{"name": "page", "optional": True, "default": 1, "serialization": "javascript_string", "source": "input"}, {"name": "per_page", "optional": True, "default": 10, "serialization": "javascript_string", "source": "input"}], "body": "none", "scope": "account", "content_type": "application/json", "auth": "account"},
+                "behavior": {"output_projection": "strict_build_summaries", "empty_state": "empty_builds_with_pagination", "pagination": "page_per_page", "artifact": "none", "error": "strict_v4_build_details_list_response_schema", "projection_validation": "full_response_before_projection", "result_info": "pagination_info"},
+                "safety": {"operation": "read", "destructive": False, "metered": False, "data_egress": True, "long_running": False, "retry_policy": "transient_read"},
+                "implementation": {"status": "verified", "adapter": "rest", "test_id": "tests/transport.rs::capability_workers_builds_list_builds_exact_request", "documentation_id": "cloudflare-workers-builds-list-builds", "reviewed_at": "2026-08-15"},
+                "evidence": {
+                    "api_client": {"blob_oid": "b53d834e977cfb57467a2b1fe4f814f9c2bb2cc7", "commit": COMMIT, "file": "packages/mcp-common/src/cloudflare-api.ts", "lines": "20-71", "source_sha256": "31c1f165a446e241dc93f4880445ad2ea096a9b11a7b757e3e82cc2f63d230d0"},
+                    "api_route": {"blob_oid": "061f5240161acc5c2d355d968002e7a178df416b", "commit": COMMIT, "file": "apps/workers-builds/src/api/workers-builds.api.ts", "lines": "13-32", "source_sha256": "3c35543e920f795a867d543e0a3700c2eeeca93d3d76ce36d535d6c0595b0db4"},
+                    "auth_scopes": {"blob_oid": "1d1ce050974abaebc3b6497d833b3f7c8f39ab94", "commit": COMMIT, "file": "apps/workers-builds/src/workers-builds.app.ts", "lines": "21-28", "source_sha256": "e087ea416688217a28e509e26401a74ef76b53742cb97ca4f8244d6f93adf384"},
+                    "input_schema": {"blob_oid": "3936684ab52f24fd02247b6a5e785f061b9bd2bd", "commit": COMMIT, "file": "apps/workers-builds/src/tools/workers-builds.tools.ts", "lines": "21-25", "source_sha256": "81f7d85ef9411c94b45805d82a53eea32dd94c2d93dbe7611c55b466b1cb4c9d"},
+                    "list_result_info_types": {"blob_oid": "7520d4accba6d6ace4d59fb11cf25e096e90501e", "commit": COMMIT, "file": "apps/workers-builds/src/types/workers-builds.types.ts", "lines": "66-80", "source_sha256": "2f5d1e8f6c7c90f0d50db43d65a35a5019bede5ce2eaee29f1f02cadea9f683c"},
+                    "pinned_handler": {"blob_oid": "3936684ab52f24fd02247b6a5e785f061b9bd2bd", "commit": COMMIT, "file": "apps/workers-builds/src/tools/workers-builds.tools.ts", "lines": "13-76", "source_sha256": "59e614836b66369317d481f4f64c530c12f88b0a915b885b4e40a60b664cb01e"},
+                    "response_schema": {"blob_oid": "7520d4accba6d6ace4d59fb11cf25e096e90501e", "commit": COMMIT, "file": "apps/workers-builds/src/types/workers-builds.types.ts", "lines": "3-64", "source_sha256": "a830f11089342d0ad203ee29f66e9eee6664cffad1386e7da2c1f1044e8bfd75"},
+                    "v4_envelope": {"blob_oid": "6748c68b64694c7a7c225dbd5daa388c779ab135", "commit": COMMIT, "file": "packages/mcp-common/src/v4-api.ts", "lines": "29-55", "source_sha256": "2866e0a419736d107bc77dc8d49bb95583101caa5317ecc8660a40062093fdfc"},
+                },
+            }
+            if any(contract[key] != expected[key] for key in ("route", "behavior", "safety", "implementation", "evidence")):
+                fail(path, "Workers Builds list-builds operation semantic or evidence mismatch")
         if capability == "logpush_jobs_by_account_id":
             expected = {"route": {"transport": "rest", "method": "GET", "path_template": "/accounts/{account_id}/logpush/jobs", "path_parameters": [{"name": "account_id", "source": "resolved_account", "format": "single_path_segment", "max_length": 32}], "query_parameters": [], "body": "none", "scope": "account", "content_type": "application/json", "auth": "account", "fixed_headers": {"Content-Type": "application/json", "portal-version": "2"}}, "behavior": {"output_projection": "strict_logpush_jobs_first_100", "empty_state": "empty_result", "pagination": "none", "artifact": "none", "error": "structured_cloudflare_api", "result_limit": 100, "projection_validation": "strict_optional_nullable_fields_and_unknown_field_stripping"}, "safety": {"operation": "read", "destructive": False, "metered": False, "data_egress": True, "long_running": False, "retry_policy": "never"}}
             if any(contract[key] != expected[key] for key in ("route", "behavior", "safety")): fail(path, "Logpush operation semantic mismatch")
@@ -987,7 +1026,7 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             fail(path, "Audit Logs modeled access/path classification mismatch")
         if capability == "list_rags" and (row["cli_access"] != "modeled" or row.get("path_template") != contract["route"]["path_template"]):
             fail(path, "AutoRAG modeled access/path classification mismatch")
-        if capability == "workers_builds_get_build" and (row["cli_access"] != "modeled" or row.get("path_template") != contract["route"]["path_template"]):
+        if capability in WORKERS_BUILDS_POLICY_CAPABILITIES and (row["cli_access"] != "modeled" or row.get("path_template") != contract["route"]["path_template"]):
             fail(path, "Workers Builds modeled access/path classification mismatch")
         if capability == "search_cloudflare_documentation" and row["cli_access"] != "mcp_remote":
             fail(path, "MCP legacy metadata join mismatch")
@@ -1001,7 +1040,7 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             evidence_items = (contract["evidence"]["pinned_handler"], contract["evidence"]["query_helper"], contract["evidence"]["response_schema"], contract["evidence"]["auth_scopes"])
         elif capability == "list_rags":
             evidence_items = (contract["evidence"]["pinned_handler"], contract["evidence"]["input_defaults"], contract["evidence"]["api_client"], contract["evidence"]["auth_scopes"])
-        elif capability == "workers_builds_get_build":
+        elif capability in WORKERS_BUILDS_POLICY_CAPABILITIES:
             evidence_items = tuple(contract["evidence"].values())
         else:
             evidence_items = (contract["evidence"]["pinned_handler"], contract["evidence"].get("official_docs"))
@@ -1014,7 +1053,7 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             pinned = (contract["evidence"].get("api_route") or contract["evidence"]["pinned_handler"]) if dimension == "route" else contract["evidence"]["pinned_handler"]
             if pinned is not None and provenance["kind"] == "pinned_git":
                 source_matches = all(provenance.get(left) == right for left, right in (("repo", REPO), ("commit", COMMIT), ("source_ref", f"{pinned['file']}:{pinned['lines']}"), ("blob", pinned["blob_oid"]), ("span", pinned["lines"]), ("source_sha256", pinned["source_sha256"])))
-                if capability == "workers_builds_get_build" and dimension == "policy":
+                if capability in WORKERS_BUILDS_POLICY_CAPABILITIES and dimension == "policy":
                     return source_matches and item["fact"] == WORKERS_BUILDS_POLICY_UPSTREAM_FACT
                 return source_matches
             docs = contract["evidence"].get("official_docs")
@@ -1023,7 +1062,7 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
         def exact_operation_contract(item):
             provenance = item["provenance"]
             return (
-                capability == "workers_builds_get_build"
+                capability in WORKERS_BUILDS_POLICY_CAPABILITIES
                 and provenance["kind"] == "generated_artifact"
                 and provenance.get("artifact") == "capabilities/cloudflare-operation-contracts.json"
                 and provenance.get("sha256") == json_sha256(operations)
@@ -1039,29 +1078,31 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
             exact = item["provenance"]["kind"] == "hermetic_test" and item["provenance"].get("test_id") == contract["implementation"]["test_id"]
             if not exact:
                 return False
-            return not (capability == "workers_builds_get_build" and dimension == "policy") or item["fact"] == WORKERS_BUILDS_POLICY_TEST_FACT
+            return not (capability in WORKERS_BUILDS_POLICY_CAPABILITIES and dimension == "policy") or item["fact"] == WORKERS_BUILDS_POLICY_TEST_FACT
 
         def exact_policy(item):
+            egress_test_id, retry_test_id = workers_builds_policy_test_ids(capability)
             return (
                 exact_authority(item, "policy")
                 or exact_operation_contract(item)
                 or exact_test(item, "policy")
-                or exact_test_binding(item, WORKERS_BUILDS_POLICY_EGRESS_TEST_ID, WORKERS_BUILDS_POLICY_EGRESS_FACT)
-                or exact_test_binding(item, WORKERS_BUILDS_POLICY_RETRY_TEST_ID, WORKERS_BUILDS_POLICY_RETRY_FACT)
+                or exact_test_binding(item, egress_test_id, WORKERS_BUILDS_POLICY_EGRESS_FACT)
+                or exact_test_binding(item, retry_test_id, WORKERS_BUILDS_POLICY_RETRY_FACT)
             )
 
         def exact_discovery(item):
             provenance = item["provenance"]
             return (provenance["kind"] == "generated_artifact" and provenance.get("artifact") == "capabilities/cloudflare-operation-contracts.json" and provenance.get("capability") == capability and provenance.get("contract_sha256") == contract["contract_sha256"]) or (capability in DISCOVERY_ALLOWLIST and provenance["kind"] == "hermetic_test" and provenance.get("test_id") == DISCOVERY_TESTS[capability])
 
-        if capability == "workers_builds_get_build" and row["parity"]["policy"]["status"] in {"classified", "verified"}:
+        if capability in WORKERS_BUILDS_POLICY_CAPABILITIES and row["parity"]["policy"]["status"] in {"classified", "verified"}:
+            egress_test_id, retry_test_id = workers_builds_policy_test_ids(capability)
             policy_items = [evidence[item_id] for item_id in row["parity"]["policy"]["evidence_ids"]]
             required_policy_authorities = (
                 lambda item: exact_authority(item, "policy"),
                 exact_operation_contract,
                 lambda item: exact_test(item, "policy"),
-                lambda item: exact_test_binding(item, WORKERS_BUILDS_POLICY_EGRESS_TEST_ID, WORKERS_BUILDS_POLICY_EGRESS_FACT),
-                lambda item: exact_test_binding(item, WORKERS_BUILDS_POLICY_RETRY_TEST_ID, WORKERS_BUILDS_POLICY_RETRY_FACT),
+                lambda item: exact_test_binding(item, egress_test_id, WORKERS_BUILDS_POLICY_EGRESS_FACT),
+                lambda item: exact_test_binding(item, retry_test_id, WORKERS_BUILDS_POLICY_RETRY_FACT),
             )
             if len(policy_items) != len(required_policy_authorities) or any(
                 sum(authority(item) for item in policy_items) != 1
@@ -1079,7 +1120,7 @@ def validate_operation_contracts(catalog, operations, rows, evidence):
         applicability = {
             "route": lambda item: exact_authority(item, "route"),
             "behavior": lambda item: exact_authority(item, "behavior") or exact_test(item, "behavior"),
-            "policy": exact_policy if capability == "workers_builds_get_build" else lambda item: exact_authority(item, "policy") or exact_test(item, "policy"),
+            "policy": exact_policy if capability in WORKERS_BUILDS_POLICY_CAPABILITIES else lambda item: exact_authority(item, "policy") or exact_test(item, "policy"),
             "verification": lambda item: exact_test(item, "verification"),
             "discovery": exact_discovery,
         }
@@ -1100,7 +1141,7 @@ def validate(catalog):
     operations = json.loads(OPERATION_FILE.read_text())
     contracts = operations.get("contracts", [])
     if (
-        operations.get("version") != "phase4h-operation-contracts-v1"
+        operations.get("version") != "phase4i-operation-contracts-v1"
         or operations.get("source_commit") != COMMIT
         or operations.get("canonicalization") != "lexicographic compact JSON SHA-256; bundle hash sets bundle_sha256=null; each contract hash sets contract_sha256=null"
         or not isinstance(contracts, list)
@@ -1298,7 +1339,7 @@ def validate(catalog):
             fail("$.capabilities", f"{field} baseline mismatch")
     if sum("method" in row for row in rows) != 147:
         fail("$.capabilities", "method baseline mismatch")
-    if sum("path_template" in row for row in rows) != 19:
+    if sum("path_template" in row for row in rows) != 20:
         fail("$.capabilities", "path baseline mismatch")
     if sum("blocker" in row for row in rows) != 40:
         fail("$.capabilities", "legacy blocker baseline mismatch")
@@ -1590,65 +1631,66 @@ def mutation_cases(catalog):
     add("swap operation metadata", lambda value: swap_field(value, "operation", read_index, write_index))
     add("route external blocked with missing evidence", lambda value: completion_with_evidence(value, "route", "external_blocked", "missing"))
     add("route external blocked with hermetic-only evidence", lambda value: completion_with_evidence(value, "route", "external_blocked", "hermetic_verified"))
-    def worker_policy_evidence(value, suffix):
+    def worker_policy_evidence(value, capability, suffix):
         return next(
             item
             for item in value["evidence"]
-            if item["id"] == f"ev-operation-workers_builds_get_build-{suffix}"
+            if item["id"] == f"ev-operation-{capability}-{suffix}"
         )
 
-    def remove_worker_policy_evidence(value, suffix):
-        row = next(row for row in value["capabilities"] if row["name"] == "workers_builds_get_build")
-        item = worker_policy_evidence(value, suffix)
+    def remove_worker_policy_evidence(value, capability, suffix):
+        row = next(row for row in value["capabilities"] if row["name"] == capability)
+        item = worker_policy_evidence(value, capability, suffix)
         row["parity"]["policy"]["evidence_ids"].remove(item["id"])
 
-    for suffix in ("policy", "policy-contract", "policy-test", "policy-egress", "policy-retry"):
+    for capability in sorted(WORKERS_BUILDS_POLICY_CAPABILITIES):
+        egress_test_id, retry_test_id = workers_builds_policy_test_ids(capability)
+        for suffix in ("policy", "policy-contract", "policy-test", "policy-egress", "policy-retry"):
+            add(
+                f"Workers Builds {capability} policy missing {suffix} authority",
+                lambda value, capability=capability, suffix=suffix: remove_worker_policy_evidence(value, capability, suffix),
+            )
         add(
-            f"Workers Builds policy missing {suffix} authority",
-            lambda value, suffix=suffix: remove_worker_policy_evidence(value, suffix),
+            f"Workers Builds {capability} policy upstream safety overclaim",
+            lambda value, capability=capability: worker_policy_evidence(value, capability, "policy").__setitem__(
+                "fact", "Authoritative operation safety policy."
+            ),
         )
-
-    add(
-        "Workers Builds policy upstream safety overclaim",
-        lambda value: worker_policy_evidence(value, "policy").__setitem__(
-            "fact", "Authoritative operation safety policy."
-        ),
-    )
-    add(
-        "Workers Builds policy contract classification overclaim",
-        lambda value: worker_policy_evidence(value, "policy-contract").__setitem__(
-            "fact", "Generated operation contract artifact."
-        ),
-    )
-    add(
-        "Workers Builds policy exact-request overclaim",
-        lambda value: worker_policy_evidence(value, "policy-test").__setitem__(
-            "fact", "Hermetic exact-request transport test."
-        ),
-    )
-    add(
-        "Workers Builds policy egress test substitution",
-        lambda value: worker_policy_evidence(value, "policy-egress")["provenance"].__setitem__(
-            "test_id", "tests/transport.rs::capability_workers_builds_get_build_exact_request"
-        ),
-    )
-    add(
-        "Workers Builds policy retry test substitution",
-        lambda value: worker_policy_evidence(value, "policy-retry")["provenance"].__setitem__(
-            "test_id", WORKERS_BUILDS_POLICY_EGRESS_TEST_ID
-        ),
-    )
-    add(
-        "Workers Builds policy borrows auth scope provenance",
-        lambda value: worker_policy_evidence(value, "policy")["provenance"].update(
-            {
-                "source_ref": "apps/workers-builds/src/workers-builds.app.ts:21-28",
-                "blob": "1d1ce050974abaebc3b6497d833b3f7c8f39ab94",
-                "span": "21-28",
-                "source_sha256": "e087ea416688217a28e509e26401a74ef76b53742cb97ca4f8244d6f93adf384",
-            }
-        ),
-    )
+        add(
+            f"Workers Builds {capability} policy contract classification overclaim",
+            lambda value, capability=capability: worker_policy_evidence(value, capability, "policy-contract").__setitem__(
+                "fact", "Generated operation contract artifact."
+            ),
+        )
+        add(
+            f"Workers Builds {capability} policy exact-request overclaim",
+            lambda value, capability=capability: worker_policy_evidence(value, capability, "policy-test").__setitem__(
+                "fact", "Hermetic exact-request transport test."
+            ),
+        )
+        add(
+            f"Workers Builds {capability} policy egress test substitution",
+            lambda value, capability=capability: worker_policy_evidence(value, capability, "policy-egress")["provenance"].__setitem__(
+                "test_id", worker_policy_evidence(value, capability, "policy-test")["provenance"]["test_id"]
+            ),
+        )
+        add(
+            f"Workers Builds {capability} policy retry test substitution",
+            lambda value, capability=capability, egress_test_id=egress_test_id: worker_policy_evidence(value, capability, "policy-retry")["provenance"].__setitem__(
+                "test_id", egress_test_id
+            ),
+        )
+        add(
+            f"Workers Builds {capability} policy borrows auth scope provenance",
+            lambda value, capability=capability: worker_policy_evidence(value, capability, "policy")["provenance"].update(
+                {
+                    "source_ref": "apps/workers-builds/src/workers-builds.app.ts:21-28",
+                    "blob": "1d1ce050974abaebc3b6497d833b3f7c8f39ab94",
+                    "span": "21-28",
+                    "source_sha256": "e087ea416688217a28e509e26401a74ef76b53742cb97ca4f8244d6f93adf384",
+                }
+            ),
+        )
 
     return tests
 

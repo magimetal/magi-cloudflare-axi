@@ -3,7 +3,7 @@ title: Cloudflare full capability parity roadmap
 status: phase-4-in-progress
 owner: magimetal
 created: 2026-08-10
-last_reviewed: 2026-08-14
+last_reviewed: 2026-08-15
 current_phase: phase-4-in-progress
 baseline_source_commit: 70ff690553722f731849ede6ba9ce98958395a23
 baseline_capabilities: 172
@@ -38,11 +38,11 @@ Registered-name presence alone remains **inventory parity**, not full parity.
 | Registered names | 172/172 | 172/172 |
 | Canonical input schemas | 172/172 | 172/172 |
 | Method metadata | 147/172 | Route-dependent |
-| Path metadata | 19/172 | Every direct route complete |
-| Capability-specific complete routes | 22/172 | 172/172, or maximal attainable parity with explicit blockers |
-| Capability contract tests | 22/172 | 172/172 hermetically verified |
+| Path metadata | 20/172 | Every direct route complete |
+| Capability-specific complete routes | 23/172 | 172/172, or maximal attainable parity with explicit blockers |
+| Capability contract tests | 23/172 | 172/172 hermetically verified |
 
-Phase 4G adds authenticated AutoRAG `list_rags` with pinned app-specific OAuth scope additions `account:read` and `rag:write`, ordered page/per-page defaults 1/20, bounded inputs, strict full response validation before `autorags` projection, exact numeric `total_count` preservation, transient GET retries, redirect refusal, `--allow-egress`, and an 8 MiB failure bound. Deprecated upstream server context does not imply operation unavailability; no API-token permission or least-privilege label is inferred. Phase 4H adds authenticated Workers Builds `workers_builds_get_build` to the Phase 0–4H baseline; exact operation contracts total 22, with 17 discovery-verified and five generated. Current vector is `I=172; S=172; R=B=P=V=22; D=17; X=40`, reads verified 21/150, and 150 routes remain unresolved. The detailed Workers Builds contract and local safety boundary are recorded in the Phase 4 workstream below.
+Phase 4G adds authenticated AutoRAG `list_rags` with pinned app-specific OAuth scope additions `account:read` and `rag:write`, ordered page/per-page defaults 1/20, bounded inputs, strict full response validation before `autorags` projection, exact numeric `total_count` preservation, transient GET retries, redirect refusal, `--allow-egress`, and an 8 MiB failure bound. Deprecated upstream server context does not imply operation unavailability; no API-token permission or least-privilege label is inferred. Phase 4H adds authenticated Workers Builds `workers_builds_get_build` to the Phase 0–4I baseline; exact operation contracts total 23 after Phase 4I adds authenticated `workers_builds_list_builds`, with 18 discovery-verified and five generated. Current vector is `I=172; S=172; R=B=P=V=23; D=18; X=40`, reads verified 22/150, and 149 routes remain unresolved. The detailed Workers Builds contracts and local safety boundaries are recorded in the Phase 4 workstream below.
 
 Phase 3 exit gate for proven direct unauthenticated Blog cohort:
 
@@ -59,7 +59,7 @@ Phase 3 completed `2026-08-11` for four Blog operations only. Research pool corr
 
 | Scope | Current | Target |
 |---|---:|---:|
-| Verified reads | 21/150 | 150/150 |
+| Verified reads | 22/150 | 150/150 |
 | Hermetically verified writes | 1/22 | 22/22 |
 | Open blocker entries | 40 | 0 |
 | Fully verified families | 1/18 | 18/18 |
@@ -68,8 +68,8 @@ Current access classifications:
 
 | Classification | Count |
 |---|---:|
-| `raw_rest` | 120 |
-| `modeled` | 13 |
+| `raw_rest` | 119 |
+| `modeled` | 14 |
 | `mcp_remote` | 26 |
 | `public_direct` | 6 |
 | `raw_graphql` | 6 |
@@ -86,7 +86,7 @@ Current transport inventory:
 | `internal_binding` | 1 |
 | `mcp` | 1 |
 
-Nineteen catalog records carry both `method` and `path_template`; the operation-contract artifact contains twenty-two complete routes.
+Twenty catalog records carry both `method` and `path_template`; the operation-contract artifact contains twenty-three operation contracts.
 
 
 ## Completion formula
@@ -351,6 +351,12 @@ Evidence: `get_url_pdf` and `get_url_screenshot` add account-authenticated binar
 
 Phase 4H — Workers Builds: `workers_builds_get_build` is invoked with `magi-cloudflare-axi capability invoke workers_builds_get_build --input '{"buildUUID":"<buildUUID>"}' --allow-egress`. It uses account auth for `GET /accounts/{account_id}/builds/builds/{buildUUID}` with no query or body. `buildUUID` is a required non-empty string and is locally validated only as a safe single path segment of at most 256 bytes; UUID syntax is not claimed. The strict V4 envelope and full pinned `BuildDetails` response, including ignored nested fields, are validated before a strict ten-field projection: `buildUUID`, `createdOn` normalized to ISO, `status`, nullable `buildOutcome`, `branch`, `commitHash`, `commitMessage`, `commitAuthor`, `buildCommand`, and `deployCommand`. A null result projects JSON null; environment variables and secret values are omitted, and unknown output is stripped. Pinned app OAuth additions are `account:read`, `workers:read`, and `workers_builds:read`; these are not API-token permissions or a least-privilege claim. Non-metered, data-egress, and `transient_read` are local AXI policy classifications, not upstream facts. Transient GET retries, redirect refusal, credential/provider-message redaction where appropriate, and the 8 MiB response bound apply.
 
+#### Phase 4I — Workers Builds list builds
+
+**Status:** `complete`
+
+Phase 4I adds `workers_builds_list_builds` with the exact command `magi-cloudflare-axi capability invoke workers_builds_list_builds --input '{"workerId":"<workerId>"}' --allow-egress`. It requests one page only with account auth at `GET /accounts/{account_id}/builds/workers/{workerId}/builds?page={page}&per_page={perPage}`, with no body and defaults page 1/perPage 10. The upstream input requires a nonempty `workerId`; local AXI validates a safe single segment up to 256 bytes and rejects whitespace, control characters, and path delimiters; no additional `workerId` syntax is claimed. Local pagination safeguards require integer `page` 1–10000 and `perPage` 1–100; those are local bounds, while the pinned upstream contract specifies the query names and defaults. The strict `success=true` V4 envelope and full `BuildDetails` array, including nested categories, plus optional or null `result_info`, are validated before projection. Date wire values are validated as ISO strings or finite numeric milliseconds and normalized to ISO. The stable newest-first output contains exactly eight fields per build: `buildUUID`, `createdOn`, `status`, `buildOutcome`, `branch`, `commitHash`, `commitMessage`, and `commitAuthor`; environment variables, secret values, commands, and unknown output are omitted. Null `result` returns `builds=[]` and `pagination_info=null`; an empty array preserves valid `pagination_info`. Its app OAuth scope additions are `account:read`, `workers:read`, and `workers_builds:read`, not API-token permissions or a least-privilege claim. Non-metered, data-egress, and `transient_read` are local AXI policy classifications, not upstream facts; `--allow-egress`, transient GET retries, redirect refusal, credential/provider-message detail redaction, and the 8 MiB response bound apply. Evidence is pinned to the Phase 4I handler SHA-256 `59e614836b66369317d481f4f64c530c12f88b0a915b885b4e40a60b664cb01e`, API-route SHA-256 `3c35543e920f795a867d543e0a3700c2eeeca93d3d76ce36d535d6c0595b0db4`, input SHA-256 `81f7d85ef9411c94b45805d82a53eea32dd94c2d93dbe7611c55b466b1cb4c9d`, list-types SHA-256 `2f5d1e8f6c7c90f0d50db43d65a35a5019bede5ce2eaee29f1f02cadea9f683c`, shared `BuildDetails` SHA-256 `a830f11089342d0ad203ee29f66e9eee6664cffad1386e7da2c1f1044e8bfd75`, and OAuth SHA-256 `e087ea416688217a28e509e26401a74ef76b53742cb97ca4f8244d6f93adf384`.
+
 Exit gate:
 
 - [ ] Every direct REST read has exact schema and route.
@@ -564,7 +570,7 @@ Update this table only when gate evidence exists.
 | 1 — Schemas | Phase 0 complete | 172/172 canonical schemas | — | complete | 2026-08-10 |
 | 2 — Routes/dispatcher | Phase 1 complete | Five verified transport slices; 167 capability routes deferred | — | complete | 2026-08-11 |
 | 3 — Proven Blog reads | Phase 2 complete | Four Blog reads verified and discovery-verified; 163 total routes unresolved | — | complete-for-proven-cohort | 2026-08-11 |
-| 4 — Authenticated direct API reads | Phase 3 cohort complete | Phase 4H complete: 21 verified reads, including authenticated Browser, Logpush, Audit Logs, AutoRAG, and Workers Builds contracts; 150 total routes unresolved | — | in_progress | —
+| 4 — Authenticated direct API reads | Phase 3 cohort complete | Phase 4I complete: 22 verified reads, including authenticated Browser, Logpush, Audit Logs, AutoRAG, and Workers Builds contracts; 149 total routes unresolved | — | in_progress | — |
 | 5 — GraphQL/MCP reads | Phase 2 complete | GraphQL reads 5/5 and exposed MCP reads verified | — | not_started | — |
 | 6 — Writes | Phase 2 complete | Writes 22/22 hermetically verified | — | not_started | — |
 | 7 — Blockers | Route research available | Blockers 0 | — | not_started | — |

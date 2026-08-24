@@ -9,18 +9,18 @@ Denominator: **172**. Full parity is not claimed.
 |---|---|---|
 | inventory | {"complete": 172, "unresolved": 0} | 172 |
 | schema | {"complete": 168, "unresolved": 0, "zero_input_evidenced": 4} | 172 |
-| route | {"complete": 22, "external_blocked": 0, "unresolved": 150} | 22 |
-| behavior | {"specified": 0, "unresolved": 150, "verified": 22} | 22 |
-| policy | {"classified": 0, "unresolved": 150, "verified": 22} | 22 |
-| verification | {"hermetic_verified": 22, "unverified": 150} | 22 |
-| discovery | {"generated": 5, "missing": 150, "verified": 17} | 17 |
+| route | {"complete": 23, "external_blocked": 0, "unresolved": 149} | 23 |
+| behavior | {"specified": 0, "unresolved": 149, "verified": 23} | 23 |
+| policy | {"classified": 0, "unresolved": 149, "verified": 23} | 23 |
+| verification | {"hermetic_verified": 23, "unverified": 149} | 23 |
+| discovery | {"generated": 5, "missing": 149, "verified": 18} | 18 |
 | external_blocker | {"none": 132, "open": 40, "resolved": 0} | 132 |
 
 ## Global parity
 
 | I | S | R | B | P | V | D | X |
 |---:|---:|---:|---:|---:|---:|---:|---:|
-| 172 | 172 | 22 | 22 | 22 | 22 | 17 | 40 |
+| 172 | 172 | 23 | 23 | 23 | 23 | 18 | 40 |
 
 ## Family summary
 
@@ -42,7 +42,7 @@ Denominator: **172**. Full parity is not claimed.
 | shared | 7 | 7 | 7 | 1 | 1 | 1 | 1 | 0 | 0 |
 | stack-mcp | 2 | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 1 |
 | workers-bindings | 18 | 18 | 18 | 2 | 2 | 2 | 2 | 0 | 0 |
-| workers-builds | 3 | 3 | 3 | 1 | 1 | 1 | 1 | 1 | 0 |
+| workers-builds | 3 | 3 | 3 | 2 | 2 | 2 | 2 | 2 | 0 |
 | workers-observability | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 3 |
 
 ## Transport summary
@@ -54,7 +54,7 @@ Denominator: **172**. Full parity is not claimed.
 | internal_binding | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | mcp | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 0 | 0 |
 | public_http | 76 | 76 | 76 | 4 | 4 | 4 | 4 | 4 | 0 |
-| rest | 81 | 81 | 81 | 16 | 16 | 16 | 16 | 13 | 32 |
+| rest | 81 | 81 | 81 | 17 | 17 | 17 | 17 | 14 | 32 |
 
 ## Access classification summary
 
@@ -62,16 +62,16 @@ Denominator: **172**. Full parity is not claimed.
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | blocked | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | mcp_remote | 26 | 26 | 26 | 1 | 1 | 1 | 1 | 0 | 25 |
-| modeled | 13 | 13 | 13 | 13 | 13 | 13 | 13 | 13 | 0 |
+| modeled | 14 | 14 | 14 | 14 | 14 | 14 | 14 | 14 | 0 |
 | public_direct | 6 | 6 | 6 | 4 | 4 | 4 | 4 | 4 | 0 |
 | raw_graphql | 6 | 6 | 6 | 1 | 1 | 1 | 1 | 0 | 0 |
-| raw_rest | 120 | 120 | 120 | 3 | 3 | 3 | 3 | 0 | 14 |
+| raw_rest | 119 | 119 | 119 | 3 | 3 | 3 | 3 | 0 | 14 |
 
 ## Read/write operation summary
 
 | Group | Count | I | S | R | B | P | V | D | X |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| read | 150 | 150 | 150 | 21 | 21 | 21 | 21 | 17 | 34 |
+| read | 150 | 150 | 150 | 22 | 22 | 22 | 22 | 18 | 34 |
 | write | 22 | 22 | 22 | 1 | 1 | 1 | 1 | 0 | 6 |
 
 ## Blocker ledger
@@ -254,7 +254,7 @@ Denominator: **172**. Full parity is not claimed.
 | start_crawl | browser-rendering | public_http | raw_rest | write | Y | Y | N | N | N | N | N | N |  |
 | workers_builds_get_build | workers-builds | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | workers_builds_get_build_logs | workers-builds | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
-| workers_builds_list_builds | workers-builds | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
+| workers_builds_list_builds | workers-builds | rest | modeled | read | Y | Y | Y | Y | Y | Y | Y | N |  |
 | workers_get_worker | shared | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | workers_get_worker_code | shared | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |
 | workers_list | shared | rest | raw_rest | read | Y | Y | N | N | N | N | N | N |  |

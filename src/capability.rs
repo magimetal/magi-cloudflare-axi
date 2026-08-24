@@ -9,10 +9,12 @@ const FIXTURES: &str = include_str!("../capabilities/cloudflare-schema-fixtures.
 const OPERATIONS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 pub const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
 const OPERATION_BUNDLE_SHA256: &str =
-    "152335217fb4766f9843fac569cf5e1c01bb57ef400f1417ac6b30fcf465e2ac";
+    "80c335cdb1fe8198d08ca55aa4c4ef3a1078d95e3fe11f07e92aec9c2478eb7a";
 const OPERATION_ARTIFACT_SHA256: &str =
-    "e5ab7d7cc6a48c6357888451fdcbcbf78255c061b5c041fb285a22ff0b72be25";
-const OPERATION_NAMES: [&str; 22] = [
+    "9b38b7fc7e2230cdb3775058b85dd3019e7891b471e4849e6c72f17daacd35d0";
+const OPERATION_ARTIFACT_CANONICAL_SHA256: &str =
+    "0b040c094418f246d13f32d51048a4970abd42b41dde6c18e705d1229dc2a792";
+const OPERATION_NAMES: [&str; 23] = [
     "auditlogs_by_account_id",
     "d1_database_delete",
     "d1_database_get",
@@ -35,8 +37,9 @@ const OPERATION_NAMES: [&str; 22] = [
     "search_cloudflare_documentation",
     "search_posts",
     "workers_builds_get_build",
+    "workers_builds_list_builds",
 ];
-const OPERATION_HASHES: [&str; 22] = [
+const OPERATION_HASHES: [&str; 23] = [
     "630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac",
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
@@ -59,6 +62,7 @@ const OPERATION_HASHES: [&str; 22] = [
     "9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41",
     "50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91",
     "156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa",
+    "b718a53caf8183c9115a7e82ee5bf46fba0a87323c3f2a8f6a87327a187e179c",
 ];
 const DENOMINATOR: usize = 172;
 const DIALECT: &str = "https://json-schema.org/draft/2020-12/schema";
@@ -69,8 +73,8 @@ const DEPENDENCY_PROVENANCE_COUNT: usize = 803;
 const DEPENDENCY_PROVENANCE_SHA256: &str =
     "bd6c83d69c8464ec0d5b428a2631972aa1d30acabdf89f310b1a06f8d5678d04";
 const LEGACY_METADATA_SHA256: &str =
-    "cb03a54935afa80047e374577cd1690371c86ed63ae1f13887f9cb83d360fb4a";
-const LEGACY_METADATA_FNV1A: u64 = 0x3a3d2d43e6381975;
+    "9384bd837265f5afb2a7612bd00a1ed2bcd24ff9b93513cead7f929aec9c2989";
+const LEGACY_METADATA_FNV1A: u64 = 0x883bed0aab938547;
 const WORKERS_BUILDS_POLICY_UPSTREAM_FACT: &str =
     "Pinned upstream handler establishes upstream read-only intent only.";
 const WORKERS_BUILDS_POLICY_CONTRACT_FACT: &str = "Generated operation contract establishes local AXI safety classifications: operation=read, destructive=false, metered=false, data_egress=true, long_running=false, retry_policy=transient_read.";
@@ -82,14 +86,33 @@ const WORKERS_BUILDS_POLICY_EGRESS_TEST_ID: &str =
     "tests/transport.rs::capability_workers_builds_get_build_preflight_guards_and_path_limits";
 const WORKERS_BUILDS_POLICY_RETRY_TEST_ID: &str =
     "tests/transport.rs::capability_workers_builds_get_build_status_retry_redaction_and_redirects";
+const WORKERS_BUILDS_LIST_POLICY_EGRESS_TEST_ID: &str =
+    "tests/transport.rs::capability_workers_builds_list_builds_preflight_guards_and_path_limits";
+const WORKERS_BUILDS_LIST_POLICY_RETRY_TEST_ID: &str = "tests/transport.rs::capability_workers_builds_list_builds_transient_statuses_retry_three_times_and_can_succeed";
+
+fn workers_builds_policy_test_ids(capability: &str) -> Option<(&'static str, &'static str)> {
+    match capability {
+        "workers_builds_get_build" => Some((
+            WORKERS_BUILDS_POLICY_EGRESS_TEST_ID,
+            WORKERS_BUILDS_POLICY_RETRY_TEST_ID,
+        )),
+        "workers_builds_list_builds" => Some((
+            WORKERS_BUILDS_LIST_POLICY_EGRESS_TEST_ID,
+            WORKERS_BUILDS_LIST_POLICY_RETRY_TEST_ID,
+        )),
+        _ => None,
+    }
+}
+
 // This exact runtime allowlist is independently checked against Cargo harness output by Python governance.
-const HERMETIC_TEST_IDS: [&str; 27] = [
+const HERMETIC_TEST_IDS: [&str; 31] = [
     "tests/integration.rs::capability_auditlogs_discovery_example_is_exact",
     "tests/integration.rs::capability_autorag_discovery_example_is_exact",
     "tests/integration.rs::capability_blog_discovery_examples_are_exact",
     "tests/integration.rs::capability_browser_discovery_examples_are_exact",
     "tests/integration.rs::capability_logpush_discovery_example_is_exact",
     "tests/integration.rs::capability_workers_builds_discovery_example_is_exact",
+    "tests/integration.rs::capability_workers_builds_list_builds_discovery_example_is_exact",
     "tests/mcp.rs::capability_search_cloudflare_documentation_exact_request",
     "tests/transport.rs::capability_auditlogs_by_account_id_exact_request",
     "tests/transport.rs::capability_cloudflare_blog_public_reads_exact_requests",
@@ -111,6 +134,9 @@ const HERMETIC_TEST_IDS: [&str; 27] = [
     "tests/transport.rs::capability_workers_builds_get_build_exact_request",
     "tests/transport.rs::capability_workers_builds_get_build_preflight_guards_and_path_limits",
     "tests/transport.rs::capability_workers_builds_get_build_status_retry_redaction_and_redirects",
+    "tests/transport.rs::capability_workers_builds_list_builds_exact_request",
+    "tests/transport.rs::capability_workers_builds_list_builds_preflight_guards_and_path_limits",
+    "tests/transport.rs::capability_workers_builds_list_builds_transient_statuses_retry_three_times_and_can_succeed",
 ];
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -447,6 +473,13 @@ fn json_sha256(value: &Value) -> Result<String, serde_json::Error> {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect())
+}
+
+fn sha256_bytes(bytes: &[u8]) -> String {
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 fn safe_relative_path(value: &str) -> bool {
@@ -819,6 +852,23 @@ fn validate_operation_contract(contract: &Value) -> Result<(), serde_json::Error
         {
             return Err(invalid(
                 "Workers Builds operation semantic or evidence mismatch",
+            ));
+        }
+    }
+    if contract["capability"] == "workers_builds_list_builds" {
+        let expected_route = json!({"transport":"rest","method":"GET","path_template":"/accounts/{account_id}/builds/workers/{workerId}/builds","path_parameters":[{"name":"account_id","source":"resolved_account","format":"single_path_segment","max_length":32},{"name":"workerId","source":"input","format":"single_path_segment","max_length":256}],"query_parameters":[{"name":"page","optional":true,"default":1,"serialization":"javascript_string","source":"input"},{"name":"per_page","optional":true,"default":10,"serialization":"javascript_string","source":"input"}],"body":"none","scope":"account","content_type":"application/json","auth":"account"});
+        let expected_behavior = json!({"output_projection":"strict_build_summaries","empty_state":"empty_builds_with_pagination","pagination":"page_per_page","artifact":"none","error":"strict_v4_build_details_list_response_schema","projection_validation":"full_response_before_projection","result_info":"pagination_info"});
+        let expected_safety = json!({"operation":"read","destructive":false,"metered":false,"data_egress":true,"long_running":false,"retry_policy":"transient_read"});
+        let expected_implementation = json!({"status":"verified","adapter":"rest","test_id":"tests/transport.rs::capability_workers_builds_list_builds_exact_request","documentation_id":"cloudflare-workers-builds-list-builds","reviewed_at":"2026-08-15"});
+        let expected_evidence = json!({"api_client":{"blob_oid":"b53d834e977cfb57467a2b1fe4f814f9c2bb2cc7","commit":SOURCE_COMMIT,"file":"packages/mcp-common/src/cloudflare-api.ts","lines":"20-71","source_sha256":"31c1f165a446e241dc93f4880445ad2ea096a9b11a7b757e3e82cc2f63d230d0"},"api_route":{"blob_oid":"061f5240161acc5c2d355d968002e7a178df416b","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/api/workers-builds.api.ts","lines":"13-32","source_sha256":"3c35543e920f795a867d543e0a3700c2eeeca93d3d76ce36d535d6c0595b0db4"},"auth_scopes":{"blob_oid":"1d1ce050974abaebc3b6497d833b3f7c8f39ab94","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/workers-builds.app.ts","lines":"21-28","source_sha256":"e087ea416688217a28e509e26401a74ef76b53742cb97ca4f8244d6f93adf384"},"input_schema":{"blob_oid":"3936684ab52f24fd02247b6a5e785f061b9bd2bd","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/tools/workers-builds.tools.ts","lines":"21-25","source_sha256":"81f7d85ef9411c94b45805d82a53eea32dd94c2d93dbe7611c55b466b1cb4c9d"},"list_result_info_types":{"blob_oid":"7520d4accba6d6ace4d59fb11cf25e096e90501e","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/types/workers-builds.types.ts","lines":"66-80","source_sha256":"2f5d1e8f6c7c90f0d50db43d65a35a5019bede5ce2eaee29f1f02cadea9f683c"},"pinned_handler":{"blob_oid":"3936684ab52f24fd02247b6a5e785f061b9bd2bd","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/tools/workers-builds.tools.ts","lines":"13-76","source_sha256":"59e614836b66369317d481f4f64c530c12f88b0a915b885b4e40a60b664cb01e"},"response_schema":{"blob_oid":"7520d4accba6d6ace4d59fb11cf25e096e90501e","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/types/workers-builds.types.ts","lines":"3-64","source_sha256":"a830f11089342d0ad203ee29f66e9eee6664cffad1386e7da2c1f1044e8bfd75"},"v4_envelope":{"blob_oid":"6748c68b64694c7a7c225dbd5daa388c779ab135","commit":SOURCE_COMMIT,"file":"packages/mcp-common/src/v4-api.ts","lines":"29-55","source_sha256":"2866e0a419736d107bc77dc8d49bb95583101caa5317ecc8660a40062093fdfc"}});
+        if contract["route"] != expected_route
+            || contract["behavior"] != expected_behavior
+            || contract["safety"] != expected_safety
+            || contract["implementation"] != expected_implementation
+            || contract["evidence"] != expected_evidence
+        {
+            return Err(invalid(
+                "Workers Builds list-builds operation semantic or evidence mismatch",
             ));
         }
     }
@@ -1253,17 +1303,48 @@ fn legacy_metadata_checksum(raw: &str) -> Result<u64, serde_json::Error> {
 fn completed_route_matches(row: &Capability, contract: &Value) -> bool {
     let route = &contract["route"];
     let blog = ["get_post", "list_posts", "list_tags", "search_posts"].contains(&row.name.as_str());
+    let workers_builds = matches!(
+        row.name.as_str(),
+        "workers_builds_get_build" | "workers_builds_list_builds"
+    );
     let transport_matches = if row.name == "get_url_html_content" {
         row.transport == "rest" && row.method.as_deref() == Some("POST")
     } else if row.name == "search_cloudflare_documentation" {
         row.transport == "mcp"
     } else if blog {
-        row.transport == "public_http"
-            && row.method.as_deref() == contract["route"]["method"].as_str()
+        row.transport == "public_http" && row.method.as_deref() == route["method"].as_str()
     } else {
         row.transport == route["transport"]
     };
-    transport_matches && row.scope == route["scope"]
+    let method_matches = if matches!(
+        row.name.as_str(),
+        "get_url_html_content" | "search_cloudflare_documentation"
+    ) {
+        true
+    } else {
+        row.method
+            .as_deref()
+            .is_none_or(|method| Some(method) == route["method"].as_str())
+    };
+    let path_matches = if workers_builds {
+        row.path_template.as_deref() == route["path_template"].as_str()
+    } else if matches!(
+        row.name.as_str(),
+        "get_url_html_content" | "search_cloudflare_documentation"
+    ) {
+        true
+    } else {
+        row.path_template
+            .as_deref()
+            .is_none_or(|path| Some(path) == route["path_template"].as_str())
+    };
+    let access_matches = !workers_builds || row.cli_access == "modeled";
+    transport_matches
+        && method_matches
+        && path_matches
+        && access_matches
+        && row.operation == contract["safety"]["operation"]
+        && row.scope == route["scope"]
 }
 
 fn validate_operation_evidence(
@@ -1288,7 +1369,20 @@ fn validate_operation_evidence(
     let logpush = capability == "logpush_jobs_by_account_id";
     let auditlogs = capability == "auditlogs_by_account_id";
     let autorag = capability == "list_rags";
-    let workers_builds = capability == "workers_builds_get_build";
+    let workers_builds = matches!(
+        capability,
+        "workers_builds_get_build" | "workers_builds_list_builds"
+    );
+    let workers_policy_test_ids = workers_builds_policy_test_ids(capability);
+    let workers_discovery_test = match capability {
+        "workers_builds_get_build" => {
+            Some("tests/integration.rs::capability_workers_builds_discovery_example_is_exact")
+        }
+        "workers_builds_list_builds" => Some(
+            "tests/integration.rs::capability_workers_builds_list_builds_discovery_example_is_exact",
+        ),
+        _ => None,
+    };
     let complete = |dimension| match dimension {
         "route" => row.parity.route.status == RouteStatus::Complete,
         "behavior" => matches!(
@@ -1349,7 +1443,7 @@ fn validate_operation_evidence(
             workers_builds
                 && item.fact == WORKERS_BUILDS_POLICY_CONTRACT_FACT
                 && artifact == "capabilities/cloudflare-operation-contracts.json"
-                && sha256 == OPERATION_ARTIFACT_SHA256
+                && sha256 == OPERATION_ARTIFACT_CANONICAL_SHA256
                 && bound.as_deref() == Some(capability)
                 && contract_sha256.as_deref() == contract["contract_sha256"].as_str()
         }
@@ -1374,18 +1468,14 @@ fn validate_operation_evidence(
         )
     };
     let egress_matches = |item: &Evidence| {
-        test_matches(
-            item,
-            WORKERS_BUILDS_POLICY_EGRESS_TEST_ID,
-            Some(WORKERS_BUILDS_POLICY_EGRESS_FACT),
-        )
+        workers_policy_test_ids.is_some_and(|(test_id, _)| {
+            test_matches(item, test_id, Some(WORKERS_BUILDS_POLICY_EGRESS_FACT))
+        })
     };
     let retry_matches = |item: &Evidence| {
-        test_matches(
-            item,
-            WORKERS_BUILDS_POLICY_RETRY_TEST_ID,
-            Some(WORKERS_BUILDS_POLICY_RETRY_FACT),
-        )
+        workers_policy_test_ids.is_some_and(|(_, test_id)| {
+            test_matches(item, test_id, Some(WORKERS_BUILDS_POLICY_RETRY_FACT))
+        })
     };
 
     if workers_builds
@@ -1404,15 +1494,26 @@ fn validate_operation_evidence(
         let authorities = [
             policy_items
                 .iter()
-                .any(|item| upstream_handler_matches(item)),
+                .filter(|item| upstream_handler_matches(item))
+                .count(),
             policy_items
                 .iter()
-                .any(|item| operation_contract_matches(item)),
-            policy_items.iter().any(|item| exact_request_matches(item)),
-            policy_items.iter().any(|item| egress_matches(item)),
-            policy_items.iter().any(|item| retry_matches(item)),
+                .filter(|item| operation_contract_matches(item))
+                .count(),
+            policy_items
+                .iter()
+                .filter(|item| exact_request_matches(item))
+                .count(),
+            policy_items
+                .iter()
+                .filter(|item| egress_matches(item))
+                .count(),
+            policy_items
+                .iter()
+                .filter(|item| retry_matches(item))
+                .count(),
         ];
-        if policy_items.len() != authorities.len() || authorities.iter().any(|present| !present) {
+        if policy_items.len() != authorities.len() || authorities.iter().any(|count| *count != 1) {
             return Err(invalid(
                 "Workers Builds policy evidence authorities are incomplete or duplicated",
             ));
@@ -1495,9 +1596,7 @@ fn validate_operation_evidence(
                             || (autorag
                                 && test_id
                                     == "tests/integration.rs::capability_autorag_discovery_example_is_exact")
-                            || (workers_builds
-                                && test_id
-                                    == "tests/integration.rs::capability_workers_builds_discovery_example_is_exact")
+                            || workers_discovery_test == Some(test_id.as_str())
                     }
                     _ => false,
                 },
@@ -1560,9 +1659,14 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
     let contracts = operations["contracts"]
         .as_array()
         .ok_or_else(|| invalid("operation contracts array required"))?;
-    if operations["version"] != "phase4h-operation-contracts-v1"
+    if operations["version"] != "phase4i-operation-contracts-v1"
+        || operations["source_commit"] != SOURCE_COMMIT
+        || operations["canonicalization"]
+            != "lexicographic compact JSON SHA-256; bundle hash sets bundle_sha256=null; each contract hash sets contract_sha256=null"
         || operations["contract_count"] != OPERATION_NAMES.len()
         || contracts.len() != OPERATION_NAMES.len()
+        || sha256_bytes(OPERATIONS.as_bytes()) != OPERATION_ARTIFACT_SHA256
+        || json_sha256(&operations)? != OPERATION_ARTIFACT_CANONICAL_SHA256
         || json_sha256(&operation_root)? != OPERATION_BUNDLE_SHA256
         || contracts
             .iter()
@@ -1923,10 +2027,10 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             != BTreeMap::from([
                 ("blocked", 1),
                 ("mcp_remote", 26),
-                ("modeled", 13),
+                ("modeled", 14),
                 ("public_direct", 6),
                 ("raw_graphql", 6),
-                ("raw_rest", 120),
+                ("raw_rest", 119),
             ])
         || operation != BTreeMap::from([("read", 150), ("write", 22)])
         || c.capabilities
@@ -1938,12 +2042,42 @@ pub fn validate(c: &Catalog) -> Result<(), serde_json::Error> {
             .iter()
             .filter(|row| row.path_template.is_some())
             .count()
-            != 19
+            != 20
         || c.capabilities
             .iter()
             .filter(|row| row.blocker.is_some())
             .count()
             != 40
+        || c.capabilities
+            .iter()
+            .filter(|row| row.parity.route.status == RouteStatus::Complete)
+            .count()
+            != 23
+        || c.capabilities
+            .iter()
+            .filter(|row| row.parity.behavior.status == BehaviorStatus::Verified)
+            .count()
+            != 23
+        || c.capabilities
+            .iter()
+            .filter(|row| row.parity.policy.status == PolicyStatus::Verified)
+            .count()
+            != 23
+        || c.capabilities
+            .iter()
+            .filter(|row| row.parity.verification.status == VerificationStatus::HermeticVerified)
+            .count()
+            != 23
+        || c.capabilities
+            .iter()
+            .filter(|row| row.parity.discovery.status == DiscoveryStatus::Verified)
+            .count()
+            != 18
+        || c.capabilities
+            .iter()
+            .filter(|row| row.parity.route.status == RouteStatus::Unresolved)
+            .count()
+            != 149
     {
         return Err(invalid("legacy baseline metadata drift"));
     }
@@ -2021,7 +2155,35 @@ pub fn access_recipe(e: &Capability) -> Value {
         "method": e.method,
         "path_template": e.path_template,
         "blocker": e.blocker,
-        "next_command": if verified { match e.name.as_str() { "auditlogs_by_account_id" => "magi-cloudflare-axi capability invoke auditlogs_by_account_id --input '{\"since\":\"<since>\",\"before\":\"<before>\"}' --allow-egress".to_string(), "get_post" => "magi-cloudflare-axi capability invoke get_post --input '{\"slug\":\"<slug>\"}'".to_string(), "list_browser_sessions" | "list_posts" | "list_tags" => format!("magi-cloudflare-axi capability invoke {} --input '{{}}'", e.name), "list_rags" => "magi-cloudflare-axi capability invoke list_rags --input '{}' --allow-egress".to_string(), "logpush_jobs_by_account_id" => "magi-cloudflare-axi capability invoke logpush_jobs_by_account_id --input '{}' --allow-egress".to_string(), "search_posts" => "magi-cloudflare-axi capability invoke search_posts --input '{\"query\":\"<query>\"}'".to_string(), "workers_builds_get_build" => "magi-cloudflare-axi capability invoke workers_builds_get_build --input '{\"buildUUID\":\"<buildUUID>\"}' --allow-egress".to_string(), "get_url_pdf" | "get_url_screenshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}' --output <path>", e.name), "get_url_markdown" | "get_url_links" | "get_url_json" | "get_url_snapshot" => format!("magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}'", e.name), "get_crawl_result" => "magi-cloudflare-axi capability invoke get_crawl_result --input '{\"job_id\":\"<job_id>\"}'".to_string(), "scrape_url_elements" => "magi-cloudflare-axi capability invoke scrape_url_elements --input '{\"url\":\"<url>\",\"elements\":[{\"selector\":\"h1\"}]}'".to_string(), _ => format!("magi-cloudflare-axi capability invoke {} --input '<json>'", e.name) } } else { format!("magi-cloudflare-axi tool schema {} --server <server>", e.name) },
+        "next_command": if verified {
+            match e.name.as_str() {
+                "auditlogs_by_account_id" => "magi-cloudflare-axi capability invoke auditlogs_by_account_id --input '{\"since\":\"<since>\",\"before\":\"<before>\"}' --allow-egress".to_string(),
+                "get_post" => "magi-cloudflare-axi capability invoke get_post --input '{\"slug\":\"<slug>\"}'".to_string(),
+                "list_browser_sessions" | "list_posts" | "list_tags" => {
+                    format!("magi-cloudflare-axi capability invoke {} --input '{{}}'", e.name)
+                }
+                "list_rags" => "magi-cloudflare-axi capability invoke list_rags --input '{}' --allow-egress".to_string(),
+                "logpush_jobs_by_account_id" => "magi-cloudflare-axi capability invoke logpush_jobs_by_account_id --input '{}' --allow-egress".to_string(),
+                "search_posts" => "magi-cloudflare-axi capability invoke search_posts --input '{\"query\":\"<query>\"}'".to_string(),
+                "workers_builds_get_build" => "magi-cloudflare-axi capability invoke workers_builds_get_build --input '{\"buildUUID\":\"<buildUUID>\"}' --allow-egress".to_string(),
+                "workers_builds_list_builds" => "magi-cloudflare-axi capability invoke workers_builds_list_builds --input '{\"workerId\":\"<workerId>\"}' --allow-egress".to_string(),
+                "get_url_pdf" | "get_url_screenshot" => format!(
+                    "magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}' --output <path>",
+                    e.name
+                ),
+                "get_url_markdown" | "get_url_links" | "get_url_json" | "get_url_snapshot" => {
+                    format!(
+                        "magi-cloudflare-axi capability invoke {} --input '{{\"url\":\"<url>\"}}'",
+                        e.name
+                    )
+                }
+                "get_crawl_result" => "magi-cloudflare-axi capability invoke get_crawl_result --input '{\"job_id\":\"<job_id>\"}'".to_string(),
+                "scrape_url_elements" => "magi-cloudflare-axi capability invoke scrape_url_elements --input '{\"url\":\"<url>\",\"elements\":[{\"selector\":\"h1\"}]}'".to_string(),
+                _ => format!("magi-cloudflare-axi capability invoke {} --input '<json>'", e.name),
+            }
+        } else {
+            format!("magi-cloudflare-axi tool schema {} --server <server>", e.name)
+        },
         "warning": if verified { "route, behavior, policy, and hermetic verification are complete; discovery remains separately gated" } else { "pinned registration-input schema is complete; live schema may vary by request context, and route/behavior/policy evidence remains incomplete" }
     })
 }
@@ -2071,6 +2233,27 @@ mod tests {
                 .count(),
             172
         );
+        assert_eq!(
+            c.capabilities
+                .iter()
+                .filter(|x| x.parity.route.status == RouteStatus::Complete)
+                .count(),
+            23
+        );
+        assert_eq!(
+            c.capabilities
+                .iter()
+                .filter(|x| x.parity.discovery.status == DiscoveryStatus::Verified)
+                .count(),
+            18
+        );
+        assert_eq!(
+            c.capabilities
+                .iter()
+                .filter(|x| x.parity.route.status == RouteStatus::Unresolved)
+                .count(),
+            149
+        );
         assert_eq!(x_count(&c), 40);
     }
     #[test]
@@ -2111,7 +2294,6 @@ mod tests {
                 .contains("capability invoke d1_database_get")
         );
     }
-
     #[test]
     fn auditlogs_recipe_and_actual_transport_discovery_symbols_are_pinned() {
         let capability = get("auditlogs_by_account_id").unwrap().unwrap();
@@ -2185,43 +2367,77 @@ mod tests {
 
     #[test]
     fn workers_builds_recipe_and_actual_transport_discovery_symbols_are_pinned() {
-        let capability = get("workers_builds_get_build").unwrap().unwrap();
-        let recipe = access_recipe(&capability);
-        assert_eq!(recipe["status"], "operation_verified");
-        assert_eq!(recipe["catalog_access"], "modeled");
-        assert_eq!(recipe["scope"], "account");
-        assert_eq!(recipe["method"], "GET");
-        assert_eq!(
-            recipe["path_template"],
-            "/accounts/{account_id}/builds/builds/{buildUUID}"
-        );
-        assert_eq!(
-            recipe["next_command"],
-            "magi-cloudflare-axi capability invoke workers_builds_get_build --input '{\"buildUUID\":\"<buildUUID>\"}' --allow-egress"
-        );
         let operations: Value = serde_json::from_str(OPERATIONS).unwrap();
-        let contract = operations["contracts"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|contract| contract["capability"] == "workers_builds_get_build")
-            .unwrap();
-        assert_eq!(
-            contract["evidence"]["api_route"]["source_sha256"],
-            "8bdd02f9580cfffc1f40e6f33f38f1dc8d8650e5d5778876c60ed4e28bbc7f84"
-        );
-        assert_eq!(
-            contract["evidence"]["v4_envelope"]["source_sha256"],
-            "2866e0a419736d107bc77dc8d49bb95583101caa5317ecc8660a40062093fdfc"
-        );
-        assert!(valid_test_id(
-            "tests/transport.rs::capability_workers_builds_get_build_exact_request"
-        ));
-        assert!(valid_test_id(WORKERS_BUILDS_POLICY_EGRESS_TEST_ID));
-        assert!(valid_test_id(WORKERS_BUILDS_POLICY_RETRY_TEST_ID));
-        assert!(valid_test_id(
-            "tests/integration.rs::capability_workers_builds_discovery_example_is_exact"
-        ));
+        for (name, path, contract_hash, route_hash, handler_hash, exact_test, discovery_test) in [
+            (
+                "workers_builds_get_build",
+                "/accounts/{account_id}/builds/builds/{buildUUID}",
+                "156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa",
+                "8bdd02f9580cfffc1f40e6f33f38f1dc8d8650e5d5778876c60ed4e28bbc7f84",
+                "fe096c34187b7646ad6e2ee033a3c2f46d50ee8623b4a9619f1f1bd6e8045ae3",
+                "tests/transport.rs::capability_workers_builds_get_build_exact_request",
+                "tests/integration.rs::capability_workers_builds_discovery_example_is_exact",
+            ),
+            (
+                "workers_builds_list_builds",
+                "/accounts/{account_id}/builds/workers/{workerId}/builds",
+                "b718a53caf8183c9115a7e82ee5bf46fba0a87323c3f2a8f6a87327a187e179c",
+                "3c35543e920f795a867d543e0a3700c2eeeca93d3d76ce36d535d6c0595b0db4",
+                "59e614836b66369317d481f4f64c530c12f88b0a915b885b4e40a60b664cb01e",
+                "tests/transport.rs::capability_workers_builds_list_builds_exact_request",
+                "tests/integration.rs::capability_workers_builds_list_builds_discovery_example_is_exact",
+            ),
+        ] {
+            let capability = get(name).unwrap().unwrap();
+            let recipe = access_recipe(&capability);
+            assert_eq!(recipe["status"], "operation_verified");
+            assert_eq!(recipe["catalog_access"], "modeled");
+            assert_eq!(recipe["scope"], "account");
+            assert_eq!(recipe["method"], "GET");
+            assert_eq!(recipe["path_template"], path);
+            let expected_command = if name == "workers_builds_get_build" {
+                "magi-cloudflare-axi capability invoke workers_builds_get_build --input '{\"buildUUID\":\"<buildUUID>\"}' --allow-egress"
+            } else {
+                "magi-cloudflare-axi capability invoke workers_builds_list_builds --input '{\"workerId\":\"<workerId>\"}' --allow-egress"
+            };
+            assert_eq!(recipe["next_command"], expected_command);
+
+            let contract = operations["contracts"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|contract| contract["capability"] == name)
+                .unwrap();
+            assert_eq!(contract["contract_sha256"], contract_hash);
+            assert_eq!(
+                contract["evidence"]["api_route"]["source_sha256"],
+                route_hash
+            );
+            assert_eq!(
+                contract["evidence"]["pinned_handler"]["source_sha256"],
+                handler_hash
+            );
+            assert_eq!(
+                contract["evidence"]["v4_envelope"]["source_sha256"],
+                "2866e0a419736d107bc77dc8d49bb95583101caa5317ecc8660a40062093fdfc"
+            );
+            if name == "workers_builds_list_builds" {
+                assert_eq!(
+                    contract["evidence"]["input_schema"]["source_sha256"],
+                    "81f7d85ef9411c94b45805d82a53eea32dd94c2d93dbe7611c55b466b1cb4c9d"
+                );
+                assert_eq!(
+                    contract["evidence"]["list_result_info_types"]["source_sha256"],
+                    "2f5d1e8f6c7c90f0d50db43d65a35a5019bede5ce2eaee29f1f02cadea9f683c"
+                );
+            }
+            assert!(valid_test_id(exact_test));
+            let (egress_test, retry_test) = workers_builds_policy_test_ids(name).unwrap();
+            assert!(valid_test_id(egress_test));
+            assert!(valid_test_id(retry_test));
+            assert!(valid_test_id(discovery_test));
+            assert_eq!(contract["implementation"]["test_id"], exact_test);
+        }
     }
     #[test]
     fn test_ids_require_embedded_harness_allowlist() {
@@ -2575,125 +2791,158 @@ mod operation_reverse_join_tests {
     #[test]
     fn workers_builds_policy_evidence_keeps_upstream_and_local_authority_separate() {
         let baseline: Catalog = serde_json::from_str(CATALOG).unwrap();
-        let row = baseline
-            .capabilities
-            .iter()
-            .find(|row| row.name == "workers_builds_get_build")
-            .unwrap();
-        let policy_ids = &row.parity.policy.evidence_ids;
-        assert_eq!(policy_ids.len(), 5);
         let evidence: BTreeMap<_, _> = baseline
             .evidence
             .iter()
             .map(|item| (item.id.as_str(), item))
             .collect();
-        assert_eq!(
-            evidence["ev-operation-workers_builds_get_build-policy"].fact,
-            WORKERS_BUILDS_POLICY_UPSTREAM_FACT
-        );
-        assert_eq!(
-            evidence["ev-operation-workers_builds_get_build-policy-contract"].fact,
-            WORKERS_BUILDS_POLICY_CONTRACT_FACT
-        );
-        assert_eq!(
-            evidence["ev-operation-workers_builds_get_build-policy-test"].fact,
-            WORKERS_BUILDS_POLICY_TEST_FACT
-        );
-        assert_eq!(
-            evidence["ev-operation-workers_builds_get_build-policy-egress"].fact,
-            WORKERS_BUILDS_POLICY_EGRESS_FACT
-        );
-        assert_eq!(
-            evidence["ev-operation-workers_builds_get_build-policy-retry"].fact,
-            WORKERS_BUILDS_POLICY_RETRY_FACT
-        );
-        assert!(matches!(
-            &evidence["ev-operation-workers_builds_get_build-policy"].provenance,
-            EvidenceProvenance::PinnedGit { source_ref, .. }
-                if source_ref == "apps/workers-builds/src/tools/workers-builds.tools.ts:78-129"
-        ));
-        assert!(matches!(
-            &evidence["ev-operation-workers_builds_get_build-policy-contract"].provenance,
-            EvidenceProvenance::GeneratedArtifact {
-                artifact,
-                capability: Some(capability),
-                contract_sha256: Some(contract_sha256),
-                ..
-            } if artifact == "capabilities/cloudflare-operation-contracts.json"
-                && capability == "workers_builds_get_build"
-                && contract_sha256 == "156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa"
-        ));
-        assert!(matches!(
-            &evidence["ev-operation-workers_builds_get_build-policy-test"].provenance,
-            EvidenceProvenance::HermeticTest { test_id, .. }
-                if test_id == "tests/transport.rs::capability_workers_builds_get_build_exact_request"
-        ));
-        assert!(matches!(
-            &evidence["ev-operation-workers_builds_get_build-policy-egress"].provenance,
-            EvidenceProvenance::HermeticTest { test_id, .. }
-                if test_id == WORKERS_BUILDS_POLICY_EGRESS_TEST_ID
-        ));
-        assert!(matches!(
-            &evidence["ev-operation-workers_builds_get_build-policy-retry"].provenance,
-            EvidenceProvenance::HermeticTest { test_id, .. }
-                if test_id == WORKERS_BUILDS_POLICY_RETRY_TEST_ID
-        ));
-
-        for suffix in [
-            "policy",
-            "policy-contract",
-            "policy-test",
-            "policy-egress",
-            "policy-retry",
-        ] {
-            let mut changed = baseline.clone();
-            changed
-                .evidence
-                .iter_mut()
-                .find(|item| item.id == format!("ev-operation-workers_builds_get_build-{suffix}"))
-                .unwrap()
-                .fact = "overclaimed policy evidence".into();
-            assert!(
-                validate(&changed).is_err(),
-                "accepted policy overclaim: {suffix}"
-            );
-        }
-        for suffix in ["policy-egress", "policy-retry"] {
-            let mut changed = baseline.clone();
-            let item = changed
-                .evidence
-                .iter_mut()
-                .find(|item| item.id == format!("ev-operation-workers_builds_get_build-{suffix}"))
-                .unwrap();
-            if let EvidenceProvenance::HermeticTest { test_id, .. } = &mut item.provenance {
-                *test_id =
-                    "tests/transport.rs::capability_workers_builds_get_build_exact_request".into();
-            }
-            assert!(
-                validate(&changed).is_err(),
-                "accepted substituted policy test: {suffix}"
-            );
-        }
-        for suffix in [
-            "policy",
-            "policy-contract",
-            "policy-test",
-            "policy-egress",
-            "policy-retry",
-        ] {
-            let mut changed = baseline.clone();
-            let row = changed
+        for name in ["workers_builds_get_build", "workers_builds_list_builds"] {
+            let row = baseline
                 .capabilities
-                .iter_mut()
-                .find(|row| row.name == "workers_builds_get_build")
+                .iter()
+                .find(|row| row.name == name)
                 .unwrap();
-            let id = format!("ev-operation-workers_builds_get_build-{suffix}");
-            row.parity.policy.evidence_ids.retain(|value| value != &id);
-            assert!(
-                validate(&changed).is_err(),
-                "accepted missing policy authority: {suffix}"
-            );
+            assert_eq!(row.parity.policy.evidence_ids.len(), 5);
+            let (handler_ref, contract_hash, exact_test) = if name == "workers_builds_get_build" {
+                (
+                    "apps/workers-builds/src/tools/workers-builds.tools.ts:78-129",
+                    "156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa",
+                    "tests/transport.rs::capability_workers_builds_get_build_exact_request",
+                )
+            } else {
+                (
+                    "apps/workers-builds/src/tools/workers-builds.tools.ts:13-76",
+                    "b718a53caf8183c9115a7e82ee5bf46fba0a87323c3f2a8f6a87327a187e179c",
+                    "tests/transport.rs::capability_workers_builds_list_builds_exact_request",
+                )
+            };
+            let prefix = format!("ev-operation-{name}-");
+            for (suffix, fact) in [
+                ("policy", WORKERS_BUILDS_POLICY_UPSTREAM_FACT),
+                ("policy-contract", WORKERS_BUILDS_POLICY_CONTRACT_FACT),
+                ("policy-test", WORKERS_BUILDS_POLICY_TEST_FACT),
+                ("policy-egress", WORKERS_BUILDS_POLICY_EGRESS_FACT),
+                ("policy-retry", WORKERS_BUILDS_POLICY_RETRY_FACT),
+            ] {
+                let id = format!("{prefix}{suffix}");
+                assert_eq!(evidence[id.as_str()].fact, fact);
+            }
+            let policy = &evidence[format!("{prefix}policy").as_str()];
+            assert!(matches!(
+                &policy.provenance,
+                EvidenceProvenance::PinnedGit { source_ref, .. }
+                    if source_ref == handler_ref
+            ));
+            let contract = &evidence[format!("{prefix}policy-contract").as_str()];
+            assert!(matches!(
+                &contract.provenance,
+                EvidenceProvenance::GeneratedArtifact {
+                    artifact,
+                    capability: Some(capability),
+                    contract_sha256: Some(actual_hash),
+                    ..
+                } if artifact == "capabilities/cloudflare-operation-contracts.json"
+                    && capability == name
+                    && actual_hash == contract_hash
+            ));
+            let exact = &evidence[format!("{prefix}policy-test").as_str()];
+            assert!(matches!(
+                &exact.provenance,
+                EvidenceProvenance::HermeticTest { test_id, .. }
+                    if test_id == exact_test
+            ));
+            let (egress_test, retry_test) = workers_builds_policy_test_ids(name).unwrap();
+            for (suffix, expected_test) in
+                [("policy-egress", egress_test), ("policy-retry", retry_test)]
+            {
+                let item = &evidence[format!("{prefix}{suffix}").as_str()];
+                assert!(matches!(
+                    &item.provenance,
+                    EvidenceProvenance::HermeticTest { test_id, .. }
+                        if test_id == expected_test
+                ));
+            }
+
+            for suffix in [
+                "policy",
+                "policy-contract",
+                "policy-test",
+                "policy-egress",
+                "policy-retry",
+            ] {
+                let mut changed = baseline.clone();
+                let id = format!("{prefix}{suffix}");
+                changed
+                    .evidence
+                    .iter_mut()
+                    .find(|item| item.id == id)
+                    .unwrap()
+                    .fact = "overclaimed policy evidence".into();
+                assert!(
+                    validate(&changed).is_err(),
+                    "accepted policy overclaim: {name}/{suffix}"
+                );
+            }
+            for (suffix, replacement) in
+                [("policy-egress", retry_test), ("policy-retry", egress_test)]
+            {
+                let mut changed = baseline.clone();
+                let id = format!("{prefix}{suffix}");
+                let item = changed
+                    .evidence
+                    .iter_mut()
+                    .find(|item| item.id == id)
+                    .unwrap();
+                if let EvidenceProvenance::HermeticTest { test_id, .. } = &mut item.provenance {
+                    *test_id = replacement.into();
+                }
+                assert!(
+                    validate(&changed).is_err(),
+                    "accepted substituted policy test: {name}/{suffix}"
+                );
+            }
+            for suffix in [
+                "policy",
+                "policy-contract",
+                "policy-test",
+                "policy-egress",
+                "policy-retry",
+            ] {
+                let mut changed = baseline.clone();
+                let id = format!("{prefix}{suffix}");
+                let row = changed
+                    .capabilities
+                    .iter_mut()
+                    .find(|row| row.name == name)
+                    .unwrap();
+                row.parity.policy.evidence_ids.retain(|value| value != &id);
+                assert!(
+                    validate(&changed).is_err(),
+                    "accepted missing policy authority: {name}/{suffix}"
+                );
+            }
         }
+
+        let mut swapped = baseline.clone();
+        let left = swapped
+            .capabilities
+            .iter()
+            .position(|row| row.name == "workers_builds_get_build")
+            .unwrap();
+        let right = swapped
+            .capabilities
+            .iter()
+            .position(|row| row.name == "workers_builds_list_builds")
+            .unwrap();
+        let (low, high) = swapped.capabilities.split_at_mut(right);
+        std::mem::swap(
+            &mut low[left].parity.policy.evidence_ids,
+            &mut high[0].parity.policy.evidence_ids,
+        );
+        assert!(
+            validate(&swapped).is_err(),
+            "accepted cross-operation policy swap"
+        );
     }
 
     #[test]

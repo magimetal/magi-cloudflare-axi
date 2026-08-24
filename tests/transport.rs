@@ -2129,6 +2129,61 @@ fn workers_args(input: &str) -> Vec<&str> {
     args.push("--allow-egress");
     args
 }
+fn workers_list_args(input: &str) -> Vec<&str> {
+    let mut args = capability_args("workers_builds_list_builds", input);
+    args.push("--allow-egress");
+    args
+}
+
+fn workers_list_info() -> Value {
+    serde_json::json!({
+        "next_page": false,
+        "page": 1,
+        "per_page": 10,
+        "count": 0,
+        "total_count": 0,
+        "total_pages": 0,
+        "ignored": "strip"
+    })
+}
+
+fn workers_list_response(result: Value, result_info: Value) -> &'static str {
+    let response = serde_json::json!({
+        "success": true,
+        "errors": [],
+        "messages": [],
+        "result": result,
+        "result_info": result_info,
+        "ignored_root_field": "strip"
+    });
+    Box::leak(serde_json::to_string(&response).unwrap().into_boxed_str())
+}
+
+fn workers_build_detail(created_on: Value, build_uuid: &str) -> Value {
+    let created_on = serde_json::to_string(&created_on).unwrap();
+    let mut response: Value = serde_json::from_str(workers_build_response(&created_on)).unwrap();
+    let build = response
+        .pointer_mut("/result")
+        .unwrap()
+        .as_object_mut()
+        .unwrap();
+    build.insert("build_uuid".into(), Value::String(build_uuid.into()));
+    let metadata = build["build_trigger_metadata"].as_object_mut().unwrap();
+    metadata.insert("branch".into(), Value::String(build_uuid.into()));
+    metadata.insert("commit_hash".into(), Value::String(build_uuid.into()));
+    metadata.insert("commit_message".into(), Value::String(build_uuid.into()));
+    metadata.insert("author".into(), Value::String(build_uuid.into()));
+    response["result"].clone()
+}
+
+fn workers_list_response_with_change(pointer: &str, replacement: Option<Value>) -> &'static str {
+    let envelope: Value =
+        serde_json::from_str(workers_build_response_with_change(pointer, replacement)).unwrap();
+    workers_list_response(
+        serde_json::json!([envelope["result"].clone()]),
+        workers_list_info(),
+    )
+}
 
 fn workers_build_response(created_on: &str) -> &'static str {
     let created_on: Value = serde_json::from_str(created_on).unwrap();
@@ -2228,6 +2283,8 @@ fn workers_build_response_with_change(pointer: &str, replacement: Option<Value>)
     Box::leak(serde_json::to_string(&response).unwrap().into_boxed_str())
 }
 fn run_workers_without_auth(
+    capability: &str,
+    input: &str,
     environment_endpoint: Option<&str>,
     global_endpoint: Option<&str>,
 ) -> (Output, TempDir) {
@@ -2254,9 +2311,9 @@ fn run_workers_without_auth(
             TEST_ACCOUNT,
             "capability",
             "invoke",
-            "workers_builds_get_build",
+            capability,
             "--input",
-            r#"{"buildUUID":"build-not-a-uuid"}"#,
+            input,
             "--allow-egress",
         ])
         .current_dir(dir.path())
@@ -2280,7 +2337,12 @@ fn run_workers_without_auth(
     (command.output().unwrap(), dir)
 }
 
-fn run_workers_with_account_source(source: &str, account: &str) -> Output {
+fn run_workers_with_account_source(
+    source: &str,
+    account: &str,
+    capability: &str,
+    input: &str,
+) -> Output {
     let directory = tempfile::tempdir().unwrap();
     let home = directory.path().join("home");
     let xdg = directory.path().join("xdg");
@@ -2327,9 +2389,9 @@ fn run_workers_with_account_source(source: &str, account: &str) -> Output {
         .args([
             "capability",
             "invoke",
-            "workers_builds_get_build",
+            capability,
             "--input",
-            r#"{"buildUUID":"build-not-a-uuid"}"#,
+            input,
             "--allow-egress",
         ])
         .output()
@@ -2438,6 +2500,7 @@ fn capability_workers_builds_get_build_accepts_iso_and_numeric_dates() {
             r#""2024-01-01T02:00:00.123+02:00""#,
             "2024-01-01T00:00:00.123Z",
         ),
+        (r#""2024-01-01""#, "2024-01-01T00:00:00.000Z"),
         ("1704067200123", "2024-01-01T00:00:00.123Z"),
     ] {
         let server = Server::start(vec![(200, workers_build_response(created_on))]);
@@ -2532,6 +2595,18 @@ fn capability_workers_builds_get_build_rejects_malformed_full_responses() {
             "created date type",
             "/result/created_on",
             Some(serde_json::json!(null)),
+            false,
+        ),
+        (
+            "created date whitespace",
+            "/result/created_on",
+            Some(serde_json::json!(" 2024-01-01T00:00:00.000Z ")),
+            false,
+        ),
+        (
+            "nullable date whitespace",
+            "/result/running_on",
+            Some(serde_json::json!(" 2024-01-02T03:04:05Z ")),
             false,
         ),
         (
@@ -2727,7 +2802,12 @@ fn capability_workers_builds_get_build_rejects_resolved_account_whitespace_and_c
  {
     for source in ["cli", "environment", "global"] {
         for account in ["account with space", "account\u{0007}with-control"] {
-            let output = run_workers_with_account_source(source, account);
+            let output = run_workers_with_account_source(
+                source,
+                account,
+                "workers_builds_get_build",
+                r#"{"buildUUID":"build-not-a-uuid"}"#,
+            );
             assert_eq!(output.status.code(), Some(2), "{source} {account:?}");
             let error = json_stdout(&output)["error"].clone();
             assert_eq!(error["type"], "usage", "{source} {account:?}");
@@ -2744,12 +2824,42 @@ fn capability_workers_builds_get_build_rejects_resolved_account_whitespace_and_c
 }
 
 #[test]
+fn capability_workers_builds_list_builds_rejects_resolved_account_whitespace_and_control_before_auth_or_network()
+ {
+    for source in ["cli", "environment", "global"] {
+        for account in ["account with space", "account\u{0007}with-control"] {
+            let output = run_workers_with_account_source(
+                source,
+                account,
+                "workers_builds_list_builds",
+                r#"{"workerId":"worker-1"}"#,
+            );
+            assert_eq!(output.status.code(), Some(2), "{source} {account:?}");
+            let error = json_stdout(&output)["error"].clone();
+            assert_eq!(error["type"], "usage", "{source} {account:?}");
+            assert!(
+                error["message"]
+                    .as_str()
+                    .is_some_and(|message| message.contains("account_id must be one safe")),
+                "{source} {account:?}: {error}"
+            );
+            assert_ne!(error["type"], "auth", "{source} {account:?}");
+            assert_ne!(error["type"], "network", "{source} {account:?}");
+        }
+    }
+}
+#[test]
 fn capability_workers_builds_get_build_validates_resolved_endpoint_before_auth() {
     for (source, environment_endpoint, global_endpoint) in [
         ("environment", Some("http://example.com/client/v4"), None),
         ("global config", None, Some("http://example.com/client/v4")),
     ] {
-        let (output, _directory) = run_workers_without_auth(environment_endpoint, global_endpoint);
+        let (output, _directory) = run_workers_without_auth(
+            "workers_builds_get_build",
+            r#"{"buildUUID":"build-not-a-uuid"}"#,
+            environment_endpoint,
+            global_endpoint,
+        );
         let text = String::from_utf8_lossy(&output.stdout);
         assert_eq!(output.status.code(), Some(1), "{source}: {text}");
         assert!(
@@ -2760,6 +2870,27 @@ fn capability_workers_builds_get_build_validates_resolved_endpoint_before_auth()
     }
 }
 
+#[test]
+fn capability_workers_builds_list_builds_validates_resolved_endpoint_before_auth() {
+    for (source, environment_endpoint, global_endpoint) in [
+        ("environment", Some("http://example.com/client/v4"), None),
+        ("global config", None, Some("http://example.com/client/v4")),
+    ] {
+        let (output, _directory) = run_workers_without_auth(
+            "workers_builds_list_builds",
+            r#"{"workerId":"worker-1"}"#,
+            environment_endpoint,
+            global_endpoint,
+        );
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert_eq!(output.status.code(), Some(1), "{source}: {text}");
+        assert!(
+            text.contains("HTTPS") || text.contains("invalid API endpoint"),
+            "{source}: {text}"
+        );
+        assert!(!text.contains("CLOUDFLARE_API_TOKEN"), "{source}: {text}");
+    }
+}
 #[test]
 fn capability_workers_builds_get_build_status_retry_redaction_and_redirects() {
     let failure = r#"{"errors":[{"code":"fixture-token","message":"failure"}]}"#;
@@ -2802,6 +2933,484 @@ fn capability_workers_builds_get_build_response_bound_is_enforced() {
     let server = Server::start(vec![(200, workers_oversized_response())]);
     let (output, _) = run(
         &workers_args(r#"{"buildUUID":"build-not-a-uuid"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stdout).contains("response exceeds 8 MiB"));
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_workers_builds_list_builds_exact_request() {
+    let server = Server::start(vec![(
+        200,
+        workers_list_response(serde_json::json!([]), workers_list_info()),
+    )]);
+    let (output, _) = run(
+        &workers_list_args(r#"{"workerId":"worker-1","unknown":true}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(
+        json_stdout(&output),
+        serde_json::json!({
+            "builds": [],
+            "pagination_info": {
+                "next_page": false,
+                "page": 1,
+                "per_page": 10,
+                "count": 0,
+                "total_count": 0,
+                "total_pages": 0
+            }
+        })
+    );
+    let requests = server.finish();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "GET");
+    assert_eq!(
+        requests[0].target,
+        "/client/v4/accounts/account-123/builds/workers/worker-1/builds?page=1&per_page=10"
+    );
+    assert!(requests[0].body.is_empty());
+    let headers = requests[0].headers.to_ascii_lowercase();
+    assert!(headers.contains("authorization: bearer fixture-token"));
+    assert!(!headers.contains("content-type:"));
+}
+
+#[test]
+fn capability_workers_builds_list_builds_supplied_pagination_and_key_email_auth() {
+    let server = Server::start(vec![(
+        200,
+        workers_list_response(serde_json::json!([]), workers_list_info()),
+    )]);
+    let directory = tempfile::tempdir().unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_magi-cloudflare-axi"))
+        .args([
+            "--format",
+            "json",
+            "--endpoint",
+            server.endpoint.as_str(),
+            "--account",
+            TEST_ACCOUNT,
+            "capability",
+            "invoke",
+            "workers_builds_list_builds",
+            "--input",
+            r#"{"workerId":"worker-1","page":7,"perPage":42,"unknown":true}"#,
+            "--allow-egress",
+        ])
+        .current_dir(directory.path())
+        .env("HOME", directory.path())
+        .env("XDG_CONFIG_HOME", directory.path())
+        .env_remove("CLOUDFLARE_API_BASE")
+        .env_remove("CLOUDFLARE_ENDPOINT")
+        .env_remove("CLOUDFLARE_API_TOKEN")
+        .env("CLOUDFLARE_API_KEY", "fixture-key")
+        .env("CLOUDFLARE_API_EMAIL", "fixture@example.invalid")
+        .env_remove("CLOUDFLARE_ACCOUNT_ID")
+        .env_remove("CLOUDFLARE_ACOUNT_ID")
+        .env_remove("CLOUDFLARE_ZONE_ID")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let request = &server.finish()[0];
+    assert_eq!(
+        request.target,
+        "/client/v4/accounts/account-123/builds/workers/worker-1/builds?page=7&per_page=42"
+    );
+    assert!(request.body.is_empty());
+    let headers = request.headers.to_ascii_lowercase();
+    assert!(headers.contains("x-auth-key: fixture-key"));
+    assert!(headers.contains("x-auth-email: fixture@example.invalid"));
+    assert!(!headers.contains("authorization:"));
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("fixture-key"));
+}
+
+#[test]
+fn capability_workers_builds_list_builds_dates_sort_newest_and_stable_equal_order() {
+    let rows = serde_json::json!([
+        workers_build_detail(serde_json::json!("2024-01-02T02:00:00.123+02:00"), "newest"),
+        workers_build_detail(serde_json::json!(1704067200123u64), "oldest"),
+        workers_build_detail(serde_json::json!("2024-01-02T00:00:00.123Z"), "equal")
+    ]);
+    let mut info = workers_list_info();
+    info["next_page"] = serde_json::json!(true);
+    info["page"] = serde_json::json!(2);
+    info["per_page"] = serde_json::json!(3);
+    info["count"] = serde_json::json!(3);
+    info["total_count"] = serde_json::json!(5);
+    info["total_pages"] = serde_json::json!(2);
+    let server = Server::start(vec![(200, workers_list_response(rows, info))]);
+    let (output, _) = run(
+        &workers_list_args(r#"{"workerId":"worker-1"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(output.status.success(), "{output:?}");
+    let value = json_stdout(&output);
+    let builds = value["builds"].as_array().unwrap();
+    assert_eq!(
+        builds
+            .iter()
+            .map(|build| build["buildUUID"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        ["newest", "equal", "oldest"]
+    );
+    assert_eq!(builds[0]["createdOn"], "2024-01-02T00:00:00.123Z");
+    assert_eq!(builds[2]["createdOn"], "2024-01-01T00:00:00.123Z");
+    for build in builds {
+        assert_eq!(build.as_object().unwrap().len(), 8);
+        assert!(build.get("buildCommand").is_none());
+        assert!(build.get("deployCommand").is_none());
+    }
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(!text.contains("environment_variables"));
+    assert!(!text.contains("top-secret"));
+    assert!(!text.contains("npm run build"));
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_workers_builds_list_builds_null_result_returns_empty_builds_and_null_pagination() {
+    let server = Server::start(vec![(
+        200,
+        workers_list_response(Value::Null, workers_list_info()),
+    )]);
+    let (output, _) = run(
+        &workers_list_args(r#"{"workerId":"worker-1"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(
+        json_stdout(&output),
+        serde_json::json!({"builds": [], "pagination_info": null})
+    );
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_workers_builds_list_builds_empty_result_preserves_valid_pagination_and_strips_unknowns()
+ {
+    let server = Server::start(vec![(
+        200,
+        workers_list_response(serde_json::json!([]), workers_list_info()),
+    )]);
+    let (output, _) = run(
+        &workers_list_args(r#"{"workerId":"worker-1"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(output.status.success(), "{output:?}");
+    let pagination = json_stdout(&output)["pagination_info"].clone();
+    assert_eq!(pagination.as_object().unwrap().len(), 6);
+    assert!(pagination.get("ignored").is_none());
+    assert_eq!(pagination["total_count"], 0);
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_workers_builds_list_builds_rejects_malformed_strict_envelopes_and_result_info() {
+    let valid_detail =
+        workers_build_detail(serde_json::json!("2024-01-01T00:00:00.000Z"), "build-1");
+    let envelope = |result: Value, result_info: Value| {
+        serde_json::json!({
+            "success": true,
+            "errors": [],
+            "messages": [],
+            "result": result,
+            "result_info": result_info
+        })
+    };
+    let with_field = |mut value: Value, field: &str, replacement: Value| {
+        value[field] = replacement;
+        value
+    };
+    let mut cases = vec![
+        ("root", serde_json::json!([])),
+        (
+            "success",
+            serde_json::json!({"success":false,"errors":[],"messages":[],"result":[]}),
+        ),
+        (
+            "errors type",
+            with_field(
+                envelope(serde_json::json!([]), workers_list_info()),
+                "errors",
+                serde_json::json!({}),
+            ),
+        ),
+        (
+            "error entry",
+            with_field(
+                envelope(serde_json::json!([]), workers_list_info()),
+                "errors",
+                serde_json::json!([{"code":1}]),
+            ),
+        ),
+        (
+            "messages type",
+            with_field(
+                envelope(serde_json::json!([]), workers_list_info()),
+                "messages",
+                serde_json::json!({}),
+            ),
+        ),
+        (
+            "result info type",
+            envelope(serde_json::json!([]), serde_json::json!("bad")),
+        ),
+        (
+            "result info missing field",
+            envelope(
+                serde_json::json!([]),
+                serde_json::json!({"next_page":false}),
+            ),
+        ),
+        (
+            "result info number type",
+            envelope(
+                serde_json::json!([]),
+                serde_json::json!({"next_page":false,"page":"1","per_page":10,"count":0,"total_count":0,"total_pages":0}),
+            ),
+        ),
+        (
+            "result type",
+            envelope(serde_json::json!({}), workers_list_info()),
+        ),
+        (
+            "result item type",
+            envelope(serde_json::json!([1]), workers_list_info()),
+        ),
+    ];
+    let mut missing_result = envelope(serde_json::json!([]), workers_list_info());
+    missing_result.as_object_mut().unwrap().remove("result");
+    cases.push(("missing result", missing_result));
+    let mut whitespace_created = valid_detail.clone();
+    whitespace_created["created_on"] = serde_json::json!(" 2024-01-01T00:00:00.000Z ");
+    cases.push((
+        "created date whitespace",
+        envelope(serde_json::json!([whitespace_created]), workers_list_info()),
+    ));
+    let mut whitespace_nullable = valid_detail.clone();
+    whitespace_nullable["running_on"] = serde_json::json!(" 2024-01-02T03:04:05Z ");
+    cases.push((
+        "nullable date whitespace",
+        envelope(
+            serde_json::json!([whitespace_nullable]),
+            workers_list_info(),
+        ),
+    ));
+    let mut invalid_build = valid_detail.clone();
+    invalid_build["build_trigger_metadata"]["branch"] = serde_json::json!(false);
+    cases.push((
+        "projected branch type",
+        envelope(serde_json::json!([invalid_build]), workers_list_info()),
+    ));
+    for (label, response) in cases {
+        let body: &'static str =
+            Box::leak(serde_json::to_string(&response).unwrap().into_boxed_str());
+        let server = Server::start(vec![(200, body)]);
+        let (output, _) = run(
+            &workers_list_args(r#"{"workerId":"worker-1"}"#),
+            Some(&server.endpoint),
+            Some("fixture-token"),
+        );
+        assert!(!output.status.success(), "{label}: {output:?}");
+        assert!(
+            String::from_utf8_lossy(&output.stdout).contains("malformed"),
+            "{label}"
+        );
+        assert_eq!(server.finish().len(), 1, "{label}");
+    }
+}
+
+#[test]
+fn capability_workers_builds_list_builds_rejects_ignored_nested_category_type_errors() {
+    let cases = [
+        ("pull request required", "/result/pull_request", None),
+        ("trigger", "/result/trigger", Some(serde_json::json!(false))),
+        (
+            "repo connection",
+            "/result/trigger/repo_connection",
+            Some(serde_json::json!([])),
+        ),
+        (
+            "metadata",
+            "/result/build_trigger_metadata",
+            Some(serde_json::json!([])),
+        ),
+        (
+            "environment variable",
+            "/result/build_trigger_metadata/environment_variables/SECRET_TOKEN",
+            Some(serde_json::json!("not-an-object")),
+        ),
+    ];
+    for (label, pointer, replacement) in cases {
+        let server = Server::start(vec![(
+            200,
+            workers_list_response_with_change(pointer, replacement),
+        )]);
+        let (output, _) = run(
+            &workers_list_args(r#"{"workerId":"worker-1"}"#),
+            Some(&server.endpoint),
+            Some("fixture-token"),
+        );
+        assert!(!output.status.success(), "{label}: {output:?}");
+        assert_eq!(server.finish().len(), 1, "{label}");
+    }
+}
+
+#[test]
+fn capability_workers_builds_list_builds_preflight_guards_and_path_limits() {
+    assert_usage_before_network(
+        &capability_args("workers_builds_list_builds", r#"{"workerId":"worker-1"}"#),
+        "--allow-egress",
+    );
+    for worker_id in [
+        "bad/path",
+        "bad\\path",
+        ".",
+        "..",
+        "bad%id",
+        "bad?id",
+        "bad#id",
+        " leading",
+        "trailing ",
+        "\t",
+        "\n",
+        "\r",
+        "\u{0000}",
+    ] {
+        let input = serde_json::json!({"workerId":worker_id}).to_string();
+        assert_usage_before_network(&workers_list_args(&input), "workerId");
+    }
+    let too_long = serde_json::json!({"workerId":"x".repeat(257)}).to_string();
+    assert_usage_before_network(&workers_list_args(&too_long), "workerId");
+    for (input, expected) in [
+        (r#"{"workerId":"worker-1","page":0}"#, "integer"),
+        (r#"{"workerId":"worker-1","page":10001}"#, "integer"),
+        (r#"{"workerId":"worker-1","page":1.5}"#, "integer"),
+        (
+            r#"{"workerId":"worker-1","page":"1"}"#,
+            "input does not match schema",
+        ),
+        (r#"{"workerId":"worker-1","perPage":0}"#, "integer"),
+        (r#"{"workerId":"worker-1","perPage":101}"#, "integer"),
+        (r#"{"workerId":"worker-1","perPage":1.5}"#, "integer"),
+        (
+            r#"{"workerId":"worker-1","perPage":true}"#,
+            "input does not match schema",
+        ),
+    ] {
+        assert_usage_before_network(&workers_list_args(input), expected);
+    }
+    assert_usage_before_network(
+        &workers_list_args(r#"{"workerId":"worker-1","account_id":"other"}"#),
+        "conflicts with resolved account scope",
+    );
+    let mut invalid_account = workers_list_args(r#"{"workerId":"worker-1"}"#);
+    invalid_account[3] = "bad account";
+    assert_usage_before_network(&invalid_account, "account_id");
+}
+
+#[test]
+fn capability_workers_builds_list_builds_validates_endpoint_before_auth() {
+    let (output, _) = run(
+        &workers_list_args(r#"{"workerId":"worker-1"}"#),
+        Some("http://example.com/client/v4"),
+        None,
+    );
+    assert_eq!(output.status.code(), Some(1));
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(text.contains("HTTPS") || text.contains("invalid API endpoint"));
+    assert!(!text.contains("CLOUDFLARE_API_TOKEN"));
+}
+
+#[test]
+fn capability_workers_builds_list_builds_non_retry_statuses_are_requested_once() {
+    for (status, expected_type) in [(400, "api"), (401, "auth")] {
+        let server = Server::start(vec![(
+            status,
+            r#"{"errors":[{"code":"fixture-token","message":"provider-secret"}]}"#,
+        )]);
+        let (output, _) = run(
+            &workers_list_args(r#"{"workerId":"worker-1"}"#),
+            Some(&server.endpoint),
+            Some("fixture-token"),
+        );
+        assert_eq!(output.status.code(), Some(1));
+        assert_eq!(json_stdout(&output)["error"]["type"], expected_type);
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert!(!text.contains("provider-secret"));
+        assert!(!text.contains("fixture-token"));
+        assert_eq!(server.finish().len(), 1);
+    }
+}
+
+#[test]
+fn capability_workers_builds_list_builds_transient_statuses_retry_three_times_and_can_succeed() {
+    let failure = r#"{"errors":[{"code":"fixture-token","message":"provider-secret"}]}"#;
+    for status in [429, 500] {
+        let server = Server::start(vec![
+            (status, failure),
+            (status, failure),
+            (status, failure),
+        ]);
+        let (output, _) = run(
+            &workers_list_args(r#"{"workerId":"worker-1"}"#),
+            Some(&server.endpoint),
+            Some("fixture-token"),
+        );
+        assert!(!output.status.success());
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert!(!text.contains("provider-secret"));
+        assert!(!text.contains("fixture-token"));
+        assert_eq!(server.finish().len(), 3, "status {status}");
+    }
+    let server = Server::start(vec![
+        (500, failure),
+        (
+            200,
+            workers_list_response(serde_json::json!([]), workers_list_info()),
+        ),
+    ]);
+    let (output, _) = run(
+        &workers_list_args(r#"{"workerId":"worker-1"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(server.finish().len(), 2);
+}
+
+#[test]
+fn capability_workers_builds_list_builds_redirect_refuses_forwarding_and_redacts_provider_details()
+{
+    let server = RedirectServer::start();
+    let (output, _) = run(
+        &workers_list_args(r#"{"workerId":"worker-1"}"#),
+        Some(&server.endpoint),
+        Some("fixture-token"),
+    );
+    assert!(!output.status.success());
+    let text = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(!text.contains("fixture-token"));
+    assert_eq!(server.finish().len(), 1);
+}
+
+#[test]
+fn capability_workers_builds_list_builds_response_bound_is_enforced() {
+    let server = Server::start(vec![(200, workers_oversized_response())]);
+    let (output, _) = run(
+        &workers_list_args(r#"{"workerId":"worker-1"}"#),
         Some(&server.endpoint),
         Some("fixture-token"),
     );

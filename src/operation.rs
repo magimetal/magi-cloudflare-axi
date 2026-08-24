@@ -2,12 +2,12 @@ use crate::{capability, client, config, error::AppError, mcp};
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
+use std::{cmp::Reverse, collections::BTreeSet};
 
 const CONTRACTS: &str = include_str!("../capabilities/cloudflare-operation-contracts.json");
 const SOURCE_COMMIT: &str = "70ff690553722f731849ede6ba9ce98958395a23";
-const BUNDLE_SHA256: &str = "152335217fb4766f9843fac569cf5e1c01bb57ef400f1417ac6b30fcf465e2ac";
-const CONTRACT_NAMES: [&str; 22] = [
+const BUNDLE_SHA256: &str = "80c335cdb1fe8198d08ca55aa4c4ef3a1078d95e3fe11f07e92aec9c2478eb7a";
+const CONTRACT_NAMES: [&str; 23] = [
     "auditlogs_by_account_id",
     "d1_database_delete",
     "d1_database_get",
@@ -30,8 +30,9 @@ const CONTRACT_NAMES: [&str; 22] = [
     "search_cloudflare_documentation",
     "search_posts",
     "workers_builds_get_build",
+    "workers_builds_list_builds",
 ];
-const CONTRACT_HASHES: [&str; 22] = [
+const CONTRACT_HASHES: [&str; 23] = [
     "630b34fad5d51bde597cc56ea7528ba993f904b5723236be830a1f99f80fd1ac",
     "d20fe0588da599ada8ff20f3baba6e948041033b6b635546943ec423173970da",
     "6f17fcc6c6d39125a11e32b7716f3d3f8f96ea2048eb2d7a55ef15f5ca8bd5c7",
@@ -54,6 +55,7 @@ const CONTRACT_HASHES: [&str; 22] = [
     "9c1240a95b266aebc995c0a4bd8aa08cb7a5bc25a8bd562162336a75e7f2aa41",
     "50cedf16e00086e8505bee4d83bfe202687f5d15eaffa3e7f71723651a3cae91",
     "156b720aa8b8a9c239a6a34a213a9dba11c6cc8362ab27db650bbb83d69dc5aa",
+    "b718a53caf8183c9115a7e82ee5bf46fba0a87323c3f2a8f6a87327a187e179c",
 ];
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
@@ -124,7 +126,7 @@ fn contracts() -> Result<Bundle, AppError> {
             .map(|c| c.capability.as_str())
             .collect::<Vec<_>>()
             != CONTRACT_NAMES
-        || bundle.version != "phase4h-operation-contracts-v1"
+        || bundle.version != "phase4i-operation-contracts-v1"
     {
         return Err(AppError::api(
             "embedded operation contract envelope is invalid",
@@ -558,6 +560,23 @@ fn validate_contract(c: &Contract) -> Result<(), AppError> {
             ));
         }
     }
+    if c.capability == "workers_builds_list_builds" {
+        let expected_route = json!({"auth":"account","body":"none","content_type":"application/json","method":"GET","path_parameters":[{"format":"single_path_segment","max_length":32,"name":"account_id","source":"resolved_account"},{"format":"single_path_segment","max_length":256,"name":"workerId","source":"input"}],"path_template":"/accounts/{account_id}/builds/workers/{workerId}/builds","query_parameters":[{"default":1,"name":"page","optional":true,"serialization":"javascript_string","source":"input"},{"default":10,"name":"per_page","optional":true,"serialization":"javascript_string","source":"input"}],"scope":"account","transport":"rest"});
+        let expected_behavior = json!({"artifact":"none","empty_state":"empty_builds_with_pagination","error":"strict_v4_build_details_list_response_schema","output_projection":"strict_build_summaries","pagination":"page_per_page","projection_validation":"full_response_before_projection","result_info":"pagination_info"});
+        let expected_safety = json!({"operation":"read","destructive":false,"metered":false,"data_egress":true,"long_running":false,"retry_policy":"transient_read"});
+        let expected_implementation = json!({"status":"verified","adapter":"rest","test_id":"tests/transport.rs::capability_workers_builds_list_builds_exact_request","documentation_id":"cloudflare-workers-builds-list-builds","reviewed_at":"2026-08-15"});
+        let expected_evidence = json!({"api_client":{"blob_oid":"b53d834e977cfb57467a2b1fe4f814f9c2bb2cc7","commit":SOURCE_COMMIT,"file":"packages/mcp-common/src/cloudflare-api.ts","lines":"20-71","source_sha256":"31c1f165a446e241dc93f4880445ad2ea096a9b11a7b757e3e82cc2f63d230d0"},"api_route":{"blob_oid":"061f5240161acc5c2d355d968002e7a178df416b","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/api/workers-builds.api.ts","lines":"13-32","source_sha256":"3c35543e920f795a867d543e0a3700c2eeeca93d3d76ce36d535d6c0595b0db4"},"auth_scopes":{"blob_oid":"1d1ce050974abaebc3b6497d833b3f7c8f39ab94","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/workers-builds.app.ts","lines":"21-28","source_sha256":"e087ea416688217a28e509e26401a74ef76b53742cb97ca4f8244d6f93adf384"},"input_schema":{"blob_oid":"3936684ab52f24fd02247b6a5e785f061b9bd2bd","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/tools/workers-builds.tools.ts","lines":"21-25","source_sha256":"81f7d85ef9411c94b45805d82a53eea32dd94c2d93dbe7611c55b466b1cb4c9d"},"list_result_info_types":{"blob_oid":"7520d4accba6d6ace4d59fb11cf25e096e90501e","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/types/workers-builds.types.ts","lines":"66-80","source_sha256":"2f5d1e8f6c7c90f0d50db43d65a35a5019bede5ce2eaee29f1f02cadea9f683c"},"pinned_handler":{"blob_oid":"3936684ab52f24fd02247b6a5e785f061b9bd2bd","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/tools/workers-builds.tools.ts","lines":"13-76","source_sha256":"59e614836b66369317d481f4f64c530c12f88b0a915b885b4e40a60b664cb01e"},"response_schema":{"blob_oid":"7520d4accba6d6ace4d59fb11cf25e096e90501e","commit":SOURCE_COMMIT,"file":"apps/workers-builds/src/types/workers-builds.types.ts","lines":"3-64","source_sha256":"a830f11089342d0ad203ee29f66e9eee6664cffad1386e7da2c1f1044e8bfd75"},"v4_envelope":{"blob_oid":"6748c68b64694c7a7c225dbd5daa388c779ab135","commit":SOURCE_COMMIT,"file":"packages/mcp-common/src/v4-api.ts","lines":"29-55","source_sha256":"2866e0a419736d107bc77dc8d49bb95583101caa5317ecc8660a40062093fdfc"}});
+        if c.route != expected_route
+            || c.behavior != expected_behavior
+            || serde_json::to_value(&c.safety).unwrap() != expected_safety
+            || c.implementation != expected_implementation
+            || c.evidence != expected_evidence
+        {
+            return Err(AppError::api(
+                "Workers Builds list-builds operation semantic or evidence mismatch",
+            ));
+        }
+    }
     Ok(())
 }
 fn guard(name: &str, s: &Safety, f: GuardFlags<'_>) -> Result<(), AppError> {
@@ -617,6 +636,33 @@ fn workers_build_uuid(v: &str) -> Result<String, AppError> {
         ));
     }
     path_segment(v, "buildUUID", Some(256))
+}
+fn workers_worker_id(v: &str) -> Result<String, AppError> {
+    if v.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        return Err(AppError::usage(
+            "workerId must be one safe non-empty path segment",
+        ));
+    }
+    path_segment(v, "workerId", Some(256))
+}
+
+fn workers_pagination_query(
+    input: &Map<String, Value>,
+    field: &str,
+    default: u64,
+    maximum: f64,
+) -> Result<String, AppError> {
+    let value = input.get(field).cloned().unwrap_or_else(|| json!(default));
+    let number = value
+        .as_f64()
+        .filter(|number| number.is_finite())
+        .ok_or_else(|| AppError::usage(format!("{field} must be a finite integer")))?;
+    if number.fract() != 0.0 || !(1.0..=maximum).contains(&number) {
+        return Err(AppError::usage(format!(
+            "{field} must be an integer from 1 through {maximum:.0}"
+        )));
+    }
+    javascript_number_string(&value)
 }
 fn encode_uri_component(value: &str) -> String {
     let mut encoded = String::with_capacity(value.len());
@@ -752,7 +798,7 @@ pub fn preflight(
     }
     let effective = effective(name, input.clone())?;
     if let Some(input_account) = effective.get("account_id").and_then(Value::as_str) {
-        if name == "workers_builds_get_build" {
+        if name == "workers_builds_get_build" || name == "workers_builds_list_builds" {
             workers_account_id(input_account)?;
         } else {
             path_segment(input_account, "account_id", Some(32))?;
@@ -770,7 +816,16 @@ pub fn preflight(
             .ok_or_else(|| AppError::usage("buildUUID is required"))?;
         workers_build_uuid(build_uuid)?;
     }
-    if name == "workers_builds_get_build" {
+    if name == "workers_builds_list_builds" {
+        let worker_id = effective
+            .get("workerId")
+            .and_then(Value::as_str)
+            .ok_or_else(|| AppError::usage("workerId is required"))?;
+        workers_worker_id(worker_id)?;
+        let _ = workers_pagination_query(&effective, "page", 1, 10_000.0)?;
+        let _ = workers_pagination_query(&effective, "perPage", 10, 100.0)?;
+    }
+    if name == "workers_builds_get_build" || name == "workers_builds_list_builds" {
         if let Some(a) = account {
             workers_account_id(a)?;
         }
@@ -779,7 +834,7 @@ pub fn preflight(
         client::validate_endpoint(e)?;
     }
     if let Some(a) = account {
-        if name != "workers_builds_get_build" {
+        if name != "workers_builds_get_build" && name != "workers_builds_list_builds" {
             path_segment(a, "account_id", Some(32))?;
         }
     }
@@ -2164,7 +2219,7 @@ fn workers_iso_millis(timestamp: i128) -> Option<String> {
 // as an ISO date/time string or a millisecond number; reject ambiguous values
 // and project both accepted forms through the Date.toISOString() shape.
 fn workers_parse_iso_date(value: &str) -> Option<i128> {
-    let bytes = value.trim().as_bytes();
+    let bytes = value.as_bytes();
     if bytes.len() < 10 || bytes[4] != b'-' || bytes[7] != b'-' {
         return None;
     }
@@ -2235,8 +2290,8 @@ fn workers_parse_iso_date(value: &str) -> Option<i128> {
     Some(local - i128::from(offset_minutes) * 60_000)
 }
 
-fn workers_coerce_date(value: &Value) -> Option<String> {
-    let timestamp = match value {
+fn workers_coerce_date_millis(value: &Value) -> Option<i128> {
+    match value {
         Value::Number(number) => {
             let millis = number.as_f64()?;
             if !millis.is_finite()
@@ -2245,12 +2300,15 @@ fn workers_coerce_date(value: &Value) -> Option<String> {
             {
                 return None;
             }
-            millis.trunc() as i128
+            Some(millis.trunc() as i128)
         }
-        Value::String(value) => workers_parse_iso_date(value)?,
-        _ => return None,
-    };
-    workers_iso_millis(timestamp)
+        Value::String(value) => workers_parse_iso_date(value),
+        _ => None,
+    }
+}
+
+fn workers_coerce_date(value: &Value) -> Option<String> {
+    workers_coerce_date_millis(value).and_then(workers_iso_millis)
 }
 
 fn workers_date(object: &Map<String, Value>, field: &str) -> Result<String, AppError> {
@@ -2391,6 +2449,112 @@ fn workers_validate_build_details(value: &Value) -> Result<Value, AppError> {
     }))
 }
 
+fn workers_builds_result_info(value: Option<&Value>) -> Result<Option<Value>, AppError> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    let Some(info) = value.as_object() else {
+        if value.is_null() {
+            return Ok(None);
+        }
+        return Err(workers_response_error(
+            "result_info must be null or an object",
+        ));
+    };
+    let next_page = info
+        .get("next_page")
+        .filter(|value| value.is_boolean())
+        .cloned()
+        .ok_or_else(|| workers_response_error("result_info.next_page must be boolean"))?;
+    let mut projected = Map::new();
+    projected.insert("next_page".into(), next_page);
+    for field in ["page", "per_page", "count", "total_count", "total_pages"] {
+        let value = info
+            .get(field)
+            .filter(|value| value.as_f64().is_some_and(|number| number.is_finite()))
+            .cloned()
+            .ok_or_else(|| {
+                workers_response_error(&format!("result_info.{field} must be a finite number"))
+            })?;
+        projected.insert(field.into(), value);
+    }
+    Ok(Some(Value::Object(projected)))
+}
+
+fn workers_builds_list_response(envelope: Value) -> Result<Value, AppError> {
+    let root = workers_object(&envelope, "root envelope")?;
+    if root.get("success") != Some(&Value::Bool(true)) {
+        return Err(workers_response_error("success must be true"));
+    }
+    let errors = root
+        .get("errors")
+        .and_then(Value::as_array)
+        .ok_or_else(|| workers_response_error("errors must be an array"))?;
+    for error in errors {
+        let error = workers_object(error, "errors entry")?;
+        workers_string(error, "message")?;
+        if let Some(code) = error.get("code") {
+            if !code.as_f64().is_some_and(|value| value.is_finite()) {
+                return Err(workers_response_error("error code must be a finite number"));
+            }
+        }
+    }
+    if !root.get("messages").is_some_and(Value::is_array) {
+        return Err(workers_response_error("messages must be an array"));
+    }
+    let pagination_info = workers_builds_result_info(root.get("result_info"))?;
+    let result = root
+        .get("result")
+        .ok_or_else(|| workers_response_error("result is required"))?;
+    if result.is_null() {
+        return Ok(json!({"builds": [], "pagination_info": null}));
+    }
+    let rows = result
+        .as_array()
+        .ok_or_else(|| workers_response_error("result must be an array or null"))?;
+    let validated = rows
+        .iter()
+        .map(workers_validate_build_details)
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut builds = rows
+        .iter()
+        .zip(validated.iter())
+        .map(|(row, full)| {
+            let build = workers_object(row, "result")?;
+            let timestamp = workers_coerce_date_millis(
+                build
+                    .get("created_on")
+                    .ok_or_else(|| workers_response_error("created_on is required"))?,
+            )
+            .ok_or_else(|| workers_response_error("created_on must be a valid date"))?;
+            let mut projected = Map::new();
+            for field in [
+                "buildUUID",
+                "createdOn",
+                "status",
+                "buildOutcome",
+                "branch",
+                "commitHash",
+                "commitMessage",
+                "commitAuthor",
+            ] {
+                projected.insert(
+                    field.into(),
+                    full.get(field)
+                        .cloned()
+                        .ok_or_else(|| workers_response_error(&format!("{field} is missing")))?,
+                );
+            }
+            Ok::<_, AppError>((timestamp, Value::Object(projected)))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    builds.sort_by_key(|(timestamp, _)| Reverse(*timestamp));
+    Ok(json!({
+        "builds": builds.into_iter().map(|(_, value)| value).collect::<Vec<_>>(),
+        "pagination_info": pagination_info.unwrap_or(Value::Null),
+    }))
+}
+
 fn workers_builds_response(envelope: Value) -> Result<Value, AppError> {
     let root = workers_object(&envelope, "root envelope")?;
     if root.get("success") != Some(&Value::Bool(true)) {
@@ -2404,8 +2568,8 @@ fn workers_builds_response(envelope: Value) -> Result<Value, AppError> {
         let error = workers_object(error, "errors entry")?;
         workers_string(error, "message")?;
         if let Some(code) = error.get("code") {
-            if !code.is_number() {
-                return Err(workers_response_error("error code must be a number"));
+            if !code.as_f64().is_some_and(|value| value.is_finite()) {
+                return Err(workers_response_error("error code must be a finite number"));
             }
         }
     }
@@ -2471,6 +2635,65 @@ fn workers_builds_get_build_request(
     )?;
     workers_builds_response(response.envelope)
 }
+fn workers_builds_list_builds_request(
+    input: &Map<String, Value>,
+    endpoint: Option<&str>,
+    cli_account: Option<String>,
+) -> Result<Value, AppError> {
+    let worker_id = workers_worker_id(
+        input
+            .get("workerId")
+            .and_then(Value::as_str)
+            .ok_or_else(|| AppError::usage("workerId is required"))?,
+    )?;
+    let query = vec![
+        (
+            "page".into(),
+            workers_pagination_query(input, "page", 1, 10_000.0)?,
+        ),
+        (
+            "per_page".into(),
+            workers_pagination_query(input, "perPage", 10, 100.0)?,
+        ),
+    ];
+    let mut cfg = config::load(endpoint.map(str::to_owned), cli_account, None)?;
+    if let (Some(configured), Some(provided)) = (
+        cfg.account.as_deref(),
+        input.get("account_id").and_then(Value::as_str),
+    ) {
+        if configured != provided {
+            return Err(AppError::usage(
+                "input account_id conflicts with resolved account scope",
+            ));
+        }
+    }
+    if cfg.account.is_none() {
+        cfg.account = input
+            .get("account_id")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+    }
+    let account = workers_account_id(cfg.account.as_deref().ok_or_else(|| {
+        AppError::usage("account scope required; use --account or input account_id")
+    })?)?;
+    client::validate_endpoint(&cfg.endpoint)?;
+    let auth = config::auth_for(&cfg)?;
+    let response = client::CloudflareClient::new(cfg, auth)?.request_with_trusted_headers(
+        client::RequestOptions {
+            method: client::Method::Get,
+            path: format!("/accounts/{account}/builds/workers/{worker_id}/builds"),
+            query,
+            body: None,
+            allow_write: false,
+            confirm_delete: None,
+            retry_policy: client::RetryPolicy::TransientRead,
+            allow_classified_read_post: false,
+        },
+        &[],
+        true,
+    )?;
+    workers_builds_list_response(response.envelope)
+}
 
 pub fn invoke(
     name: &str,
@@ -2500,6 +2723,9 @@ pub fn invoke(
         "auditlogs_by_account_id" => auditlogs_request(&input, endpoint.as_deref(), cli_account),
         "workers_builds_get_build" => {
             workers_builds_get_build_request(&input, endpoint.as_deref(), cli_account)
+        }
+        "workers_builds_list_builds" => {
+            workers_builds_list_builds_request(&input, endpoint.as_deref(), cli_account)
         }
         "list_rags" => autorag_request(&input, endpoint.as_deref(), cli_account),
         "search_cloudflare_documentation" => {
